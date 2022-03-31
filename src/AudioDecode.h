@@ -2,7 +2,7 @@
 #define HGL_AUDIO_DECODE_INCLUDE
 
 #include<hgl/audio/OpenAL.h>
-#include<hgl/type/BaseString.h>
+#include<hgl/type/String.h>
 
 using namespace openal;
 namespace hgl

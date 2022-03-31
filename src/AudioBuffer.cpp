@@ -136,9 +136,9 @@ namespace hgl
 
         if(alLastError())return(ok=false);
 
-        if(aft<=aftNone||aft>=aftEnd)
+        if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString(aft));
+            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString::valueOf((int)aft));
             alDeleteBuffers(1,&Index);
             RETURN_FALSE;
         }
@@ -168,10 +168,10 @@ namespace hgl
         if(!alGenBuffers)RETURN_FALSE;
         if(!in)RETURN_FALSE;
         if(size<=0)RETURN_FALSE;
-
-        if(aft<=aftNone||aft>=aftEnd)
+        
+        if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString(aft));
+            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString::valueOf((int)aft));
             ok=false;
         }
         else
@@ -198,8 +198,8 @@ namespace hgl
         if(!alGenBuffers)RETURN_FALSE;
 
         aft=CheckAudioFileType(filename);
-
-        if(!aft)
+        
+        if(!RangeCheck(aft))
         {
             LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFile: ")+OSString(filename));
             ok=false;

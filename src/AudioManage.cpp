@@ -25,7 +25,7 @@ namespace hgl
     {
         if(!buffer)return(true);
 
-        if(source->State==AL_PLAYING)return(false);
+        if(source->IsPlaying())return(false);
 
         source->Unlink();
 
@@ -49,7 +49,7 @@ namespace hgl
         buffer=new AudioBuffer(filename);
 
         source->Link(buffer);
-        source->Gain=gain;
+        source->SetGain(gain);
         source->Play(false);
     }
 }//namespace hgl

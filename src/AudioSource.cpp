@@ -1,6 +1,6 @@
 ﻿#include<hgl/audio/AudioSource.h>
 #include<hgl/audio/OpenAL.h>
-#include<hgl/LogInfo.h>
+#include<hgl/log/LogInfo.h>
 
 using namespace openal;
 namespace hgl
@@ -21,23 +21,6 @@ namespace hgl
     {
         index=InvalidIndex;
         Buffer=nullptr;
-
-        hglSetPropertyRead(     Index,          this,AudioSource::GetIndex);
-
-        hglSetProperty(         CurTime,        this,AudioSource::GetCurTime,       AudioSource::SetCurTime);
-
-        hglSetPropertyRead(     State,          this,AudioSource::GetState);
-        hglSetPropertyRead(     MinGain,        this,AudioSource::GetMinGain);
-        hglSetPropertyRead(     MaxGain,        this,AudioSource::GetMaxGain);
-
-        hglSetProperty(         Loop,           this,AudioSource::GetLoop,          AudioSource::SetLoop);
-
-        hglSetProperty(         Pitch,          this,AudioSource::GetPitch,         AudioSource::SetPitch);
-        hglSetProperty(         Gain,           this,AudioSource::GetGain,          AudioSource::SetGain);
-        hglSetProperty(         ConeGain,       this,AudioSource::GetConeGain,      AudioSource::SetConeGain);
-
-        hglSetProperty(         DistanceModel,  this,AudioSource::GetDistanceModel, AudioSource::SetDistanceModel);
-        hglSetProperty(         RolloffFactor,  this,AudioSource::GetRolloffFactor, AudioSource::SetRolloffFactor);
     }
 
     /**
@@ -69,7 +52,7 @@ namespace hgl
         Close();
     }
 
-    double AudioSource::GetCurTime()
+    double AudioSource::GetCurTime() const
     {
         if(!alGetSourcei)return(0);
         if(index==InvalidIndex)return(0);
@@ -89,7 +72,7 @@ namespace hgl
         alSourcef(index,AL_SEC_OFFSET,ct);
     }
 
-    int AudioSource::GetState()
+    int AudioSource::GetState() const
     {
         if(!alGetSourcei)return(0);
         if(index==InvalidIndex)return(AL_NONE);
@@ -101,7 +84,7 @@ namespace hgl
         return(state);
     }
 
-    float AudioSource::GetMinGain()
+    float AudioSource::GetMinGain() const
     {
         if(!alGetSourcef)return(0);
         if(index==InvalidIndex)return(0);
@@ -113,7 +96,7 @@ namespace hgl
         return(min);
     }
 
-    float AudioSource::GetMaxGain()
+    float AudioSource::GetMaxGain() const
     {
         if(!alGetSourcef)return(0);
         if(index==InvalidIndex)return(0);
@@ -267,7 +250,7 @@ namespace hgl
         if(!Buffer
           ||Buffer->Time<=0)return(false);
 
-        if(State==AL_PLAYING)
+        if(IsPlaying())
             alSourceStop(index);
 
         alSourcePlay(index);
@@ -288,7 +271,7 @@ namespace hgl
         if(!Buffer
           ||Buffer->Time<=0)return(false);
 
-        if(State==AL_PLAYING)
+        if(IsPlaying())
             alSourceStop(index);
 
         alSourcePlay(index);

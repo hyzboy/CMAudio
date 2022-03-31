@@ -6,7 +6,7 @@
 #include<hgl/thread/ThreadMutex.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
-#include<hgl/algorithm/VectorMath.h>
+#include<hgl/math/Math.h>
 using namespace openal;
 namespace hgl
 {
@@ -17,6 +17,14 @@ namespace hgl
 
     struct AudioPlugInInterface;
 
+    enum class PlayState        //播放器状态
+    {
+        None=0,
+        Play,
+        Pause,
+        Exit
+    };
+
     /**
     * 使用AudioPlayer创建的音频播放器类，一般用于背景音乐等独占的音频处理。
     * 这个音频播放器将使用一个单独的线程，在播放器被删除时线程也会被关闭。
@@ -25,35 +33,91 @@ namespace hgl
     {
         ThreadMutex lock;
 
-    public:
+    protected:
 
-        enum PlayState        //播放器状态
+        ALbyte *audio_data;
+        int audio_data_size;
+
+        void *audio_ptr;                                                                                ///<音频数据指针
+
+        char *audio_buffer;
+        int audio_buffer_size;
+        uint audio_buffer_count;                                                                        ///<播放数据计数
+
+        AudioPlugInInterface *decode;
+
+        ALenum format;                                                                                  ///<音频数据格式
+        ALsizei rate;                                                                                   ///<音频数据采样率
+
+        struct
         {
-            psNone=0,
-            psPlay,
-            psPause,
-            psExit
-        };
+            bool open;
+            uint64 time;
+            float gap;
 
-        #include<hgl/audio/AudioPlayer.Attrib.h>
+            struct
+            {
+                float gain;
+                double time;
+            }start,end;
+        }auto_gain;                                                                                     ///<自动增益
+
+        bool ReadData(ALuint);
+        bool UpdateBuffer();
+        void ClearBuffer();
+
+        bool Playback();
+
+        bool IsExitDelete()const override{return false;}    
+        bool Execute() override;
+
+        void InitPrivate();
+        bool Load(AudioFileType);
+
+    protected:
+
+        volatile bool loop;
+        volatile PlayState ps;
+
+        AudioSource audiosource;
+        ALuint source;
+        ALuint buffer[3];
+        double total_time;
+        double wait_time;
+
+        double gain;
+
+        double start_time;
+
+        double fade_in_time;
+        double fade_out_time;
 
     public: //属性
 
-        Property<uint>      Index;                                                                  ///<音源索引
-        Property<double>    Time;                                                                   ///<音频总时间
+                            uint        GetIndex()const{return audiosource.index;}                      ///<获取音源索引
 
-        Property<PlayState> State;                                                                  ///<播放器状态
-        Property<int>       SourceState;                                                            ///<音源状态
-        Property<float>     MinGain;                                                                ///<最小增益
-        Property<float>     MaxGain;                                                                ///<最大增益
+                            double      GetTotalTime()const{return total_time;}                         ///<获取音频总时长
 
-        Property<bool>      Loop;                                                                   ///<是否循环播放虚拟变量
+                            PlayState   GetPlayState()const{return ps;}                                 ///<获取播放器状态
 
-        Property<float>     Pitch;                                                                  ///<播放频率
-        Property<float>     Gain;                                                                   ///<音量增益幅度
-        Property<float>     ConeGain;                                                               ///<
+                            int         GetSourceState()const{return audiosource.GetState();}           ///<获取音源索引
 
-        Property<float>     RolloffFactor;                                                          ///<
+                            bool        IsLoop();                                                       ///<是否循环播放
+                            void        SetLoop(bool);                                                  ///<设置循环播放
+
+                            float       GetGain()const{return audiosource.gain;}                        ///<获取音量增益
+                            float       GetMinGain()const{return audiosource.GetMinGain();}             ///<获取音量最小增益
+                            float       GetMaxGain()const{return audiosource.GetMaxGain();}             ///<获取音量最大增益
+                            float       GetConeGain()const{return audiosource.cone_gain;}               ///<获取音量锥形增益
+
+                            void        SetGain(float val){audiosource.SetGain(val);}                   ///<设置音量增益
+                            void        SetConeGain(float val){audiosource.SetConeGain(val);}           ///<设置音量锥形增益
+
+                            float       GetPitch()const{return audiosource.pitch;}                      ///<获取播放频率
+                            void        SetPitch(float val){audiosource.SetPitch(val);}                 ///<设置播放频率
+
+                            float       GetRolloffFactor()const{return audiosource.rolloff_factor;}     ///<获取Rolloff因子
+                            void        SetRolloffFactor(float f){audiosource.SetRolloffFactor(f);}     ///<设置Rolloff因子
 
     public: //属性方法
 
@@ -76,13 +140,13 @@ namespace hgl
 
         AudioPlayer();
         AudioPlayer(io::InputStream *,int,AudioFileType);
-        AudioPlayer(const os_char *,AudioFileType=aftNone);
-//      AudioPlayer(HAC *,const os_char *,AudioFileType=aftNone);
+        AudioPlayer(const os_char *,AudioFileType=AudioFileType::None);
+//      AudioPlayer(HAC *,const os_char *,AudioFileType=AudioFileType::None);
         virtual ~AudioPlayer();
 
         virtual bool Load(io::InputStream *,int,AudioFileType);                                     ///<从流中加载一个音频文件
-        virtual bool Load(const os_char *,AudioFileType=aftNone);                                   ///<加载一个音频文件
-//      virtual bool Load(HAC *,const os_char *,AudioFileType=aftNone);                             ///<从HAC包中加载一个音频文件
+        virtual bool Load(const os_char *,AudioFileType=AudioFileType::None);                       ///<加载一个音频文件
+//      virtual bool Load(HAC *,const os_char *,AudioFileType=AudioFileType::None);                 ///<从HAC包中加载一个音频文件
 
         virtual void Play(bool=true);                                                               ///<播放音频
         virtual void Stop();                                                                        ///<停止播放
@@ -93,7 +157,7 @@ namespace hgl
         virtual double GetPlayTime();                                                               ///<取得已播放时间(单位秒)
         virtual void SetFadeTime(double,double);                                                    ///<设置淡入淡出时间
 
-        virtual void AutoGain(float,double);                                                        ///<自动音量
+        virtual void AutoGain(float,double,const double cur_time);                                  ///<自动音量
     };//class AudioPlayer
 }//namespace hgl
 #endif//HGL_AUDIO_PLAYER_INCLUDE

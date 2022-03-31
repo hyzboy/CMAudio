@@ -1,6 +1,6 @@
 ﻿#include<hgl/audio/Listener.h>
 #include<hgl/audio/OpenAL.h>
-#include<hgl/LogInfo.h>
+#include<hgl/log/LogInfo.h>
 
 using namespace openal;
 namespace hgl

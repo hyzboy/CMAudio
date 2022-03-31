@@ -1,8 +1,9 @@
 ﻿#include<hgl/audio/AudioPlayer.h>
-#include<hgl/LogInfo.h>
-#include<hgl/PlugIn.h>
+#include<hgl/log/LogInfo.h>
+#include<hgl/plugin/PlugIn.h>
 #include<hgl/Time.h>
 #include<hgl/io/MemoryInputStream.h>
+#include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
 
 namespace hgl
@@ -29,29 +30,13 @@ namespace hgl
 
         decode=nullptr;
 
-        ps=psNone;
+        ps=PlayState::None;
 
-        {
-            hglSetPropertyRead( Index,          this,AudioPlayer::GetIndex      );
-            hglSetPropertyRead( Time,           this,AudioPlayer::GetTime       );
-
-            hglSetPropertyRead( State,          this,AudioPlayer::GetPlayState  );
-            hglSetPropertyRead( SourceState,    this,AudioPlayer::GetSourceState);
-            hglSetPropertyRead( MinGain,        this,AudioPlayer::GetMinGain    );
-            hglSetPropertyRead( MaxGain,        this,AudioPlayer::GetMaxGain    );
-
-            hglSetProperty(     Loop,           this,AudioPlayer::GetLoop,          AudioPlayer::SetLoop            );
-
-            hglSetProperty(     Pitch,          this,AudioPlayer::GetPitch,         AudioPlayer::SetPitch           );
-            hglSetProperty(     Gain,           this,AudioPlayer::GetGain,          AudioPlayer::SetGain            );
-            hglSetProperty(     ConeGain,       this,AudioPlayer::GetConeGain,      AudioPlayer::SetConeGain        );
-
-            hglSetProperty(     RolloffFactor,  this,AudioPlayer::GetRolloffFactor, AudioPlayer::SetRolloffFactor   );
-        }
+        total_time=0;
 
         if(!audiosource.Create())return;
 
-        audiosource.Loop=false;
+        audiosource.SetLoop(false);
 
         source=audiosource.index;
 
@@ -106,7 +91,7 @@ namespace hgl
 
         if(decode)
         {
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&time);
+            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
 
             audio_buffer_size=(AudioTime(format,rate)+9)/10;        // 1/10 秒
 
@@ -117,8 +102,8 @@ namespace hgl
 
             wait_time=0.1;
 
-            if(wait_time>time/3.0f)
-                wait_time=time/10.0f;
+            if(wait_time>total_time/3.0f)
+                wait_time=total_time/10.0f;
 
             return(true);
         }
@@ -140,9 +125,9 @@ namespace hgl
 
         Clear();
 
-        if(aft<=aftNone||aft>=aftEnd)
+        if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未支持的音频文件类型！AudioFileType: ")+OSString(aft));
+            LOG_ERROR(OS_TEXT("未支持的音频文件类型！AudioFileType: ")+OSString::valueOf((int)aft));
 
             return(false);
         }
@@ -168,10 +153,10 @@ namespace hgl
         if(!alGenBuffers)return(false);
         if(!filename||!(*filename))return(false);
 
-        if(aft<=aftNone||aft>=aftEnd)
+        if(!RangeCheck(aft))
             aft=CheckAudioFileType(filename);
 
-        if(aft<=aftNone||aft>=aftEnd)
+        if(!RangeCheck(aft))
         {
             LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFile: ")+OSString(filename));
             return(false);
@@ -236,10 +221,10 @@ namespace hgl
 
         audio_ptr=nullptr;
 
-        time=0;
+        total_time=0;
     }
 
-    bool AudioPlayer::GetLoop()
+    bool AudioPlayer::IsLoop()
     {
         lock.Lock();
         bool rv=loop;
@@ -299,12 +284,12 @@ namespace hgl
             alSourcePlay(source);
             start_time=GetDoubleTime();
 
-            ps=psPlay;
+            ps=PlayState::Play;
             return(true);
         }
         else
         {
-            ps=psExit;
+            ps=PlayState::Exit;
 
             return(false);
         }
@@ -322,7 +307,7 @@ namespace hgl
 
         loop=_loop;
 
-        if(ps==psNone||ps==psPause)      //未启动线程
+        if(ps==PlayState::None||ps==PlayState::Pause)      //未启动线程
             Start();
 
         Playback();            //Execute执行有检测Lock，所以不必担心该操作会引起线程冲突
@@ -342,7 +327,7 @@ namespace hgl
         lock.Lock();
 
         if(Thread::IsLive())
-            ps=psExit;
+            ps=PlayState::Exit;
         else
             thread_is_live=false;
 
@@ -351,7 +336,7 @@ namespace hgl
         if(thread_is_live)
             Thread::WaitExit();
 
-        ps=psNone;
+        ps=PlayState::None;
     }
 
     /**
@@ -363,8 +348,8 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==psPlay)
-            ps=psPause;
+        if(ps==PlayState::Play)
+            ps=PlayState::Pause;
 
         lock.Unlock();
     }
@@ -378,9 +363,9 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==psPause)
+        if(ps==PlayState::Pause)
         {
-            ps=psPlay;
+            ps=PlayState::Play;
 
             Thread::Start();
         }
@@ -404,9 +389,9 @@ namespace hgl
             audiosource.SetGain(((cur_time-start_time)/fade_in_time)*gain);
         }
         else
-        if(cur_time-start_time>time-fade_out_time)    //淡出时间
+        if(cur_time-start_time>total_time-fade_out_time)    //淡出时间
         {
-            audiosource.SetGain(((time-(cur_time-start_time))/fade_out_time)*gain);
+            audiosource.SetGain(((total_time-(cur_time-start_time))/fade_out_time)*gain);
         }
 
         if(auto_gain.open)
@@ -415,14 +400,14 @@ namespace hgl
             {
                 auto_gain.open=false;
 
-                Gain=auto_gain.end.gain;
+                SetGain(auto_gain.end.gain);
 
                 if(auto_gain.end.gain<=0)
-                    ps=psExit;
+                    ps=PlayState::Exit;
             }
             else
             {
-                Gain=auto_gain.start.gain+auto_gain.gap*((cur_time-auto_gain.start.time)/auto_gain.time);
+                SetGain(auto_gain.start.gain+auto_gain.gap*((cur_time-auto_gain.start.time)/auto_gain.time));
             }
         }
 
@@ -468,13 +453,13 @@ namespace hgl
         {
             lock.Lock();
 
-            if(ps==psPlay)    //被要求播放
+            if(ps==PlayState::Play)    //被要求播放
             {
                 if(!UpdateBuffer())
                 {
                     if(loop)        //被要求循环播放
                     {
-                        if(SourceState!=AL_STOPPED)               //等它放完
+                        if(GetSourceState()!=AL_STOPPED)               //等它放完
                             Playback();
                     }
                     else
@@ -482,18 +467,18 @@ namespace hgl
                         //退出
                         lock.Unlock();
 
-                        ps=psNone;
+                        ps=PlayState::None;
                         return(false);
                     }
                 }
                 else
                 {
-                    if(SourceState!=AL_PLAYING)
+                    if(GetSourceState()!=AL_PLAYING)
                         alSourcePlay(source);
                 }
             }
             else
-            if(ps==psPause)        //被要求暂停
+            if(ps==PlayState::Pause)        //被要求暂停
             {
                 alSourcePause(source);
 
@@ -501,7 +486,7 @@ namespace hgl
                 return(false);
             }
             else
-            if(ps==psExit)      //被要求暂停或退出
+            if(ps==PlayState::Exit)      //被要求暂停或退出
             {
                 alSourceStop(source);
                 alSourcei(source,AL_BUFFER,0);
@@ -535,14 +520,17 @@ namespace hgl
 
     /**
     * 自动调整增益
+    * @param target_gain 目标增益
+    * @param adjust_time 到达目标增益要经过的时间
+    * @param cur_time 当前时间
     */
-    void AudioPlayer::AutoGain(float target_gain,double adjust_time)
+    void AudioPlayer::AutoGain(float target_gain,double adjust_time,const double cur_time)
     {
         if(!audio_data)return;
 
         lock.Lock();
-            auto_gain.start.gain=Gain;
-            auto_gain.start.time=GetDoubleTime();
+            auto_gain.start.gain=GetGain();
+            auto_gain.start.time=cur_time;
             auto_gain.end.gain=target_gain;
             auto_gain.end.time=auto_gain.start.time+adjust_time;
 

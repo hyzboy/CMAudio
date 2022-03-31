@@ -3,7 +3,7 @@
 #include<hgl/audio/OpenAL.h>
 #include<hgl/type/Pair.h>
 #include<hgl/type/Stack.h>
-#include<hgl/type/BaseString.h>
+#include<hgl/type/String.h>
 #include<hgl/type/StringList.h>
 #include<hgl/platform/ExternalModule.h>
 
@@ -37,90 +37,88 @@ namespace openal
 
     void PutOpenALInfo();
     //--------------------------------------------------------------------------------------------------
+    bool OnFindedOpenALDynamicLinkLibrary(const OSString &filename,void *user_data,bool exist)
+    {
+        if(!exist)return(true);
+        
+        AudioEM=LoadExternalModule(filename);
+
+        if(!AudioEM)
+        {            
+            LOG_INFO(OS_TEXT("找到一个OpenAL动态链接库，但加载失败！文件名: ")+OSString(filename));
+            return(true);
+        }
+        
+        LOG_INFO(OS_TEXT("加载OpenAL动态链接库功成。文件名: ")+OSString(filename));
+
+        return(false);
+    }
+    //--------------------------------------------------------------------------------------------------
     /**
     * 加载OpenAL
     * @return 加载OpenAL是否成功
     */
     bool LoadOpenAL(const os_char *filename)
     {
-        const os_char oalfn[][HGL_MAX_PATH]=
+        OSStringList oalpn;
+        OSStringList oalfn=
         {
 #if HGL_OS == HGL_OS_Windows
-            OS_TEXT("\\OpenAL32.dll"),
-            OS_TEXT("\\ct_oal.dll"),
-            OS_TEXT("\\nvOpenAL.dll"),
-            OS_TEXT("\\soft_oal.dll"),
-            OS_TEXT("\\wrap_oal.dll"),
+            OS_TEXT("OpenAL32.dll"),
+            OS_TEXT("ct_oal.dll"),
+            OS_TEXT("nvOpenAL.dll"),
+            OS_TEXT("soft_oal.dll"),
+            OS_TEXT("wrap_oal.dll"),
 #elif (HGL_OS == HGL_OS_Linux)||(HGL_OS == HGL_OS_FreeBSD)||(HGL_OS == HGL_OS_NetBSD)||(HGL_OS == HGL_OS_OpenBSD)
-            OS_TEXT("/libopenal.so"),
-            OS_TEXT("/libopenal.so.1"),
+            OS_TEXT("libopenal.so"),
+            OS_TEXT("libopenal.so.1"),
 #elif HGL_OS == HGL_OS_MacOS
-            OS_TEXT("/libopenal.dylib"),
+            OS_TEXT("libopenal.dylib"),
 #endif//HGL_OS == HGL_OS_Windows
-            OS_TEXT("\x0")
         };
 
         int count=0;
-        const os_char *pi_path=GetString(hfsPlugInPath);
-        os_char pifn[HGL_MAX_PATH];
-        os_char dllfn[HGL_MAX_PATH];
         os_char *final_filename=nullptr;
+
+        {
+            OSString pn;
+
+            filesystem::GetCurrentPath(pn);
+            oalpn.Add(pn);
+
+            pn=filesystem::MergeFilename(pn,OS_TEXT("Plug-Ins"));
+            if(filesystem::IsDirectory(pn))
+                oalpn.Add(pn);
+
+            filesystem::GetOSLibararyPath(pn);
+            oalpn.Add(pn);
+        }
 
         CloseOpenAL();
 
         if(filename)
         {
-            hgl::strcpy(dllfn,HGL_MAX_PATH,hgl::info::GetString(hgl::info::hfsOSLibraryPath).c_str());
-            hgl::strcat(dllfn,HGL_MAX_PATH,HGL_DIRECTORY_SEPARATOR);
-            hgl::strcat(dllfn,HGL_MAX_PATH,filename,HGL_MAX_PATH);
-
-            hgl::strcpy(pifn,HGL_MAX_PATH,pi_path);
-            hgl::strcat(pifn,HGL_MAX_PATH,HGL_DIRECTORY_SEPARATOR);
-            hgl::strcat(pifn,HGL_MAX_PATH,filename,HGL_MAX_PATH);
-
-            if(filesystem::FileExist(filename ))final_filename=(os_char *)filename;else
-            if(filesystem::FileExist(dllfn    ))final_filename=dllfn;else
-            if(filesystem::FileExist(pifn        ))final_filename=pifn;
-
-            AudioEM=LoadExternalModule(final_filename);
+            filesystem::FindFileOnPaths(filename,oalpn,nullptr,OnFindedOpenALDynamicLinkLibrary);
         }
         else
         {
-            do
-            {
-                hgl::strcpy(pifn,HGL_MAX_PATH,pi_path);
-                hgl::strcat(pifn,HGL_MAX_PATH,oalfn[count],HGL_MAX_PATH);
-
-                hgl::strcpy(dllfn,HGL_MAX_PATH,hgl::info::GetString(hgl::info::hfsOSLibraryPath).c_str());
-                hgl::strcat(dllfn,HGL_MAX_PATH,oalfn[count],HGL_MAX_PATH);
-
-                if(filesystem::FileExist(dllfn))final_filename=dllfn;else
-                if(filesystem::FileExist(pifn ))final_filename=pifn;else
-                    continue;
-
-                AudioEM=LoadExternalModule(final_filename);
-
-                if(AudioEM)break;      //如果加载成功
-
-            }while(oalfn[++count][0]);
+            filesystem::FindFileOnPaths(oalfn,oalpn,nullptr,OnFindedOpenALDynamicLinkLibrary);
         }
 
         if(AudioEM)
         {
-            LOG_INFO(OS_TEXT("加载OpenAL成功！使用动态链接库: ")+OSString(final_filename));
-
-            return (AL_TRUE);
+            return true;
         }
         else
         {
         #if HGL_OS == HGL_OS_Windows
             LOG_ERROR(  OS_TEXT("加载OpenAL动态链接库失败！OpenAL动态链接库可能是: OpenAL32.dll、soft_oal.dll、wrap_oal.dll、ct_oal.dll、nvOpenAL.dll\n")
-                        OS_TEXT("软件实现的OpenAL32.DLL、wrap_oal可在http://www.openal.org上下载、soft_oal.dll可在http://kcat.strangesoft.net/openal.html下载!\n")
+                        OS_TEXT("软件实现的OpenAL32.DLL、wrap_oal可在http://www.openal.or上下载、soft_oal.dll可在https://openal-soft.org下载!\n")
                         OS_TEXT("硬件实现的OpenAL32.DLL请到对应您声卡的厂商网站下载对应的驱动程序! 下载完成后可其放入Windows\\System32目录下或应用程序Plug-Ins目录下即可!"));
         #else
-            LOG_ERROR(  OS_TEXT("加载OpenAL动态链接库失败！"));
+            LOG_ERROR(  OS_TEXT("加载OpenAL动态链接库失败，或没有找到OpenAL动态链接库！"));
         #endif//#if HGL_OS == HGL_OS_Windows
-            return (AL_FALSE);
+            return false;
         }
     }
 

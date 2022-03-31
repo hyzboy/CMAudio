@@ -169,16 +169,15 @@ namespace hgl
 
         if(!asi->source)
         {
-            asi->source=source_pool.Acquire();
-
-            if(!asi->source)return(false);
+            if(!source_pool.Acquire(asi->source))
+                return(false);
         }
 
         asi->source->Link(asi->buffer);
 
-        asi->source->Gain=asi->gain;
-        asi->source->DistanceModel=asi->distance_model;
-        asi->source->RolloffFactor=asi->rolloff_factor;
+        asi->source->SetGain(asi->gain);
+        asi->source->SetDistanceModel(asi->distance_model);
+        asi->source->SetRolloffFactor(asi->rolloff_factor);
         asi->source->SetDistance(asi->ref_distance,asi->max_distance);
         asi->source->SetPosition(asi->cur_pos);
         asi->source->SetConeAngle(asi->cone_angle);
@@ -187,7 +186,7 @@ namespace hgl
         asi->source->SetDopplerFactor(asi->doppler_factor);
         asi->source->SetDopplerVelocity(0);
 
-        asi->source->CurTime=time_off;
+        asi->source->SetCurTime(time_off);
         asi->source->Play(asi->loop);
 
         OnToHear(asi);
@@ -200,7 +199,7 @@ namespace hgl
         if(!asi)return(false);
         if(!asi->source)return(false);
 
-        if(asi->source->State==AL_STOPPED)    //停播状态
+        if(asi->source->GetState()==AL_STOPPED)    //停播状态
         {
             if(!asi->loop)                  //不是循环播放
             {

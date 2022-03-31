@@ -1,7 +1,7 @@
 ﻿#ifndef HGL_AUDIO_SCENE_INCLUDE
 #define HGL_AUDIO_SCENE_INCLUDE
 
-#include<hgl/algorithm/VectorMath.h>
+#include<hgl/math/Math.h>
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
 #include<hgl/audio/ConeAngle.h>
@@ -119,7 +119,7 @@ namespace hgl
         AudioListener *listener;                                                                    ///<收聽者
 
         ObjectPool<AudioSource> source_pool;                                                        ///<音源数据池
-        Set<AudioSourceItem *> source_list;                                                         ///<音源列表
+        SortedSets<AudioSourceItem *> source_list;                                                  ///<音源列表
 
     protected:
 

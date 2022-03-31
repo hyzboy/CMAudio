@@ -1,7 +1,7 @@
 ﻿#ifndef HGL_LISTENER_INCLUDE
 #define HGL_LISTENER_INCLUDE
 
-#include<hgl/algorithm/VectorMath.h>
+#include<hgl/math/math.h>
 namespace hgl
 {
     /**

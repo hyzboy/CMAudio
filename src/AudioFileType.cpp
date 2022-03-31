@@ -1,5 +1,6 @@
 ﻿#include<hgl/audio/AudioFileType.h>
 #include<hgl/type/StrChar.h>
+#include<hgl/TypeFunc.h>
 
 namespace hgl
 {
@@ -11,17 +12,17 @@ namespace hgl
 
     const AudioFormatExt audio_format_ext_name[]=
     {
-        {OS_TEXT("wav"),  aftWAV      },
-        {OS_TEXT("ogg"),  aftVorbis   },
-        {OS_TEXT("opus"), aftOpus     },
-        {OS_TEXT(""), aftNone }
+        {OS_TEXT("wav"),    AudioFileType::Wav      },
+        {OS_TEXT("ogg"),    AudioFileType::Vorbis   },
+        {OS_TEXT("opus"),   AudioFileType::Opus     },
+        {OS_TEXT(""),       AudioFileType::None     }
     };
 
     AudioFileType CheckAudioExtName(const os_char *ext_name)
     {
         auto *afp=audio_format_ext_name;
 
-        while(afp->type)
+        while(afp->type!=AudioFileType::None)
         {
             if(hgl::strcmp(ext_name,afp->name)==0)
                 return(afp->type);
@@ -29,7 +30,7 @@ namespace hgl
             ++afp;
         }
 
-        return(aftNone);
+        return(AudioFileType::None);
     }
 
     AudioFileType CheckAudioFileType(const os_char *filename)
@@ -40,7 +41,7 @@ namespace hgl
         ext=hgl::strrchr(filename,hgl::strlen(filename),'.');
 
         if(!ext)
-            return(aftNone);
+            return(AudioFileType::None);
 
         ++ext;
 
@@ -50,9 +51,8 @@ namespace hgl
         return CheckAudioExtName(extname);
     }
 
-    const os_char audio_decode_name[aftEnd][32]=
+    const os_char audio_decode_name[size_t(AudioFileType::RANGE_SIZE)][32]=
     {
-        OS_TEXT(""),
         OS_TEXT("Wav"),
         OS_TEXT("Vorbis"),
         OS_TEXT("Opus")
@@ -60,8 +60,8 @@ namespace hgl
 
     const os_char *GetAudioDecodeName(const AudioFileType aft)
     {
-        if(aft<=aftNone||aft>=aftEnd)return(nullptr);
+        if(!RangeCheck(aft))return(nullptr);
 
-        return audio_decode_name[aft];
+        return audio_decode_name[(size_t)aft-(size_t)AudioFileType::BEGIN_RANGE];
     }
 }//namespace hgl
