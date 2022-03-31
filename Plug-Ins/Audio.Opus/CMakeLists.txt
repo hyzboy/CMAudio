@@ -195,7 +195,7 @@ IF(WIN32)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/opusfile/include)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/opusfile/src)
 
-    SET(OPUSFILE_SOURCE    opusfile/src/info.c
+    SET(OPUSFILE_SOURCE opusfile/src/info.c
                         opusfile/src/internal.c
                         opusfile/src/opusfile.c
                         opusfile/src/stream.c)

@@ -228,7 +228,7 @@ static OutInterface out_interface=
 #if HGL_OS != HGL_OS_Windows
 const u16char plugin_intro[]=U16_TEXT("Vorbis OGG 音频文件解码(使用操作系统内置解码器,2016-09-16)");
 #else
-const u16char plugin_intro[]=U16_TEXT("Vorbis OGG 音频文件解码(LibOGG 1.3.2,LibVorbis 1.3.5,MMX,2016-09-16)");
+const u16char plugin_intro[]=U16_TEXT("Vorbis OGG 音频文件解码(LibOGG 1.3.5,LibVorbis 1.3.7,2022-03-31)");
 #endif//
 
 HGL_PLUGIN_FUNC uint32 GetPlugInVersion()
