@@ -27,28 +27,30 @@ namespace hgl
 
         if(!plugin_name)RETURN_ERROR(0);
 
-        AudioPlugInInterface *decode=AudioInterfaceCheck(plugin_name);
+        AudioPlugInInterface decode;
+        AudioFloatPlugInInterface decode_float;
 
-        if(!decode)RETURN_ERROR(0);
+        hgl_zero(decode);
+        hgl_zero(decode_float);
 
-        AudioFloatPlugInInterface *decode_float=nullptr;
+        if(!GetAudioInterface(plugin_name,&decode,&decode_float))
+            RETURN_ERROR(0);        
 
-        if(IsSupportFloatAudioData())
-            decode_float=AudioFloatInterfaceCheck(plugin_name);
+        const bool use_float_data=(IsSupportFloatAudioData()&&decode_float.Load);
 
-        if(decode_float)
-            decode_float->Load((ALbyte *)memory, memory_size, &format,(float **)&data, &size, &freq, &loop);
+        if(use_float_data)
+            decode_float.Load((ALbyte *)memory, memory_size, &format,(float **)&data, &size, &freq, &loop);
         else
-            decode->Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
+            decode.Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
 
         alLastError();
 
         alBufferData(index, format, data, size, freq);
 
-        if(decode_float)
-            decode_float->Clear(format, data, size, freq);
+        if(use_float_data)
+            decode_float.Clear(format, data, size, freq);
         else
-            decode->Clear(format, data, size, freq);
+            decode.Clear(format, data, size, freq);
 
         if(alLastError())RETURN_ERROR(0);
 
@@ -138,7 +140,7 @@ namespace hgl
 
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString::valueOf((int)aft));
+            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::valueOf((int)aft));
             alDeleteBuffers(1,&Index);
             RETURN_FALSE;
         }
@@ -171,7 +173,7 @@ namespace hgl
         
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFileType:")+OSString::valueOf((int)aft));
+            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::valueOf((int)aft));
             ok=false;
         }
         else
@@ -201,7 +203,7 @@ namespace hgl
         
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFile: ")+OSString(filename));
+            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFile: ")+OSString(filename));
             ok=false;
             RETURN_FALSE;
         }

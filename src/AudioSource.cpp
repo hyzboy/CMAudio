@@ -248,7 +248,7 @@ namespace hgl
         if(!alSourcePlay)return(false);
         if(index==InvalidIndex)return(false);
         if(!Buffer
-          ||Buffer->Time<=0)return(false);
+          ||Buffer->GetTime()<=0)return(false);
 
         if(IsPlaying())
             alSourceStop(index);
@@ -269,7 +269,7 @@ namespace hgl
         if(!alSourcePlay)return(false);
         if(index==InvalidIndex)return(false);
         if(!Buffer
-          ||Buffer->Time<=0)return(false);
+          ||Buffer->GetTime()<=0)return(false);
 
         if(IsPlaying())
             alSourceStop(index);
@@ -380,6 +380,8 @@ namespace hgl
         alSourceStop(index);
         alSourcei(index,AL_BUFFER,0);
         alDeleteSources(1,&index);
+
+        index=InvalidIndex;
     }
 
     /**
@@ -390,7 +392,7 @@ namespace hgl
     bool AudioSource::Link(AudioBuffer *buf)
     {
         if(!buf)return(false);
-        if(!buf->Time)return(false);
+        if(!buf->GetTime())return(false);
         if(!alSourcei)return(false);
         if(index==InvalidIndex)
         {
@@ -400,7 +402,7 @@ namespace hgl
             Stop();
 
 
-        alSourcei(index,AL_BUFFER,buf->Index);
+        alSourcei(index,AL_BUFFER,buf->GetIndex());
 
         Buffer=buf;
 

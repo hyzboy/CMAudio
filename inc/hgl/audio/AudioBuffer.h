@@ -19,12 +19,19 @@ namespace hgl
 
         void InitPrivate();
 
-    public:
+    private:
 
         uint      Index;
         double    Time;                                                                             ///<缓冲区中音频数据可以播放的时间(秒)
         uint      Size;                                                                             ///<缓冲区中音频数据的总字节数
         uint      Freq;                                                                             ///<音频数量采样率
+
+    public:
+
+        const uint      GetIndex()const{return Index;}
+        const double    GetTime()const{return Time;}
+        const uint      GetSize()const{return Size;}
+        const uint      GetFreq()const{return Freq;}
 
     public:
 

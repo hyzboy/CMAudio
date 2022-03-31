@@ -1,0 +1,1 @@
+﻿add_cm_plugin(CMP.Audio.Wav "Plug-Ins//Audio" WavRead.cpp)

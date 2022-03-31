@@ -87,11 +87,11 @@ namespace hgl
 
         if(!plugin_name)return(false);
 
-        decode=AudioInterfaceCheck(plugin_name);
+        AudioPlugInInterface decode;
 
-        if(decode)
+        if(GetAudioInterface(plugin_name,&decode,nullptr))
         {
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            audio_ptr=decode.Open(audio_data,audio_data_size,&format,&rate,&total_time);
 
             audio_buffer_size=(AudioTime(format,rate)+9)/10;        // 1/10 秒
 

@@ -1,15 +1,35 @@
 ﻿#include"AudioDecode.h"
-#include<hgl/plugin/PlugIn.h>
+#include<hgl/plugin/PlugInManage.h>
+#include<hgl/filesystem/FileSystem.h>
 
 using namespace openal;
 namespace hgl
 {
-    //PlugInManage(   AudioInterface,            //管理器名称，仅此一次，所以随便命名
-    //                AudioPlugInInterface,    //接口结构名称,来自外部
-    //                AudioInterfaceCheck,    //检查接口函数名称,要对外用
-    //                u"Audio",                //插件前缀
-    //                2);                        //当前所用版本
+    namespace
+    {
+        PlugInManage audio_plug_in(OS_TEXT("Audio"));
+    }
 
-    //PlugInManage(Audio,"Audio",2);
-    //PlugInManage(AudioFloat,"Audio",3);
+    bool GetAudioInterface(const OSString &name,AudioPlugInInterface *api,AudioFloatPlugInInterface *afpi)
+    {
+        PlugIn *pi=audio_plug_in.LoadPlugin(name);
+
+        if(!pi)
+            return(nullptr);
+
+        uint result=0;
+
+        if(api)
+            if(pi->GetInterface(2,api))++result;
+
+        if(afpi)
+            if(pi->GetInterface(3,afpi))++result;
+
+        return result>0;
+    }
+
+    void CloseAudioPlugIns()
+    {
+        audio_plug_in.Clear();
+    }
 }//namespace hgl

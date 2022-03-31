@@ -151,7 +151,7 @@ namespace hgl
         {
             time_off=cur_time-asi->start_play_time;
 
-            if(time_off>=asi->buffer->Time)     //大于整个音频的时间
+            if(time_off>=asi->buffer->GetTime())     //大于整个音频的时间
             {
                 if(!asi->loop)                  //无需循环
                 {
@@ -160,9 +160,9 @@ namespace hgl
                 }
                 else                            //循环播放的
                 {
-                    const int count=int(time_off/asi->buffer->Time);        //计算超了几次并取整
+                    const int count=int(time_off/asi->buffer->GetTime());        //计算超了几次并取整
 
-                    time_off-=asi->buffer->Time*count;                      //计算单次的偏移时间
+                    time_off-=asi->buffer->GetTime()*count;                      //计算单次的偏移时间
                 }
             }
         }

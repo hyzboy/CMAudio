@@ -18,8 +18,6 @@ namespace hgl
         void    (AL_APIENTRY *Restart   )(void *);
     };//struct AudioPlugInInterface
 
-    AudioPlugInInterface *AudioInterfaceCheck(const OSString &);
-
     struct AudioFloatPlugInInterface
     {
         void    (AL_APIENTRY *Load      )(ALbyte *,ALsizei,ALenum *,float **,ALsizei *,ALsizei *,ALboolean *);
@@ -28,6 +26,6 @@ namespace hgl
         uint    (AL_APIENTRY *Read      )(void *,float *,uint);
     };//struct AudioPlugInInterface
 
-    AudioFloatPlugInInterface *AudioFloatInterfaceCheck(const OSString &);
+    bool GetAudioInterface(const OSString &,AudioPlugInInterface *,AudioFloatPlugInInterface *);
 }//namespace hgl
 #endif//HGL_AUDIO_DECODE_INCLUDE
