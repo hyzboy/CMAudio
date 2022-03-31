@@ -45,11 +45,11 @@ namespace openal
 
         if(!AudioEM)
         {            
-            LOG_INFO(OS_TEXT("找到一个OpenAL动态链接库，但加载失败！文件名: ")+OSString(filename));
+            LOG_INFO(OS_TEXT("Finded a OpenAL dynamic link library, but it can't load. filename: ")+OSString(filename));
             return(true);
         }
         
-        LOG_INFO(OS_TEXT("加载OpenAL动态链接库功成。文件名: ")+OSString(filename));
+        LOG_INFO(OS_TEXT("Loading of openAL dynamic link library successfully, filename: ")+OSString(filename));
 
         return(false);
     }
@@ -111,13 +111,10 @@ namespace openal
         }
         else
         {
-        #if HGL_OS == HGL_OS_Windows
-            LOG_ERROR(  OS_TEXT("加载OpenAL动态链接库失败！OpenAL动态链接库可能是: OpenAL32.dll、soft_oal.dll、wrap_oal.dll、ct_oal.dll、nvOpenAL.dll\n")
-                        OS_TEXT("软件实现的OpenAL32.DLL、wrap_oal可在http://www.openal.or上下载、soft_oal.dll可在https://openal-soft.org下载!\n")
-                        OS_TEXT("硬件实现的OpenAL32.DLL请到对应您声卡的厂商网站下载对应的驱动程序! 下载完成后可其放入Windows\\System32目录下或应用程序Plug-Ins目录下即可!"));
-        #else
-            LOG_ERROR(  OS_TEXT("加载OpenAL动态链接库失败，或没有找到OpenAL动态链接库！"));
-        #endif//#if HGL_OS == HGL_OS_Windows
+            LOG_ERROR(  OS_TEXT("The OpenAL Dynamic link library was not found, perhaps the loading failed..\n")
+                        OS_TEXT("you can download it on \"http://www.openal.org\" or \"https://openal-soft.org\",\n")
+                        OS_TEXT("Downloading the driver driver installation from the official website of the sound card is also a good choice."));
+
             return false;
         }
     }
@@ -198,7 +195,7 @@ namespace openal
 
         if(!devices)
         {
-            LOG_INFO(OS_TEXT("取得的OpenAL设备列表为空！"));
+            LOG_INFO(OS_TEXT("Can't get list of OpenAL Devices."));
             return(-1);
         }
 
@@ -222,7 +219,7 @@ namespace openal
 
         if(!devices)
         {
-            LOG_INFO(OS_TEXT("取得的OpenAL设备列表为空！"));
+            LOG_INFO(OS_TEXT("can't get list of OpenAL Devices."));
             return;
         }
 
@@ -242,11 +239,11 @@ namespace openal
                 {
                     alcGetIntegerv(device,ALC_MINOR_VERSION,sizeof(int),&minor);
 
-                    LOG_INFO(u8"OpenAL设备: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8",支持OpenAL特性版本: "+UTF8String::valueOf(major)+"."+UTF8String::valueOf(minor));
+                    LOG_INFO(u8"OpenAL device: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8", version: "+UTF8String::valueOf(major)+"."+UTF8String::valueOf(minor));
                 }
                 else
                 {
-                    LOG_INFO(u8"OpenAL设备: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8",不支持版本获取，按OpenAL 1.0标准执行");
+                    LOG_INFO(u8"OpenAL device: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8",can't get version, used OpenAL 1.0.");
                 }
 
                 alcCloseDevice(device);
@@ -302,11 +299,11 @@ namespace openal
 
             if(*AudioDeviceName)
             {
-                LOG_INFO(u8"没有指定音频设备，按缺省设备初始化，可能不是最佳选择："+UTF8String(AudioDeviceName));
+                LOG_INFO(u8"Select the default OpenAL device: "+UTF8String(AudioDeviceName));
             }
             else
             {
-                LOG_INFO(OS_TEXT("没有指定音频设备，按缺省设备初始化，可能不是最佳选择！也有可能初始化失败！"));
+                LOG_INFO(OS_TEXT("Select the default OpenAL device."));
             }
 
             default_device=true;
@@ -316,7 +313,7 @@ namespace openal
 
         if(AudioDevice==nullptr)
         {
-            LOG_ERROR(u8"打开音频设备失败: "+UTF8String(AudioDeviceName));
+            LOG_ERROR(u8"Failed to OpenAL Device: "+UTF8String(AudioDeviceName));
 
             if(default_device)
             {
@@ -331,56 +328,56 @@ namespace openal
 
                 if(!AudioDevice)
                 {
-                    LOG_ERROR(OS_TEXT("使用指定设备和缺省设备均无法正常初始化音频设备！"));
+                    LOG_ERROR(OS_TEXT("The OpenAL device cannot be initialized properly using the specified device and the default device!"));
                     CloseOpenAL();
                     return(AL_FALSE);
                 }
 
-                LOG_INFO(OS_TEXT("指定音频设备初始化失败，改用缺省设备！"));
+                LOG_INFO(OS_TEXT("Select the default OpenAL device because the specified device is failing."));
             }
         }
 
-        LOG_INFO(U8_TEXT("打开音频设备成功: ")+UTF8String(AudioDeviceName));
+        LOG_INFO(U8_TEXT("Opened OpenAL Device")+UTF8String(AudioDeviceName));
 
         AudioContext=alcCreateContext(AudioDevice,0);
         if(AudioContext==nullptr)
         {
-            LOG_ERROR(OS_TEXT("关联音频设备上下文失败！"));
+            LOG_ERROR(OS_TEXT("Create OpenAL Context OK."));
             CloseOpenAL();
             return (AL_FALSE);
         }
         #ifdef _DEBUG
         else
         {
-            LOG_INFO(OS_TEXT("关联音频设备成功！"));
+            LOG_INFO(OS_TEXT("Failed to Create OpenAL Context."));
         }
         #endif//_DEBUG
 
         if(!alcMakeContextCurrent(AudioContext))
         {
-            LOG_ERROR(OS_TEXT("关联音频设备上下文与音频设备失败！"));
+            LOG_ERROR(OS_TEXT("Failed to Make OpenAL Context"));
             CloseOpenAL();
             RETURN_FALSE;
         }
         #ifdef _DEBUG
         else
         {
-            LOG_INFO(OS_TEXT("关联音频设备上下文与音频设备成功！"));
+            LOG_INFO(OS_TEXT("Make OpenAL Context OK."));
         }
         #endif//_DEBUG
 
         hgl::strcpy(AudioDeviceName,AL_DEVICE_NAME_MAX_LEN,alcGetString(AudioDevice,ALC_DEVICE_SPECIFIER));
 
-        LOG_INFO(u8"初始化音频设备完成: "+UTF8String(AudioDeviceName));
+        LOG_INFO(u8"Initing OpenAL Device: "+UTF8String(AudioDeviceName));
 
         if (!LoadALFunc(AudioEM))
         {
-            LOG_INFO(OS_TEXT("加载OpenAL函数失败！"));
+            LOG_INFO(OS_TEXT("Failed to load OpenAL functions"));
             CloseOpenAL();
             RETURN_FALSE;
         }
 
-        LOG_INFO(OS_TEXT("加载OpenAL函数完成！"));
+        LOG_INFO(OS_TEXT("Loaded OpenAL functions."));
 
         if(alcIsExtensionPresent)
         {
@@ -397,9 +394,7 @@ namespace openal
 
         InitOpenALExt();
 
-        LOG_INFO(OS_TEXT("初始化OpenAL完成！"));
-        PutOpenALInfo();
-
+        LOG_INFO(OS_TEXT("Inited OpenAL."));
         return(AL_TRUE);
     }
 
@@ -425,7 +420,7 @@ namespace openal
             if(AudioDevice)    alcCloseDevice(AudioDevice);
             SAFE_CLEAR(AudioEM);
 
-            LOG_INFO(OS_TEXT("关闭OpenAL完成！"));
+            LOG_INFO(OS_TEXT("Close OpenAL."));
         }
 
         ClearAL();
@@ -653,7 +648,7 @@ namespace openal
 
         if(result)
         {
-            LOG_ERROR(U8_TEXT("OpenAL错误,source file:\"")+UTF8String(filename)+u8"\",line:"+UTF8String::valueOf(line));
+            LOG_ERROR(U8_TEXT("OpenAL error,source file:\"")+UTF8String(filename)+u8"\",line:"+UTF8String::valueOf(line));
             LOG_ERROR(U8_TEXT("OpenAL ErrorNo:")+UTF8String(result));
         }
 
@@ -664,19 +659,17 @@ namespace openal
     {
         if(!alGetString)return;
 
-        LOG_INFO(OS_TEXT("OpenAL 信息:"));
+        LOG_INFO(UTF8String(u8"          OpenAL Vendor: ")+alGetString(AL_VENDOR    ));
+        LOG_INFO(UTF8String(u8"         OpenAL Version: ")+alGetString(AL_VERSION   ));
+        LOG_INFO(UTF8String(u8"        OpenAL Renderer: ")+alGetString(AL_RENDERER  ));
+        LOG_INFO(OS_TEXT(               "      Max audio sources: ")+OSString::valueOf(GetMaxNumSources()));
+        LOG_INFO(AudioFloat32?OS_TEXT(  "   Supported float data: Yes")
+                             :OS_TEXT(  "   Supported float data: No"));
 
-        LOG_INFO(UTF8String(u8"　　　音频芯片制造商: ")+alGetString(AL_VENDOR    ));
-        LOG_INFO(UTF8String(u8"　　支持的OpenAL版本: ")+alGetString(AL_VERSION   ));
-        LOG_INFO(UTF8String(u8"　　　　音频芯片名称: ")+alGetString(AL_RENDERER  ));
-        LOG_INFO(OS_TEXT(               "　　　　　最大音源数: ")+OSString::valueOf(GetMaxNumSources()));
-        LOG_INFO(AudioFloat32?OS_TEXT(  "    浮点音频数据支持: 是")
-                             :OS_TEXT(  "    浮点音频数据支持: 否"));
-
-        LOG_INFO(AudioEFX?OS_TEXT(  "　　　　　   EFX支持: 是")
-                         :OS_TEXT(  "　　　　　   EFX支持: 否"));
-        LOG_INFO(AudioXRAM?OS_TEXT( "           X-RAM支持: 是")
-                          :OS_TEXT( "           X-RAM支持: 否"));
+        LOG_INFO(AudioEFX?OS_TEXT(      "                    EFX: Supported")
+                         :OS_TEXT(      "                    EFX: No"));
+        LOG_INFO(AudioXRAM?OS_TEXT(     "                  X-RAM: Supported")
+                          :OS_TEXT(     "                  X-RAM: No"));
 
         if(AudioXRAM)
         {
@@ -684,32 +677,32 @@ namespace openal
 
             alcGetIntegerv(AudioDevice,eXRAMSize,sizeof(int),&size);
 
-            LOG_INFO(OS_TEXT("           X-RAM容量: ")+OSString::valueOf(size));
+            LOG_INFO(OS_TEXT(           "    X-RAM Volume: ")+OSString::valueOf(size));
         }
 
         for(int i=0;i<OpenALExt_List.GetCount();i++)
             if(i==0)
             {
-                LOG_INFO(UTF8String(u8"　　支持的OpenAL扩展: ")+OpenALExt_List[i]);
+                LOG_INFO(UTF8String(u8"      OpenAL Extentsion: ")+OpenALExt_List[i]);
             }
             else
             {
-                LOG_INFO(UTF8String(u8"                      ")+OpenALExt_List[i]);
+                LOG_INFO(UTF8String(u8"                         ")+OpenALExt_List[i]);
             }
 
         for(int i=0;i<OpenALContextExt_List.GetCount();i++)
             if(i==0)
             {
-                LOG_INFO(UTF8String(u8"支持的OpenAL设备扩展: ")+OpenALContextExt_List[i]);
+                LOG_INFO(UTF8String(u8"OpenAL Device Extension: ")+OpenALContextExt_List[i]);
             }
             else
             {
-                LOG_INFO(UTF8String(u8"                      ")+OpenALContextExt_List[i]);
+                LOG_INFO(UTF8String(u8"                         ")+OpenALContextExt_List[i]);
             }
 
 
         #ifdef _DEBUG
-        LOG_INFO(OS_TEXT("输出OpenAL信息完成"));
+        LOG_INFO(OS_TEXT("OpenAL Infomation finished."));
         #endif//
     }
 
