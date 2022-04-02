@@ -73,7 +73,7 @@ long VorbisTell(void *ptr)
 ALvoid LoadOGG(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **data, ALsizei *size, ALsizei *freq, ALboolean *loop)
 {
     int             result;
-    char *            ptr=nullptr;
+    char *          ptr=nullptr;
 
     ov_callbacks    func;
     OggVorbis_File  ogg_stream;
@@ -101,15 +101,19 @@ ALvoid LoadOGG(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **data
     if(info->channels==1)*format=AL_FORMAT_MONO16;
                     else *format=AL_FORMAT_STEREO16;
 
-    const int pcm_total = ov_pcm_total(&ogg_stream,0)*info->channels*2;
+    const int pcm_total_bytes = ov_pcm_total(&ogg_stream,0)*info->channels*2;
 
     int out_size = 0;
 
-    ptr = new char[pcm_total];
+    ptr = new char[pcm_total_bytes];
 
     while(true)
     {
-        result=ov_read(&ogg_stream,ptr+out_size,pcm_total-out_size,0,2,1,&section);
+        result=ov_read(&ogg_stream,ptr+out_size,pcm_total_bytes-out_size,
+                       0,           // 0: little-endian     1: big_endian
+                       2,           // 1: 8 bit-samples     2: 16 bit-samples
+                       1,           // 0: unsigned          1: signed
+                       &section);
 
         if(result<=0)break;
 
