@@ -72,6 +72,8 @@ namespace hgl
 
     AudioPlayer::~AudioPlayer()
     {
+        SAFE_CLEAR(decode);
+
         if(!audio_data)return;
 
         Clear();
@@ -87,11 +89,19 @@ namespace hgl
 
         if(!plugin_name)return(false);
 
-        AudioPlugInInterface decode;
+        decode=new AudioPlugInInterface;
 
-        if(GetAudioInterface(plugin_name,&decode,nullptr))
+        if (!GetAudioInterface(plugin_name, decode, nullptr))
         {
-            audio_ptr=decode.Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            delete decode;
+            decode=nullptr;
+
+            LOG_ERROR(OS_TEXT("无法加载音频解码插件：")+OSString(plugin_name));
+            return(false);
+        }
+
+        {
+            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
 
             audio_buffer_size=(AudioTime(format,rate)+9)/10;        // 1/10 秒
 
@@ -107,7 +117,6 @@ namespace hgl
 
             return(true);
         }
-        else return(false);
     }
 
     /**
@@ -242,6 +251,8 @@ namespace hgl
 
     bool AudioPlayer::ReadData(ALuint n)
     {
+        if(!decode)return(false);
+
         uint size;
 
         size=decode->Read(audio_ptr,audio_buffer,audio_buffer_size);
@@ -261,6 +272,7 @@ namespace hgl
     bool AudioPlayer::Playback()
     {
         if(!audio_data)return(false);
+        if(!decode)return(false);
 
         alSourceStop(source);
         ClearBuffer();
