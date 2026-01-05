@@ -405,7 +405,7 @@ namespace hgl
         }
 
         // 设置默认混响参数（通用预设）
-        SetReverbPreset(1);
+        SetReverbPreset(ReverbPreset::Generic);
 
         reverb_enabled = true;
         return true;
