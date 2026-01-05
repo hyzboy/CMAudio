@@ -1,8 +1,8 @@
 ﻿#include<hgl/audio/AudioScene.h>
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/Listener.h>
+#include<hgl/audio/ReverbPreset.h>
 #include<hgl/al/al.h>
-#include<hgl/al/efx-presets.h>
 #include<hgl/Time.h>
 namespace hgl
 {
@@ -434,10 +434,10 @@ namespace hgl
     }
 
     /**
-     * 应用 EFX 混响预设结构到效果
-     * @param preset EFX 混响预设结构
+     * 应用混响预设结构到效果
+     * @param preset 混响预设属性结构
      */
-    void AudioScene::ApplyReverbPreset(const EFXEAXREVERBPROPERTIES &preset)
+    void AudioScene::ApplyReverbPreset(const ReverbPresetProperties &preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return;
@@ -459,48 +459,21 @@ namespace hgl
 
     /**
      * 设置混响预设（使用 OpenAL Soft 官方预设）
-     * @param preset 预设编号：0=无混响, 1=通用, 2=带衬垫的单元, 3=房间, 4=浴室, 5=大厅, 6=石质房间, 7=礼堂, 8=音乐厅, 9=洞穴, 10=竞技场
-     *               11=机库, 12=地毯走廊, 13=走廊, 14=石质走廊, 15=小巷, 16=森林, 17=城市, 18=山脉, 19=采石场, 20=平原, 21=停车场
+     * @param preset 预设枚举值
      * @return 是否成功设置
      */
-    bool AudioScene::SetReverbPreset(const int preset)
+    bool AudioScene::SetReverbPreset(ReverbPreset preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return false;
 
-        // 使用 OpenAL Soft 官方预设
-        static const EFXEAXREVERBPROPERTIES presets[] = {
-            EFX_REVERB_PRESET_GENERIC,          // 0 - 通用（作为无混响的替代，因为完全无混响不在官方预设中）
-            EFX_REVERB_PRESET_GENERIC,          // 1 - 通用
-            EFX_REVERB_PRESET_PADDEDCELL,       // 2 - 带衬垫的单元
-            EFX_REVERB_PRESET_ROOM,             // 3 - 房间
-            EFX_REVERB_PRESET_BATHROOM,         // 4 - 浴室
-            EFX_REVERB_PRESET_LIVINGROOM,       // 5 - 大厅
-            EFX_REVERB_PRESET_STONEROOM,        // 6 - 石质房间
-            EFX_REVERB_PRESET_AUDITORIUM,       // 7 - 礼堂
-            EFX_REVERB_PRESET_CONCERTHALL,      // 8 - 音乐厅
-            EFX_REVERB_PRESET_CAVE,             // 9 - 洞穴
-            EFX_REVERB_PRESET_ARENA,            // 10 - 竞技场
-            EFX_REVERB_PRESET_HANGAR,           // 11 - 机库
-            EFX_REVERB_PRESET_CARPETEDHALLWAY,  // 12 - 地毯走廊
-            EFX_REVERB_PRESET_HALLWAY,          // 13 - 走廊
-            EFX_REVERB_PRESET_STONECORRIDOR,    // 14 - 石质走廊
-            EFX_REVERB_PRESET_ALLEY,            // 15 - 小巷
-            EFX_REVERB_PRESET_FOREST,           // 16 - 森林
-            EFX_REVERB_PRESET_CITY,             // 17 - 城市
-            EFX_REVERB_PRESET_MOUNTAINS,        // 18 - 山脉
-            EFX_REVERB_PRESET_QUARRY,           // 19 - 采石场
-            EFX_REVERB_PRESET_PLAIN,            // 20 - 平原
-            EFX_REVERB_PRESET_PARKINGLOT        // 21 - 停车场
-        };
-
-        const int num_presets = sizeof(presets) / sizeof(presets[0]);
-        
-        if(preset < 0 || preset >= num_presets)
+        // 获取预设属性
+        const ReverbPresetProperties *props = GetReverbPresetProperties(preset);
+        if(!props)
             return false;
 
         // 应用预设
-        ApplyReverbPreset(presets[preset]);
+        ApplyReverbPreset(*props);
 
         // 将效果绑定到效果槽
         if(alAuxiliaryEffectSloti)

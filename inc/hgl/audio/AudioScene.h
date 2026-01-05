@@ -5,6 +5,7 @@
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
 #include<hgl/audio/ConeAngle.h>
+#include<hgl/audio/ReverbPreset.h>
 #include<hgl/thread/ThreadMutex.h>
 namespace hgl
 {
@@ -166,7 +167,7 @@ namespace hgl
 
         bool UpdateSource(AudioSourceItem *);                                                       ///<刷新音源处理
         
-        void ApplyReverbPreset(const struct EFXEAXREVERBPROPERTIES &);                              ///<应用混响预设结构
+        void ApplyReverbPreset(const ReverbPresetProperties &);                                     ///<应用混响预设结构
 
     public:     //事件
 
@@ -207,7 +208,7 @@ namespace hgl
 
                 bool                InitReverb();                                                       ///<初始化混响系统
                 void                CloseReverb();                                                      ///<关闭混响系统
-                bool                SetReverbPreset(const int preset);                                  ///<设置混响预设(使用OpenAL Soft官方预设,0-21:通用/房间/浴室/大厅/音乐厅/洞穴/竞技场/机库/走廊/小巷/森林/城市/山脉等)
+                bool                SetReverbPreset(ReverbPreset preset);                                ///<设置混响预设(使用OpenAL Soft官方预设)
                 bool                EnableReverb(bool enable);                                          ///<启用/禁用混响
 
         virtual AudioSourceItem *   Create(AudioBuffer *,const Vector3f &pos,const float &gain=1);  ///<创建一個音源
