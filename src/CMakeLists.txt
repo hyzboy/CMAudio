@@ -6,9 +6,9 @@
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManage.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioPlayer.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioScene.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SpatialAudioWorld.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioSource.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ConeAngle.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Listener.h
@@ -25,8 +25,8 @@ set(CM_AUDIO_SOURCE
     AudioFileType.cpp
     AudioBuffer.cpp
     AudioDecode.cpp
-    AudioManage.cpp
-    AudioScene.cpp
+    AudioManager.cpp
+    SpatialAudioWorld.cpp
     AudioPlayer.cpp
     AudioSource.cpp
     Listener.cpp)

@@ -1,5 +1,4 @@
-﻿#ifndef HGL_CONEANGLE_INCLUDE
-#define HGL_CONEANGLE_INCLUDE
+﻿#pragma once
 
 namespace hgl
 {
@@ -19,4 +18,3 @@ namespace hgl
         }
     };
 }//namespace hgl
-#endif//HGL_CONEANGLE_INCLUDE

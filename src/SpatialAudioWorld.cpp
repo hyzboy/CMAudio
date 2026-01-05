@@ -1,24 +1,28 @@
-﻿#include<hgl/audio/AudioScene.h>
+﻿#include<hgl/audio/SpatialAudioWorld.h>
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/Listener.h>
 #include<hgl/audio/ReverbPreset.h>
 #include<hgl/al/efx.h>
 #include<hgl/time/Time.h>
+#include<hgl/math/Clamp.h>
+
+#include <algorithm>
+#include <cmath>
 
 namespace hgl
 {
     using namespace openal;
 
     /**
-     * 計算指定音源相對收聽者的音量
+     * 计算指定音源相对于监听者的音量
      */
-    const double GetGain(AudioListener *l,AudioSourceItem *s)
+    const double GetGain(AudioListener *l,SpatialAudioSource *s)
     {
         if(!l||!s)return(0);
 
-        if(s->gain<=0)return(0);        //本身音量就是0
+        if(s->gain<=0)return(0);        // 本身音量为0
         
-        // 添加参数验证，避免除零
+        // 添加参数验证，避免除以零
         if(s->ref_distance<=0.0f)return(1);
         if(s->max_distance<=s->ref_distance)return(1);
 
@@ -34,39 +38,39 @@ namespace hgl
                 if(distance<=s->ref_distance)
                     return 1;
 
-            distance = hgl_max(distance,s->ref_distance);
-            distance = hgl_min(distance,s->max_distance);
+            // 使用 std::clamp 进行边界限定
+            distance = std::clamp(distance, s->ref_distance, s->max_distance);
 
             return s->ref_distance/(s->ref_distance+s->rolloff_factor*(distance-s->ref_distance));
         }
         else
         if(s->distance_model==AL_LINEAR_DISTANCE_CLAMPED)
         {
-            distance = hgl_max(distance,s->ref_distance);
-            distance = hgl_min(distance,s->max_distance);
+            // 使用 std::clamp 进行边界限定
+            distance = std::clamp(distance, s->ref_distance, s->max_distance);
 
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
-            return hgl_max(0.0f, hgl_min(1.0f, gain));  // 钳位到 [0, 1]
+            return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_LINEAR_DISTANCE)
         {
-            distance = hgl_min(distance,s->max_distance);
+            distance = std::min(distance, s->max_distance);
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
-            return hgl_max(0.0f, hgl_min(1.0f, gain));  // 钳位到 [0, 1]
+            return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_EXPONENT_DISTANCE)
         {
-            return pow(distance/s->ref_distance,-s->rolloff_factor);
+            return std::pow(distance/s->ref_distance, -s->rolloff_factor);
         }
         else
         if(s->distance_model==AL_EXPONENT_DISTANCE_CLAMPED)
         {
-            distance = hgl_max(distance,s->ref_distance);
-            distance = hgl_min(distance,s->max_distance);
+            // 使用 std::clamp 进行边界限定
+            distance = std::clamp(distance, s->ref_distance, s->max_distance);
 
-            return pow(distance/s->ref_distance,-s->rolloff_factor);
+            return std::pow(distance/s->ref_distance, -s->rolloff_factor);
         }
         else
             return 1;
@@ -75,9 +79,9 @@ namespace hgl
     /**
      * 音频场景管理类构造函数
      * @param max_source 最大音源数量
-     * @param al 收听者
+     * @param al 监听者
      */
-    AudioScene::AudioScene(int max_source,AudioListener *al)
+    SpatialAudioWorld::SpatialAudioWorld(int max_source,AudioListener *al)
     {
         source_pool.Reserve(max_source);
 
@@ -92,15 +96,15 @@ namespace hgl
         reverb_enabled=false;
     }
 
-    AudioSourceItem *AudioScene::Create(const AudioSourceConfig &config)
+    SpatialAudioSource *SpatialAudioWorld::Create(const SpatialAudioSourceConfig &config)
     {
         if(!config.buffer)
             return(nullptr);
 
         // 使用场景的默认距离参数更新配置
-        AudioSourceConfig finalConfig = config;
+        SpatialAudioSourceConfig finalConfig = config;
         
-        // 如果配置中的距离参数使用了结构体默认值，则使用场景的默认值
+        // 如果配置中的距离参数为结构体默认值，则使用场景的默认值
         if(finalConfig.ref_distance == 1.0f && ref_distance != 1.0f)
             finalConfig.ref_distance = ref_distance;
         if(finalConfig.max_distance == 10000.0f && max_distance != 10000.0f)
@@ -111,12 +115,12 @@ namespace hgl
             finalConfig.distance_model = AL_INVERSE_DISTANCE_CLAMPED;
         
         // 使用最终的配置结构体创建音源
-        AudioSourceItem *asi = new AudioSourceItem(finalConfig);
+        SpatialAudioSource *asi = new SpatialAudioSource(finalConfig);
 
         return asi;
     }
 
-    void AudioScene::Delete(AudioSourceItem *asi)
+    void SpatialAudioWorld::Delete(SpatialAudioSource *asi)
     {
         if(!asi)return;
 
@@ -126,25 +130,25 @@ namespace hgl
 
         source_list.Delete(asi);
         
-        delete asi;  // 修复内存泄漏：释放 AudioSourceItem 对象
+        delete asi;  // 释放音源对象
         
         scene_mutex.Unlock();
     }
 
-    void AudioScene::Clear()
+    void SpatialAudioWorld::Clear()
     {
         scene_mutex.Lock();
         
-        // 先释放所有 AudioSourceItem 对象
+        // 先释放所有音源对象
         int count = source_list.GetCount();
-        AudioSourceItem **items = source_list.GetData();
+        SpatialAudioSource **items = source_list.GetData();
         
         for(int i = 0; i < count; i++)
         {
             if(items[i])
             {
                 ToMute(items[i]);
-                delete items[i];  // 修复内存泄漏：释放每个 AudioSourceItem
+                delete items[i];  // 释放每个音源对象
             }
         }
         
@@ -154,7 +158,7 @@ namespace hgl
         scene_mutex.Unlock();
     }
 
-    bool AudioScene::ToMute(AudioSourceItem *asi)
+    bool SpatialAudioWorld::ToMute(SpatialAudioSource *asi)
     {
         if(!asi)return(false);
         if(!asi->source)return(false);
@@ -170,12 +174,12 @@ namespace hgl
         return(true);
     }
 
-    bool AudioScene::ToHear(AudioSourceItem *asi)
+    bool SpatialAudioWorld::ToHear(SpatialAudioSource *asi)
     {
         if(!asi)return(false);
         if(!asi->buffer)return(false);
 
-        if(asi->start_play_time>cur_time)       //还没到起播时间
+        if(asi->start_play_time>cur_time)       // 还没到开始播放时间
             return(false);
 
         double time_off=0;
@@ -185,18 +189,18 @@ namespace hgl
         {
             time_off=cur_time-asi->start_play_time;
 
-            if(time_off>=asi->buffer->GetTime())     //大于整个音频的时间
+            if(time_off>=asi->buffer->GetTime())     // 超过整个音频时长
             {
-                if(!asi->loop)                  //无需循环
+                if(!asi->loop)                  // 不循环播放
                 {
-                    asi->is_play=false;         //不用放了
+                    asi->is_play=false;         // 不再播放
                     return(false);
                 }
-                else                            //循环播放的
+                else                            // 循环播放
                 {
-                    const int count=int(time_off/asi->buffer->GetTime());        //计算超了几次并取整
+                    const int count=int(time_off/asi->buffer->GetTime());        // 计算超出的循环次数并取整
 
-                    time_off-=asi->buffer->GetTime()*count;                      //计算单次的偏移时间
+                    time_off-=asi->buffer->GetTime()*count;                      // 计算单次的偏移时间
                 }
             }
         }
@@ -235,14 +239,14 @@ namespace hgl
         return(true);
     }
 
-    bool AudioScene::UpdateSource(AudioSourceItem *asi)
+    bool SpatialAudioWorld::UpdateSource(SpatialAudioSource *asi)
     {
         if(!asi)return(false);
         if(!asi->source)return(false);
 
-        if(asi->source->GetState()==AL_STOPPED)    //停播状态
+        if(asi->source->GetState()==AL_STOPPED)    // 停止播放状态
         {
-            if(!asi->loop)                  //不是循环播放
+            if(!asi->loop)                  // 不是循环播放
             {
                 if(OnStopped(asi))
                     ToMute(asi);
@@ -251,11 +255,11 @@ namespace hgl
             }
             else
             {
-                // 循环播放：先触发事件，允许用户控制是否继续
+                // 循环播放：先触发事件，允许用户决定是否继续
                 bool continue_play = OnStopped(asi);
                 if(continue_play)
                 {
-                    if(!asi->source->Play())  // 检查返回值
+                    if(!asi->source->Play())  // 尝试继续播放
                     {
                         // 播放失败，释放音源
                         ToMute(asi);
@@ -263,17 +267,17 @@ namespace hgl
                 }
                 else
                 {
-                    // 用户不希望继续播放
+                    // 用户不希望继续播放，释放音源
                     ToMute(asi);
                 }
             }
         }
 
-        if(asi->doppler_factor>0)                   //需要多普勒效果
+        if(asi->doppler_factor>0)                   // 需要多普勒效果
         {
-            if(asi->last_pos!=asi->cur_pos)         //坐标不一样了
+            if(asi->last_pos!=asi->cur_pos)         // 位置发生变化
             {
-                // 检查时间差，避免除零
+                // 检查时间差，避免除以零
                 double time_diff = asi->cur_time - asi->last_time;
                 if(time_diff > 0)
                 {
@@ -291,7 +295,7 @@ namespace hgl
                 }
             }
 
-            if(cur_time>asi->cur_time)          //更新时间和坐标
+            if(cur_time>asi->cur_time)          // 更新时间和位置
             {
                 asi->last_pos=asi->cur_pos;
                 asi->last_time=asi->cur_time;
@@ -302,12 +306,12 @@ namespace hgl
     }
 
     /**
-     * 刷新處理
+     * 刷新处理
      * @param ct 当前时间
-     * @return 收聽者仍可聽到的音源數量
-     * @return -1 出錯
+     * @return 监听者仍能听到的音源数量
+     * @return -1 出错
      */
-    int AudioScene::Update(const double &ct)
+    int SpatialAudioWorld::Update(const double &ct)
     {
         scene_mutex.Lock();
         
@@ -333,39 +337,39 @@ namespace hgl
         float new_gain;
         int hear_count=0;
 
-        AudioSourceItem **ptr=source_list.GetData();
+        SpatialAudioSource **ptr=source_list.GetData();
 
         for(int i=0;i<count;i++)
         {
             if(!(*ptr)->is_play)
             {
-                if((*ptr)->source)          //还有音源
+                if((*ptr)->source)          // 还有绑定的音源
                     ToMute(*ptr);
 
                 ++ptr;
-                continue;   //不需要放的音源
+                continue;   // 不需要播放的音源
             }
 
             new_gain=OnCheckGain(*ptr);
 
-            if(new_gain<=0)                 //听不到声音了
+            if(new_gain<=0)                 // 听不到声音
             {
-                if((*ptr)->last_gain>0)     //之前可以听到
+                if((*ptr)->last_gain>0)     // 之前可以听到
                     ToMute(*ptr);
                 else
-                    OnContinuedMute(*ptr);  //之前就听不到
+                    OnContinuedMute(*ptr);  // 之前就听不到
             }
             else
             {
                 if((*ptr)->last_gain<=0)
                 {
-                    if(!ToHear(*ptr))       //之前没声
-                        new_gain=0;         //没有足够可用音源、或是已经放完了，所以还是听不到
+                    if(!ToHear(*ptr))       // 之前没声，尝试转为播放
+                        new_gain=0;         // 没有足够可用音源或已播放结束，仍然听不到
                 }
                 else
                 {
-                    UpdateSource(*ptr);     //刷新音源处理
-                    OnContinuedHear(*ptr);  //之前就有声音
+                    UpdateSource(*ptr);     // 刷新音源处理
+                    OnContinuedHear(*ptr);  // 持续可听
                 }
             }
 
@@ -385,7 +389,7 @@ namespace hgl
      * 初始化混响系统
      * @return 是否成功初始化
      */
-    bool AudioScene::InitReverb()
+    bool SpatialAudioWorld::InitReverb()
     {
         if(!alGenAuxiliaryEffectSlots || !alGenEffects)
             return false;  // EFX 不可用
@@ -421,7 +425,7 @@ namespace hgl
     /**
      * 关闭混响系统
      */
-    void AudioScene::CloseReverb()
+    void SpatialAudioWorld::CloseReverb()
     {
         reverb_enabled = false;
 
@@ -441,27 +445,27 @@ namespace hgl
     }
 
     /**
-     * 应用混响预设结构到效果
+     * 将混响预设应用到效果
      * @param preset 混响预设属性结构
      */
-    void AudioScene::ApplyReverbPreset(const ReverbPresetProperties &preset)
+    void SpatialAudioWorld::ApplyReverbPreset(const ReverbPresetProperties &preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return;
 
-        alEffectf(reverb_effect, AL_REVERB_DENSITY, preset.flDensity);
-        alEffectf(reverb_effect, AL_REVERB_DIFFUSION, preset.flDiffusion);
-        alEffectf(reverb_effect, AL_REVERB_GAIN, preset.flGain);
-        alEffectf(reverb_effect, AL_REVERB_GAINHF, preset.flGainHF);
-        alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, preset.flDecayTime);
-        alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, preset.flDecayHFRatio);
-        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_GAIN, preset.flReflectionsGain);
-        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_DELAY, preset.flReflectionsDelay);
-        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_GAIN, preset.flLateReverbGain);
-        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_DELAY, preset.flLateReverbDelay);
-        alEffectf(reverb_effect, AL_REVERB_AIR_ABSORPTION_GAINHF, preset.flAirAbsorptionGainHF);
-        alEffectf(reverb_effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, preset.flRoomRolloffFactor);
-        alEffecti(reverb_effect, AL_REVERB_DECAY_HFLIMIT, preset.iDecayHFLimit);
+        alEffectf(reverb_effect, AL_REVERB_DENSITY, preset.Density);
+        alEffectf(reverb_effect, AL_REVERB_DIFFUSION, preset.Diffusion);
+        alEffectf(reverb_effect, AL_REVERB_GAIN, preset.Gain);
+        alEffectf(reverb_effect, AL_REVERB_GAINHF, preset.GainHF);
+        alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, preset.DecayTime);
+        alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, preset.DecayHFRatio);
+        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_GAIN, preset.ReflectionsGain);
+        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_DELAY, preset.ReflectionsDelay);
+        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_GAIN, preset.LateReverbGain);
+        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_DELAY, preset.LateReverbDelay);
+        alEffectf(reverb_effect, AL_REVERB_AIR_ABSORPTION_GAINHF, preset.AirAbsorptionGainHF);
+        alEffectf(reverb_effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, preset.RoomRolloffFactor);
+        alEffecti(reverb_effect, AL_REVERB_DECAY_HFLIMIT, preset.DecayHFLimit);
     }
 
     /**
@@ -469,7 +473,7 @@ namespace hgl
      * @param preset 预设枚举值
      * @return 是否成功设置
      */
-    bool AudioScene::SetReverbPreset(ReverbPreset preset)
+    bool SpatialAudioWorld::SetReverbPreset(ReverbPreset preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return false;
@@ -494,7 +498,7 @@ namespace hgl
      * @param enable 是否启用
      * @return 是否成功
      */
-    bool AudioScene::EnableReverb(bool enable)
+    bool SpatialAudioWorld::EnableReverb(bool enable)
     {
         if(aux_effect_slot == 0)
             return false;
