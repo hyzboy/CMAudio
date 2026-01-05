@@ -240,6 +240,19 @@ namespace hgl
         alDopplerVelocity(doppler_velocity);
     }
 
+    void AudioSource::SetAirAbsorptionFactor(const float &factor)
+    {
+        if(!alSourcef)return;
+        if(index==InvalidIndex)return;
+
+        // 空气吸收因子范围: 0.0 (无吸收) 到 10.0 (最大吸收)
+        // 默认值为 0.0，高频在远距离会衰减更快
+        air_absorption_factor = factor;
+        
+        // AL_AIR_ABSORPTION_FACTOR 是 EFX 扩展的一部分
+        alSourcef(index, AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
+    }
+
     /**
      * 播放当前音源
      */
@@ -365,6 +378,10 @@ namespace hgl
         alGetSourcef    (index,AL_ROLLOFF_FACTOR,       &rolloff_factor);
         alGetSourcef    (index,AL_CONE_INNER_ANGLE,     &angle.inner);
         alGetSourcef    (index,AL_CONE_OUTER_ANGLE,     &angle.outer);
+        
+        // 初始化空气吸收因子为默认值 0.0 (无吸收)
+        air_absorption_factor = 0.0f;
+        alSourcef       (index,AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
 
         return(true);
     }

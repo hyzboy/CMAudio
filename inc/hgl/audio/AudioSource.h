@@ -43,6 +43,8 @@ namespace hgl
 
         float doppler_factor;
         float doppler_velocity;
+        
+        float air_absorption_factor;
 
     public: //属性
 
@@ -85,6 +87,9 @@ namespace hgl
 
                         void    SetDopplerFactor(const float &);                                    ///<设置多普勒效果强度
                         void    SetDopplerVelocity(const float &);                                  ///<设置多普勒速度
+                        
+                const   float   GetAirAbsorptionFactor()const{return air_absorption_factor;}        ///<获取空气吸收因子
+                        void    SetAirAbsorptionFactor(const float &);                              ///<设置空气吸收因子(0.0-10.0,默认0.0)
 
                 const   void    GetDistance(float &rd,float &md)const                               ///<获取音源距离范围
                 {

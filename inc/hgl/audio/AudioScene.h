@@ -33,6 +33,7 @@ namespace hgl
         uint distance_model;                                ///<音量衰减模型
         float rolloff_factor;                               ///<环境衰减比率,默认为1
         float doppler_factor;                               ///<多普勒效果强度,默认为0
+        float air_absorption_factor;                        ///<空气吸收因子,默认为0
 
         float ref_distance;                                 ///<衰减距离
         float max_distance;                                 ///<最大距离
@@ -70,6 +71,7 @@ namespace hgl
             , distance_model(0)
             , rolloff_factor(1.0f)
             , doppler_factor(0.0f)
+            , air_absorption_factor(0.0f)
             , ref_distance(1.0f)
             , max_distance(10000.0f)
             , start_play_time(0)

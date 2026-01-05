@@ -206,6 +206,7 @@ namespace hgl
         asi->source->SetDirection(asi->direction);
         asi->source->SetDopplerFactor(asi->doppler_factor);
         asi->source->SetDopplerVelocity(0);
+        asi->source->SetAirAbsorptionFactor(asi->air_absorption_factor);
 
         asi->source->SetCurTime(time_off);
         asi->source->Play(asi->loop);
