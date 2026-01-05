@@ -71,7 +71,7 @@ namespace hgl
     /**
      * 音频场景管理类构造函数
      * @param max_source 最大音源数量
-     * @param al 收的者
+     * @param al 收听者
      */
     AudioScene::AudioScene(int max_source,AudioListener *al)
     {
@@ -81,6 +81,11 @@ namespace hgl
 
         ref_distance=1;
         max_distance=10000;
+        
+        // 初始化混响相关变量
+        aux_effect_slot=0;
+        reverb_effect=0;
+        reverb_enabled=false;
     }
 
     AudioSourceItem *AudioScene::Create(AudioBuffer *buf,const Vector3f &pos,const float &gain)
@@ -207,6 +212,12 @@ namespace hgl
         asi->source->SetDopplerFactor(asi->doppler_factor);
         asi->source->SetDopplerVelocity(0);
         asi->source->SetAirAbsorptionFactor(asi->air_absorption_factor);
+
+        // 应用混响效果
+        if(reverb_enabled && aux_effect_slot != 0 && alSource3i)
+        {
+            alSource3i(asi->source->GetIndex(), AL_AUXILIARY_SEND_FILTER, aux_effect_slot, 0, AL_FILTER_NULL);
+        }
 
         asi->source->SetCurTime(time_off);
         asi->source->Play(asi->loop);
@@ -360,5 +371,209 @@ namespace hgl
 
         scene_mutex.Unlock();
         return hear_count;
+    }
+
+    /**
+     * 初始化混响系统
+     * @return 是否成功初始化
+     */
+    bool AudioScene::InitReverb()
+    {
+        if(!alGenAuxiliaryEffectSlots || !alGenEffects)
+            return false;  // EFX 不可用
+
+        // 创建辅助效果槽
+        alGenAuxiliaryEffectSlots(1, &aux_effect_slot);
+        if(alGetError() != AL_NO_ERROR)
+            return false;
+
+        // 创建混响效果
+        alGenEffects(1, &reverb_effect);
+        if(alGetError() != AL_NO_ERROR)
+        {
+            alDeleteAuxiliaryEffectSlots(1, &aux_effect_slot);
+            return false;
+        }
+
+        // 设置为混响类型
+        alEffecti(reverb_effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+        if(alGetError() != AL_NO_ERROR)
+        {
+            CloseReverb();
+            return false;
+        }
+
+        // 设置默认混响参数（通用预设）
+        SetReverbPreset(1);
+
+        reverb_enabled = true;
+        return true;
+    }
+
+    /**
+     * 关闭混响系统
+     */
+    void AudioScene::CloseReverb()
+    {
+        reverb_enabled = false;
+
+        if(reverb_effect != 0)
+        {
+            if(alDeleteEffects)
+                alDeleteEffects(1, &reverb_effect);
+            reverb_effect = 0;
+        }
+
+        if(aux_effect_slot != 0)
+        {
+            if(alDeleteAuxiliaryEffectSlots)
+                alDeleteAuxiliaryEffectSlots(1, &aux_effect_slot);
+            aux_effect_slot = 0;
+        }
+    }
+
+    /**
+     * 设置混响预设
+     * @param preset 预设编号：0=无混响, 1=通用, 2=带衬垫的单元, 3=房间, 4=浴室, 5=大厅, 6=石质房间, 7=礼堂, 8=音乐厅, 9=洞穴, 10=竞技场
+     * @return 是否成功设置
+     */
+    bool AudioScene::SetReverbPreset(const int preset)
+    {
+        if(!alEffectf || reverb_effect == 0)
+            return false;
+
+        // 根据预设设置参数
+        switch(preset)
+        {
+            case 0:  // 无混响
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 0.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 0.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.0f);
+                break;
+
+            case 1:  // 通用 (Generic)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.89f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 1.49f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.83f);
+                break;
+
+            case 2:  // 带衬垫的单元 (Padded Cell)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 0.1715f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.1f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 0.17f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.1f);
+                break;
+
+            case 3:  // 房间 (Room)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 0.4287f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.592f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 0.4f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.83f);
+                break;
+
+            case 4:  // 浴室 (Bathroom)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 0.1715f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.251f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 1.49f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.54f);
+                break;
+
+            case 5:  // 大厅 (Living Room)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 0.9766f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.001f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 0.5f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.1f);
+                break;
+
+            case 6:  // 石质房间 (Stone Room)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.707f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 2.31f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.64f);
+                break;
+
+            case 7:  // 礼堂 (Auditorium)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.578f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 4.32f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.59f);
+                break;
+
+            case 8:  // 音乐厅 (Concert Hall)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.562f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 3.92f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.7f);
+                break;
+
+            case 9:  // 洞穴 (Cave)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 2.91f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 1.3f);
+                break;
+
+            case 10:  // 竞技场 (Arena)
+                alEffectf(reverb_effect, AL_REVERB_DENSITY, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_DIFFUSION, 1.0f);
+                alEffectf(reverb_effect, AL_REVERB_GAIN, 0.32f);
+                alEffectf(reverb_effect, AL_REVERB_GAINHF, 0.447f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, 7.24f);
+                alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, 0.33f);
+                break;
+
+            default:
+                return false;
+        }
+
+        // 将效果绑定到效果槽
+        if(alAuxiliaryEffectSloti)
+            alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, reverb_effect);
+
+        return (alGetError() == AL_NO_ERROR);
+    }
+
+    /**
+     * 启用/禁用混响
+     * @param enable 是否启用
+     * @return 是否成功
+     */
+    bool AudioScene::EnableReverb(bool enable)
+    {
+        if(aux_effect_slot == 0)
+            return false;
+
+        reverb_enabled = enable;
+
+        // 如果禁用，将效果槽设置为 NULL 效果
+        if(!enable && alAuxiliaryEffectSloti)
+        {
+            alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+        }
+        else if(enable && reverb_effect != 0 && alAuxiliaryEffectSloti)
+        {
+            alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, reverb_effect);
+        }
+
+        return (alGetError() == AL_NO_ERROR);
     }
 }//namespace hgl

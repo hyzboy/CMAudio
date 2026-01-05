@@ -154,6 +154,10 @@ namespace hgl
         SortedSets<AudioSourceItem *> source_list;                                                  ///<音源列表
         
         ThreadMutex scene_mutex;                                                                    ///<线程互斥锁
+        
+        uint aux_effect_slot;                                                                       ///<辅助效果槽
+        uint reverb_effect;                                                                         ///<混响效果
+        bool reverb_enabled;                                                                        ///<混响是否启用
 
     protected:
 
@@ -198,6 +202,11 @@ namespace hgl
                     ref_distance=rd;
                     max_distance=md;
                 }
+
+                bool                InitReverb();                                                       ///<初始化混响系统
+                void                CloseReverb();                                                      ///<关闭混响系统
+                bool                SetReverbPreset(const int preset);                                  ///<设置混响预设(0=无混响,1=通用,2=带衬垫的单元,3=房间,4=浴室,5=大厅等)
+                bool                EnableReverb(bool enable);                                          ///<启用/禁用混响
 
         virtual AudioSourceItem *   Create(AudioBuffer *,const Vector3f &pos,const float &gain=1);  ///<创建一個音源
         virtual void                Delete(AudioSourceItem *);                                      ///<删除一个音源
