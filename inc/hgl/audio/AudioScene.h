@@ -5,6 +5,7 @@
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
 #include<hgl/audio/ConeAngle.h>
+#include<hgl/thread/ThreadMutex.h>
 namespace hgl
 {
     class AudioBuffer;
@@ -43,6 +44,7 @@ namespace hgl
 
         double start_play_time;                             ///<开播时间
         bool is_play;                                       ///<是否需要播放
+        bool position_initialized;                          ///<位置是否已初始化
 
         Vector3f last_pos;
         double last_time;
@@ -66,7 +68,7 @@ namespace hgl
         {
             start_play_time=play_time;
             is_play=true;
-            last_time=0;
+            // 不重置 last_time，避免破坏 MoveTo() 的逻辑
         }
 
         /**
@@ -84,12 +86,13 @@ namespace hgl
          */
         void MoveTo(const Vector3f &pos,const double &ct)
         {
-            if(last_time==0)
+            if(!position_initialized)
             {
                 last_pos=cur_pos=pos;
                 last_time=cur_time=ct;
 
                 move_speed=0;
+                position_initialized=true;
             }
             else
             {
@@ -120,6 +123,8 @@ namespace hgl
 
         ObjectPool<AudioSource> source_pool;                                                        ///<音源数据池
         SortedSets<AudioSourceItem *> source_list;                                                  ///<音源列表
+        
+        ThreadMutex scene_mutex;                                                                    ///<线程互斥锁
 
     protected:
 
@@ -164,11 +169,7 @@ namespace hgl
         virtual AudioSourceItem *   Create(AudioBuffer *,const Vector3f &pos,const float &gain=1);  ///<创建一個音源
         virtual void                Delete(AudioSourceItem *);                                      ///<删除一个音源
 
-        virtual void                Clear()                                                         ///<清除所有音源
-        {
-            source_list.Clear();
-            source_pool.ReleaseAll();
-        }
+        virtual void                Clear();                                                        ///<清除所有音源
 
         virtual int                 Update(const double &ct=0);                                     ///<刷新,返回仍在發聲的音源數量
     };//class AudioScene

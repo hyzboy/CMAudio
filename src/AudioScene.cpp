@@ -13,6 +13,10 @@ namespace hgl
         if(!l||!s)return(0);
 
         if(s->gain<=0)return(0);        //本身音量就是0
+        
+        // 添加参数验证，避免除零
+        if(s->ref_distance<=0.0f)return(1);
+        if(s->max_distance<=s->ref_distance)return(1);
 
         float distance;
 
@@ -37,13 +41,15 @@ namespace hgl
             distance = hgl_max(distance,s->ref_distance);
             distance = hgl_min(distance,s->max_distance);
 
-            return (1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance));
+            float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
+            return hgl_max(0.0f, hgl_min(1.0f, gain));  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_LINEAR_DISTANCE)
         {
             distance = hgl_min(distance,s->max_distance);
-            return (1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance));
+            float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
+            return hgl_max(0.0f, hgl_min(1.0f, gain));  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_EXPONENT_DISTANCE)
@@ -97,6 +103,7 @@ namespace hgl
 
         asi->start_play_time=0;
         asi->is_play=false;
+        asi->position_initialized=false;  // 初始化新增的标志位
 
         asi->last_pos=pos;
         asi->cur_pos=pos;
@@ -115,9 +122,38 @@ namespace hgl
     {
         if(!asi)return;
 
+        scene_mutex.Lock();
+        
         ToMute(asi);
 
         source_list.Delete(asi);
+        
+        delete asi;  // 修复内存泄漏：释放 AudioSourceItem 对象
+        
+        scene_mutex.Unlock();
+    }
+
+    void AudioScene::Clear()
+    {
+        scene_mutex.Lock();
+        
+        // 先释放所有 AudioSourceItem 对象
+        int count = source_list.GetCount();
+        AudioSourceItem **items = source_list.GetData();
+        
+        for(int i = 0; i < count; i++)
+        {
+            if(items[i])
+            {
+                ToMute(items[i]);
+                delete items[i];  // 修复内存泄漏：释放每个 AudioSourceItem
+            }
+        }
+        
+        source_list.Clear();
+        source_pool.ReleaseAll();
+        
+        scene_mutex.Unlock();
     }
 
     bool AudioScene::ToMute(AudioSourceItem *asi)
@@ -246,11 +282,21 @@ namespace hgl
      */
     int AudioScene::Update(const double &ct)
     {
-        if(!listener)return(-1);
+        scene_mutex.Lock();
+        
+        if(!listener)
+        {
+            scene_mutex.Unlock();
+            return(-1);
+        }
 
         const int count=source_list.GetCount();
 
-        if(count<=0)return 0;
+        if(count<=0)
+        {
+            scene_mutex.Unlock();
+            return 0;
+        }
 
         if(ct!=0)
             cur_time=ct;
@@ -269,6 +315,7 @@ namespace hgl
                 if((*ptr)->source)          //还有音源
                     ToMute(*ptr);
 
+                ++ptr;
                 continue;   //不需要放的音源
             }
 
@@ -303,6 +350,7 @@ namespace hgl
             ++ptr;
         }
 
+        scene_mutex.Unlock();
         return hear_count;
     }
 }//namespace hgl
