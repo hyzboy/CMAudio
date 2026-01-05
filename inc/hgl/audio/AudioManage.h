@@ -1,7 +1,7 @@
-﻿#ifndef HGL_AUDIO_MANAGE_INCLUDE
-#define HGL_AUDIO_MANAGE_INCLUDE
+﻿#pragma once
 
-#include<hgl/type/List.h>
+#include<hgl/type/ObjectList.h>
+
 namespace hgl
 {
     class AudioSource;
@@ -43,4 +43,3 @@ namespace hgl
         bool Play(const os_char *filename,float gain=1);
     };//class AudioManage
 }//namespace hgl
-#endif//HGL_AUDIO_MANAGE_INCLUDEE

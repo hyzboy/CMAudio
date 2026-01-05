@@ -1,9 +1,12 @@
-﻿#ifndef HGL_LISTENER_INCLUDE
-#define HGL_LISTENER_INCLUDE
+﻿#pragma once
 
-#include<hgl/math/math.h>
+#include<hgl/math/Vector.h>
+#include<hgl/log/Log.h>
+
 namespace hgl
 {
+    using namespace math;
+
     /**
      * 收听者方向,用值请参考gluLookAt
      */
@@ -18,6 +21,8 @@ namespace hgl
     */
     class AudioListener                                                                             ///收听者管理类
     {
+        OBJECT_LOGGER
+
     protected:
 
         float gain;
@@ -44,4 +49,4 @@ namespace hgl
         ~AudioListener();
     };//class AudioListener
 }//namespace hgl
-#endif//HGL_LISTENER_INCLUDE
+

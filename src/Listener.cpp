@@ -1,6 +1,6 @@
 ﻿#include<hgl/audio/Listener.h>
 #include<hgl/audio/OpenAL.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/Log.h>
 
 using namespace openal;
 namespace hgl
@@ -29,7 +29,7 @@ namespace hgl
     {
         if(!alGetListenerf)
         {
-            LOG_ERROR(OS_TEXT("OpenAL/EE 还未初始化!"));
+            LogError(OS_TEXT("OpenAL/EE 还未初始化!"));
             return;
         }
 

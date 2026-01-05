@@ -4,16 +4,15 @@
 // 这是一个根据标准OpenAL SDK所编写的特殊增强版本，它支持目前所有的OpenAL扩展。
 //
 //          作者: 胡颖卓
-//          版本: 1.15
+//          版本: 1.2
 // 对应OpenAL版本: 1.1
 //       对应语言: C/C++
 //    对应操作系统: Windows,MacOSX,iOS,Linux,BSD,Android
 //
 // 第一版编写时间: 2003年10月5日
-// 当前版完成时间: 2015年7月6日
+// 当前版完成时间: 2026年1月05日
 //
-//       官方网站: http://www.hyzgame.com.cn
-// OpenAL官方网站: http://www.openal.org
+//       官方网站: http://www.hyzgame.com
 //--------------------------------------------------------------------------------------------------
 #ifndef OpenALH
 #define OpenALH
@@ -25,7 +24,7 @@
 #endif //__al_h_
 
 #include<hgl/platform/Platform.h>
-#include<hgl/type/List.h>
+#include<hgl/type/ArrayList.h>
 
 #include<hgl/al/al.h>
 #include<hgl/al/alc.h>
@@ -46,7 +45,7 @@ namespace openal                                                                
     };
 
     bool alcGetDefaultDevice(OpenALDevice &);                                                       ///<取得缺省设备
-    int alcGetDeviceList(hgl::List<OpenALDevice> &);                                                ///<取得设备列表
+    int alcGetDeviceList(hgl::ArrayList<OpenALDevice> &);                                           ///<取得设备列表
 
     void alcSetDefaultContext();                                                                    ///<设置缺省上下文
 

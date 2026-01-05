@@ -1,6 +1,6 @@
 ﻿#include<hgl/audio/AudioSource.h>
 #include<hgl/audio/OpenAL.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/Log.h>
 
 using namespace openal;
 namespace hgl
@@ -347,7 +347,7 @@ namespace hgl
     {
         if(!alGenSources)
         {
-            LOG_INFO(OS_TEXT("OpenAL/EE 还未初始化!"));
+            LogInfo(OS_TEXT("OpenAL/EE 还未初始化!"));
             return(false);
         }
 
@@ -361,7 +361,7 @@ namespace hgl
         {
             index=InvalidIndex;
 
-            LOG_INFO(OS_TEXT("无法再创建音频播放源了！"));
+            LogInfo(OS_TEXT("无法再创建音频播放源了！"));
             return(false);
         }
 

@@ -1,13 +1,15 @@
-﻿#ifndef HGL_AUDIO_SOURCE_INCLUDE
-#define HGL_AUDIO_SOURCE_INCLUDE
+﻿#pragma once
 
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/AudioBuffer.h>
 #include<hgl/al/al.h>
-#include<hgl/math/Math.h>
+#include<hgl/math/Vector.h>
+#include<hgl/log/Log.h>
 
 namespace hgl
 {
+    using namespace math;
+
     class AudioListener;
 
     /**
@@ -15,6 +17,8 @@ namespace hgl
     */
     class AudioSource                                                                       ///音频源类
     {
+        OBJECT_LOGGER
+
         friend class AudioPlayer;
 
     private:
@@ -130,4 +134,3 @@ namespace hgl
                 void Unlink();                                                                      ///<解除绑定
     };//class AudioSource
 }//namespace hgl
-#endif//HGL_AUDIO_SOURCE_INCLUDE

@@ -1,15 +1,18 @@
-﻿#ifndef HGL_AUDIO_PLAYER_INCLUDE
-#define HGL_AUDIO_PLAYER_INCLUDE
+﻿#pragma once
 
-// #include<hgl/HAC.H>
 #include<hgl/thread/Thread.h>
 #include<hgl/thread/ThreadMutex.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
-#include<hgl/math/Math.h>
+#include<hgl/math/Vector.h>
+#include<hgl/time/Time.h>
+
 using namespace openal;
+
 namespace hgl
 {
+    using namespace math;
+
     namespace io
     {
         class InputStream;
@@ -31,6 +34,8 @@ namespace hgl
     */
     class AudioPlayer:public Thread                                                                 ///音频播放器基类
     {
+        OBJECT_LOGGER
+
         ThreadMutex lock;
 
     protected:
@@ -68,7 +73,7 @@ namespace hgl
 
         bool Playback();
 
-        bool IsExitDelete()const override{return false;}    
+        bool DeletedAfterExit()const override{return false;}    
         bool Execute() override;
 
         void InitPrivate();
@@ -82,15 +87,15 @@ namespace hgl
         AudioSource audiosource;
         ALuint source;
         ALuint buffer[3];
-        double total_time;
-        double wait_time;
+        PreciseTime total_time;
+        PreciseTime wait_time;
 
         double gain;
 
-        double start_time;
+        PreciseTime start_time;
 
-        double fade_in_time;
-        double fade_out_time;
+        PreciseTime fade_in_time;
+        PreciseTime fade_out_time;
 
     public: //属性
 
@@ -154,10 +159,9 @@ namespace hgl
         virtual void Resume();                                                                      ///<继续播放
         virtual void Clear();                                                                       ///<清除音频数据
 
-        virtual double GetPlayTime();                                                               ///<取得已播放时间(单位秒)
-        virtual void SetFadeTime(double,double);                                                    ///<设置淡入淡出时间
+        virtual PreciseTime GetPlayTime();                                                               ///<取得已播放时间(单位秒)
+        virtual void SetFadeTime(PreciseTime,PreciseTime);                                                    ///<设置淡入淡出时间
 
-        virtual void AutoGain(float,double,const double cur_time);                                  ///<自动音量
+        virtual void AutoGain(float,PreciseTime,const PreciseTime cur_time);                                  ///<自动音量
     };//class AudioPlayer
 }//namespace hgl
-#endif//HGL_AUDIO_PLAYER_INCLUDE

@@ -1,14 +1,17 @@
-﻿#ifndef HGL_AUDIO_SCENE_INCLUDE
-#define HGL_AUDIO_SCENE_INCLUDE
+﻿#pragma once
 
-#include<hgl/math/Math.h>
+#include<hgl/math/Vector.h>
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
+#include<hgl/type/SortedSet.h>
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/ReverbPreset.h>
 #include<hgl/thread/ThreadMutex.h>
+
 namespace hgl
-{
+{   
+    using namespace math;
+
     class AudioBuffer;
     class AudioSource;
     class AudioListener;
@@ -160,7 +163,7 @@ namespace hgl
         AudioListener *listener;                                                                    ///<收聽者
 
         ObjectPool<AudioSource> source_pool;                                                        ///<音源数据池
-        SortedSets<AudioSourceItem *> source_list;                                                  ///<音源列表
+        SortedSet<AudioSourceItem *> source_list;                                                   ///<音源列表
         
         ThreadMutex scene_mutex;                                                                    ///<线程互斥锁
         
@@ -234,4 +237,3 @@ namespace hgl
         virtual int                 Update(const double &ct=0);                                     ///<刷新,返回仍在發聲的音源數量
     };//class AudioScene
 }//namespace hgl
-#endif//HGL_AUDIO_SCENE_INCLUDE

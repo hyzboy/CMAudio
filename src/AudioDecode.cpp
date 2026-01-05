@@ -15,7 +15,7 @@ namespace hgl
         PlugIn *pi=audio_plug_in.LoadPlugin(name);
 
         if(!pi)
-            return(nullptr);
+            return(false);
 
         uint result=0;
 

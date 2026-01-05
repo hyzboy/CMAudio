@@ -1,6 +1,6 @@
 ﻿#include<hgl/al/alc.h>
 #include<hgl/platform/ExternalModule.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/Log.h>
 
 using namespace hgl;
 

@@ -1,10 +1,13 @@
-﻿#include<hgl/log/LogInfo.h>
+﻿#include<hgl/log/Log.h>
 #include<hgl/filesystem/FileSystem.h>
+#include<hgl/filesystem/Filename.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/type/Pair.h>
 #include<hgl/type/Stack.h>
 #include<hgl/type/String.h>
 #include<hgl/type/StringList.h>
+#include<hgl/type/SplitString.h>
+#include<hgl/math/PhysicsConstants.h>
 #include<hgl/platform/ExternalModule.h>
 
 using namespace hgl;
@@ -17,8 +20,8 @@ namespace openal
     static ALCdevice *AudioDevice       =nullptr;        //OpenAL设备
     static ALCcontext *AudioContext     =nullptr;        //OpenAL上下文
 
-    static UTF8StringList OpenALExt_List;
-    static UTF8StringList OpenALContextExt_List;
+    static U8StringList OpenALExt_List;
+    static U8StringList OpenALContextExt_List;
 
     static bool AudioFloat32            =false;         //是否支持float 32数据
     static bool AudioEFX                =false;         //EFX是否可用
@@ -45,11 +48,11 @@ namespace openal
 
         if(!AudioEM)
         {            
-            LOG_INFO(OS_TEXT("Finded a OpenAL dynamic link library, but it can't load. filename: ")+OSString(filename));
+            GLogWarning(OS_TEXT("Finded a OpenAL dynamic link library, but it can't load. filename: ")+OSString(filename));
             return(true);
         }
         
-        LOG_INFO(OS_TEXT("Loading of openAL dynamic link library successfully, filename: ")+OSString(filename));
+        GLogInfo(OS_TEXT("Loading of openAL dynamic link library successfully, filename: ")+OSString(filename));
 
         return(false);
     }
@@ -64,16 +67,16 @@ namespace openal
         OSStringList oalfn=
         {
 #if HGL_OS == HGL_OS_Windows
-            OS_TEXT("OpenAL32.dll"),
-            OS_TEXT("ct_oal.dll"),
-            OS_TEXT("nvOpenAL.dll"),
-            OS_TEXT("soft_oal.dll"),
-            OS_TEXT("wrap_oal.dll"),
+            OSString(OS_TEXT("OpenAL32.dll")),
+            OSString(OS_TEXT("ct_oal.dll")),
+            OSString(OS_TEXT("nvOpenAL.dll")),
+            OSString(OS_TEXT("soft_oal.dll")),
+            OSString(OS_TEXT("wrap_oal.dll")),
 #elif (HGL_OS == HGL_OS_Linux)||(HGL_OS == HGL_OS_FreeBSD)||(HGL_OS == HGL_OS_NetBSD)||(HGL_OS == HGL_OS_OpenBSD)
-            OS_TEXT("libopenal.so"),
-            OS_TEXT("libopenal.so.1"),
+            OSString(OS_TEXT("libopenal.so")),
+            OSString(OS_TEXT("libopenal.so.1")),
 #elif HGL_OS == HGL_OS_MacOS
-            OS_TEXT("libopenal.dylib"),
+            OSString(OS_TEXT("libopenal.dylib")),
 #endif//HGL_OS == HGL_OS_Windows
         };
 
@@ -86,11 +89,11 @@ namespace openal
             filesystem::GetCurrentPath(pn);
             oalpn.Add(pn);
 
-            pn=filesystem::MergeFilename(pn,OS_TEXT("Plug-Ins"));
+            pn=filesystem::JoinPathWithFilename(pn,OS_TEXT("Plug-Ins"));
             if(filesystem::IsDirectory(pn))
                 oalpn.Add(pn);
 
-            filesystem::GetOSLibararyPath(pn);
+            filesystem::GetOSLibraryPath(pn);
             oalpn.Add(pn);
         }
 
@@ -111,7 +114,7 @@ namespace openal
         }
         else
         {
-            LOG_ERROR(  OS_TEXT("The OpenAL Dynamic link library was not found, perhaps the loading failed..\n")
+            GLogError(  OS_TEXT("The OpenAL Dynamic link library was not found, perhaps the loading failed..\n")
                         OS_TEXT("you can download it on \"http://www.openal.org\" or \"https://openal-soft.org\",\n")
                         OS_TEXT("Downloading the driver driver installation from the official website of the sound card is also a good choice."));
 
@@ -189,13 +192,13 @@ namespace openal
         return alcGetDeviceInfo(dev,dev.name);
     }
 
-    int alcGetDeviceList(List<OpenALDevice> &device_list)
+    int alcGetDeviceList(ArrayList<OpenALDevice> &device_list)
     {
         const char *devices=alcGetDeviceNameList();
 
         if(!devices)
         {
-            LOG_INFO(OS_TEXT("Can't get list of OpenAL Devices."));
+            GLogInfo(OS_TEXT("Can't get list of OpenAL Devices."));
             return(-1);
         }
 
@@ -219,7 +222,7 @@ namespace openal
 
         if(!devices)
         {
-            LOG_INFO(OS_TEXT("can't get list of OpenAL Devices."));
+            GLogInfo(OS_TEXT("can't get list of OpenAL Devices."));
             return;
         }
 
@@ -239,11 +242,11 @@ namespace openal
                 {
                     alcGetIntegerv(device,ALC_MINOR_VERSION,sizeof(int),&minor);
 
-                    LOG_INFO(u8"OpenAL device: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8", version: "+UTF8String::valueOf(major)+"."+UTF8String::valueOf(minor));
+                    GLogInfo(u8"OpenAL device: "+U8String((u8char *)devices)+u8" Specifier:"+U8String((u8char *)actual_devicename)+u8", version: "+U8String::numberOf(major)+u8"."+U8String::numberOf(minor));
                 }
                 else
                 {
-                    LOG_INFO(u8"OpenAL device: "+UTF8String(devices)+u8" Specifier:"+UTF8String(actual_devicename)+u8",can't get version, used OpenAL 1.0.");
+                    GLogInfo(u8"OpenAL device: "+U8String((u8char *)devices)+u8" Specifier:"+U8String((u8char *)actual_devicename)+u8",can't get version, used OpenAL 1.0.");
                 }
 
                 alcCloseDevice(device);
@@ -258,11 +261,11 @@ namespace openal
         alcMakeContextCurrent(AudioContext);
     }
 
-    void GetOpenALExt(UTF8StringList &ext_list,const char *ext_str)
+    void GetOpenALExt(U8StringList &ext_list,const char *ext_str)
     {
         int len=hgl::strlen(ext_str);
 
-        SplitToStringListBySpace(ext_list,ext_str,len);         //space指所有不可打印字符
+        SplitToStringListBySpace<u8char>(ext_list,(const u8char *)ext_str,len);        //space指所有不可打印字符
     }
 
     void InitOpenALExt()
@@ -270,7 +273,7 @@ namespace openal
         GetOpenALExt(OpenALExt_List,alGetString(AL_EXTENSIONS));
         GetOpenALExt(OpenALContextExt_List,alcGetString(AudioDevice,ALC_EXTENSIONS));
 
-        if(OpenALExt_List.Find("AL_EXT_FLOAT32")!=-1)
+        if(OpenALExt_List.Contains(u8"AL_EXT_FLOAT32"))
             AudioFloat32=true;
     }
 
@@ -299,11 +302,11 @@ namespace openal
 
             if(*AudioDeviceName)
             {
-                LOG_INFO(u8"Select the default OpenAL device: "+UTF8String(AudioDeviceName));
+                GLogInfo(u8"Select the default OpenAL device: "+U8String((u8char *)AudioDeviceName));
             }
             else
             {
-                LOG_INFO(OS_TEXT("Select the default OpenAL device."));
+                GLogInfo(OS_TEXT("Select the default OpenAL device."));
             }
 
             default_device=true;
@@ -313,7 +316,7 @@ namespace openal
 
         if(AudioDevice==nullptr)
         {
-            LOG_ERROR(u8"Failed to OpenAL Device: "+UTF8String(AudioDeviceName));
+            GLogError(u8"Failed to OpenAL Device: "+U8String((u8char *)AudioDeviceName));
 
             if(default_device)
             {
@@ -328,56 +331,56 @@ namespace openal
 
                 if(!AudioDevice)
                 {
-                    LOG_ERROR(OS_TEXT("The OpenAL device cannot be initialized properly using the specified device and the default device!"));
+                    GLogError(OS_TEXT("The OpenAL device cannot be initialized properly using the specified device and the default device!"));
                     CloseOpenAL();
                     return(AL_FALSE);
                 }
 
-                LOG_INFO(OS_TEXT("Select the default OpenAL device because the specified device is failing."));
+                GLogInfo(OS_TEXT("Select the default OpenAL device because the specified device is failing."));
             }
         }
 
-        LOG_INFO(U8_TEXT("Opened OpenAL Device")+UTF8String(AudioDeviceName));
+        GLogInfo(U8_TEXT("Opened OpenAL Device")+U8String((u8char *)AudioDeviceName));
 
         AudioContext=alcCreateContext(AudioDevice,0);
         if(AudioContext==nullptr)
         {
-            LOG_ERROR(OS_TEXT("Create OpenAL Context OK."));
+            GLogError(OS_TEXT("Create OpenAL Context OK."));
             CloseOpenAL();
             return (AL_FALSE);
         }
         #ifdef _DEBUG
         else
         {
-            LOG_INFO(OS_TEXT("Failed to Create OpenAL Context."));
+            GLogInfo(OS_TEXT("Failed to Create OpenAL Context."));
         }
         #endif//_DEBUG
 
         if(!alcMakeContextCurrent(AudioContext))
         {
-            LOG_ERROR(OS_TEXT("Failed to Make OpenAL Context"));
+            GLogError(OS_TEXT("Failed to Make OpenAL Context"));
             CloseOpenAL();
             RETURN_FALSE;
         }
         #ifdef _DEBUG
         else
         {
-            LOG_INFO(OS_TEXT("Make OpenAL Context OK."));
+            GLogInfo(OS_TEXT("Make OpenAL Context OK."));
         }
         #endif//_DEBUG
 
         hgl::strcpy(AudioDeviceName,AL_DEVICE_NAME_MAX_LEN,alcGetString(AudioDevice,ALC_DEVICE_SPECIFIER));
 
-        LOG_INFO(u8"Initing OpenAL Device: "+UTF8String(AudioDeviceName));
+        GLogInfo(u8"Initing OpenAL Device: "+U8String((u8char *)AudioDeviceName));
 
         if (!LoadALFunc(AudioEM))
         {
-            LOG_INFO(OS_TEXT("Failed to load OpenAL functions"));
+            GLogInfo(OS_TEXT("Failed to load OpenAL functions"));
             CloseOpenAL();
             RETURN_FALSE;
         }
 
-        LOG_INFO(OS_TEXT("Loaded OpenAL functions."));
+        GLogInfo(OS_TEXT("Loaded OpenAL functions."));
 
         if(alcIsExtensionPresent)
         {
@@ -394,7 +397,7 @@ namespace openal
 
         InitOpenALExt();
 
-        LOG_INFO(OS_TEXT("Inited OpenAL."));
+        GLogInfo(OS_TEXT("Inited OpenAL."));
         return(AL_TRUE);
     }
 
@@ -420,7 +423,7 @@ namespace openal
             if(AudioDevice)    alcCloseDevice(AudioDevice);
             SAFE_CLEAR(AudioEM);
 
-            LOG_INFO(OS_TEXT("Close OpenAL."));
+            GLogInfo(OS_TEXT("Close OpenAL."));
         }
 
         ClearAL();
@@ -621,19 +624,19 @@ namespace openal
         return AudioFloat32;
     }
     //--------------------------------------------------------------------------------------------------
-    const char *alGetErrorInfo(const char *filename,const int line)
+    const u8char *alGetErrorInfo(const os_char *filename,const int line)
     {
         if(!alGetError)return(U8_TEXT("OpenALEE/OpenAL 未初始化!"));
 
-        const char *result=nullptr;
+        const u8char *result=nullptr;
 
-        const char al_error_invalid             []=U8_TEXT("invalid");
-        const char al_error_invalid_name        []=U8_TEXT("invalid name");
-        const char al_error_invalid_enum        []=U8_TEXT("invalid enum");
-        const char al_error_invalid_value       []=U8_TEXT("invalid value");
-        const char al_error_invalid_operation   []=U8_TEXT("invalid operation");
-        const char al_error_out_of_memory       []=U8_TEXT("out of memory");
-        const char al_error_unknown_error       []=U8_TEXT("unknown error");
+        const u8char al_error_invalid             []=U8_TEXT("invalid");
+        const u8char al_error_invalid_name        []=U8_TEXT("invalid name");
+        const u8char al_error_invalid_enum        []=U8_TEXT("invalid enum");
+        const u8char al_error_invalid_value       []=U8_TEXT("invalid value");
+        const u8char al_error_invalid_operation   []=U8_TEXT("invalid operation");
+        const u8char al_error_out_of_memory       []=U8_TEXT("out of memory");
+        const u8char al_error_unknown_error       []=U8_TEXT("unknown error");
 
         const ALenum error=alGetError();
 
@@ -648,8 +651,8 @@ namespace openal
 
         if(result)
         {
-            LOG_ERROR(U8_TEXT("OpenAL error,source file:\"")+UTF8String(filename)+u8"\",line:"+UTF8String::valueOf(line));
-            LOG_ERROR(U8_TEXT("OpenAL ErrorNo:")+UTF8String(result));
+            GLogError(OS_TEXT("OpenAL error,source file:\"")+OSString(filename)+OS_TEXT("\",line:")+OSString::numberOf(line));
+            GLogError(U8_TEXT("OpenAL ErrorNo:")+U8String(result));
         }
 
         return(result);
@@ -659,17 +662,15 @@ namespace openal
     {
         if(!alGetString)return;
 
-        LOG_INFO(UTF8String(u8"          OpenAL Vendor: ")+alGetString(AL_VENDOR    ));
-        LOG_INFO(UTF8String(u8"         OpenAL Version: ")+alGetString(AL_VERSION   ));
-        LOG_INFO(UTF8String(u8"        OpenAL Renderer: ")+alGetString(AL_RENDERER  ));
-        LOG_INFO(OS_TEXT(               "      Max audio sources: ")+OSString::valueOf(GetMaxNumSources()));
-        LOG_INFO(AudioFloat32?OS_TEXT(  "   Supported float data: Yes")
-                             :OS_TEXT(  "   Supported float data: No"));
+        GLogInfo(U8String(    u8"          OpenAL Vendor: ")+(u8char *)alGetString(AL_VENDOR    ));
+        GLogInfo(U8String(    u8"         OpenAL Version: ")+(u8char *)alGetString(AL_VERSION   ));
+        GLogInfo(U8String(    u8"        OpenAL Renderer: ")+(u8char *)alGetString(AL_RENDERER  ));
+        GLogInfo(U8String(    u8"      Max audio sources: ")+U8String::numberOf(GetMaxNumSources()));
+        GLogInfo(AudioFloat32?u8"   Supported float data: Yes"
+                             :u8"   Supported float data: No");
 
-        LOG_INFO(AudioEFX?OS_TEXT(      "                    EFX: Supported")
-                         :OS_TEXT(      "                    EFX: No"));
-        LOG_INFO(AudioXRAM?OS_TEXT(     "                  X-RAM: Supported")
-                          :OS_TEXT(     "                  X-RAM: No"));
+        GLogInfo(AudioEFX?    u8"                    EFX: Supported"
+                         :    u8"                    EFX: No");
 
         if(AudioXRAM)
         {
@@ -677,32 +678,37 @@ namespace openal
 
             alcGetIntegerv(AudioDevice,eXRAMSize,sizeof(int),&size);
 
-            LOG_INFO(OS_TEXT(           "    X-RAM Volume: ")+OSString::valueOf(size));
+            GLogInfo(         u8"                  X-RAM: Supported");
+            GLogInfo(         u8"           X-RAM Volume: "+U8String::numberOf(size));
+        }
+        else
+        {
+            GLogInfo(         u8"                  X-RAM: No");
         }
 
         for(int i=0;i<OpenALExt_List.GetCount();i++)
             if(i==0)
             {
-                LOG_INFO(UTF8String(u8"      OpenAL Extentsion: ")+OpenALExt_List[i]);
+                GLogInfo(U8String(u8"      OpenAL Extentsion: ")+OpenALExt_List[i]);
             }
             else
             {
-                LOG_INFO(UTF8String(u8"                         ")+OpenALExt_List[i]);
+                GLogInfo(U8String(u8"                         ")+OpenALExt_List[i]);
             }
 
         for(int i=0;i<OpenALContextExt_List.GetCount();i++)
             if(i==0)
             {
-                LOG_INFO(UTF8String(u8"OpenAL Device Extension: ")+OpenALContextExt_List[i]);
+                GLogInfo(U8String(u8"OpenAL Device Extension: ")+OpenALContextExt_List[i]);
             }
             else
             {
-                LOG_INFO(UTF8String(u8"                         ")+OpenALContextExt_List[i]);
+                GLogInfo(U8String(u8"                         ")+OpenALContextExt_List[i]);
             }
 
 
         #ifdef _DEBUG
-        LOG_INFO(OS_TEXT("OpenAL Infomation finished."));
+        GLogInfo(OS_TEXT("OpenAL Infomation finished."));
         #endif//
     }
 

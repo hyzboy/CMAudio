@@ -1,7 +1,6 @@
 ﻿#include<hgl/audio/AudioPlayer.h>
-#include<hgl/log/LogInfo.h>
+#include<hgl/log/Log.h>
 #include<hgl/plugin/PlugIn.h>
-#include<hgl/Time.h>
 #include<hgl/io/MemoryInputStream.h>
 #include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
@@ -14,7 +13,7 @@ namespace hgl
     {
         if(!alGenSources)
         {
-            LOG_ERROR(OS_TEXT("OpenAL/EE 还未初始化!"));
+            LogError(OS_TEXT("OpenAL/EE 还未初始化!"));
             return;
         }
 
@@ -96,7 +95,7 @@ namespace hgl
             delete decode;
             decode=nullptr;
 
-            LOG_ERROR(OS_TEXT("无法加载音频解码插件：")+OSString(plugin_name));
+            LogError(OS_TEXT("无法加载音频解码插件：")+OSString(plugin_name));
             return(false);
         }
 
@@ -136,7 +135,7 @@ namespace hgl
 
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未支持的音频文件类型！AudioFileType: ")+OSString::valueOf((int)aft));
+            LogError(OS_TEXT("未支持的音频文件类型！AudioFileType: ")+OSString::numberOf((int)aft));
 
             return(false);
         }
@@ -167,7 +166,7 @@ namespace hgl
 
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("未知的音频文件类型！AudioFile: ")+OSString(filename));
+            LogError(OS_TEXT("未知的音频文件类型！AudioFile: ")+OSString(filename));
             return(false);
         }
 
@@ -175,48 +174,6 @@ namespace hgl
 
         return(Load(fis,fis->Available(),aft));
     }
-
-//     /**
-//     * 从文件中加载一段音频数据
-//     * @param hac HAC包指针
-//     * @param filename 音频文件名称
-//     * @param aft 音频文件类型
-//     * @return 是否加载成功
-//     */
-//     bool AudioPlayer::Load(HAC *hac,const os_char *filename,AudioFileType aft)
-//     {
-//         if(!alGenBuffers)return(false);
-//
-//         os_char *ext;
-//         Stream *stream;
-//         bool result;
-//
-//         ext=strrchr(filename,u'.');
-//
-//         LowerString(ext);
-//
-//         if(aft<=aftNone||aft>=aftEnd)
-//         {
-//             if(strcmp(ext,u".ogg")==0)aft=aftOGG;else
-//             {
-//                 PutError(u"未支持的音频文件类型！AudioFileType:%d",aft);
-//                 return(false);
-//             }
-//         }
-//
-//         stream=hac->LoadFile(filename);
-//
-//         if(stream)
-//         {
-//             result=Load(stream,aft);
-//
-//             delete stream;
-//
-//             return(result);
-//         }
-//
-//         return(false);
-//     }
 
     void AudioPlayer::Clear()
     {
@@ -294,7 +251,7 @@ namespace hgl
 
             alSourceQueueBuffers(source,count,buffer);
             alSourcePlay(source);
-            start_time=GetDoubleTime();
+            start_time=GetPreciseTime();
 
             ps=PlayState::Play;
             return(true);
@@ -394,7 +351,7 @@ namespace hgl
 
         if(processed<=0)return(true);
 
-        const double cur_time=GetDoubleTime();
+        const PreciseTime cur_time=GetPreciseTime();
 
         if(cur_time-start_time<fade_in_time)        //淡入时间
         {
@@ -514,7 +471,7 @@ namespace hgl
         }
     }
 
-    double AudioPlayer::GetPlayTime()
+    PreciseTime AudioPlayer::GetPlayTime()
     {
         if(!audio_data)return(0);
 
@@ -536,7 +493,7 @@ namespace hgl
     * @param adjust_time 到达目标增益要经过的时间
     * @param cur_time 当前时间
     */
-    void AudioPlayer::AutoGain(float target_gain,double adjust_time,const double cur_time)
+    void AudioPlayer::AutoGain(float target_gain,PreciseTime adjust_time,const PreciseTime cur_time)
     {
         if(!audio_data)return;
 
@@ -553,7 +510,7 @@ namespace hgl
         lock.Unlock();
     }
 
-    void AudioPlayer::SetFadeTime(double in,double out)
+    void AudioPlayer::SetFadeTime(PreciseTime in,PreciseTime out)
     {
         fade_in_time=in;
         fade_out_time=out;

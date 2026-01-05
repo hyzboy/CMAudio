@@ -1,6 +1,5 @@
 ﻿#include<hgl/audio/AudioFileType.h>
 #include<hgl/type/StrChar.h>
-#include<hgl/TypeFunc.h>
 
 namespace hgl
 {
@@ -46,7 +45,7 @@ namespace hgl
         ++ext;
 
         hgl::strcpy(extname,16,ext);
-        hgl::tolower(extname);
+        hgl::to_lower_char(extname);
 
         return CheckAudioExtName(extname);
     }

@@ -58,7 +58,7 @@ namespace hgl
 {
     AudioManage::AudioManage(int count)
     {
-        Items.PreMalloc(count);
+        Items.Reserve(count);
     }
 
     AudioManage::~AudioManage()

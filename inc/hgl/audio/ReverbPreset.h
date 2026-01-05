@@ -1,7 +1,6 @@
-#ifndef HGL_REVERB_PRESET_INCLUDE
-#define HGL_REVERB_PRESET_INCLUDE
+#pragma once
 
-#include<hgl/type/BaseString.h>
+#include<hgl/type/String.h>
 
 namespace hgl
 {
@@ -132,8 +131,8 @@ namespace hgl
      */
     struct ReverbPresetProperties
     {
-        UTF8String name_cn;         ///<中文名称
-        UTF8String name_en;         ///<英文名称
+        u8char name_cn[32];         ///<中文名称
+        u8char name_en[32];         ///<英文名称
         
         float flDensity;
         float flDiffusion;
@@ -172,4 +171,3 @@ namespace hgl
      */
     int GetReverbPresetCount();
 }//namespace hgl
-#endif//HGL_REVERB_PRESET_INCLUDE

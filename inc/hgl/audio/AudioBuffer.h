@@ -1,10 +1,8 @@
-﻿#ifndef HGL_AUDIO_BUFFER_INCLUDE
-#define HGL_AUDIO_BUFFER_INCLUDE
+﻿#pragma once
 
 #include<hgl/io/InputStream.h>
-// #include<hgl/HAC.H>
-//#include<hgl/type/ObjectBuffer.h>
 #include<hgl/audio/AudioFileType.h>
+#include<hgl/log/Log.h>
 
 namespace hgl
 {
@@ -15,6 +13,8 @@ namespace hgl
     */
     class AudioBuffer                                                                               ///音频数据缓冲区类
     {
+        OBJECT_LOGGER
+
         bool ok;
 
         void InitPrivate();
@@ -38,7 +38,6 @@ namespace hgl
         AudioBuffer(void *,int,AudioFileType);                                                      ///<本类构造函数
         AudioBuffer(InputStream *,int,AudioFileType);                                               ///<本类构造函数
         AudioBuffer(const os_char *filename=0,AudioFileType=AudioFileType::None);                   ///<本类构造函数
-//      AudioBuffer(HAC *,const os_char *,AudioFileType=aftNone);                                   ///<本类构造函数
         virtual ~AudioBuffer();                                                                     ///<本类析构函数
 
         bool SetData(uint format,const void *data,uint size,uint freq);
@@ -46,12 +45,9 @@ namespace hgl
         bool Load(void *,int,AudioFileType);                                                        ///<从内存中加载音频数据
         bool Load(InputStream *,int,AudioFileType);                                                 ///<从流中加载音频数据
         bool Load(const os_char *,AudioFileType=AudioFileType::None);                               ///<从文件中加载音频数据
-//      bool Load(HAC *,const os_char *,AudioFileType=aftNone);                                     ///<从HAC包的文件中加载音频数据
 
         void Clear();                                                                               ///<清除数据
     };//class AudioBuffer
 
 //  typedef ObjectBuffer<AudioBuffer>           AudioBufferBuffer;                                  ///<AudioBuffer缓冲管理器
-//  typedef ObjectBufferFromHAC<AudioBuffer>    AudioBufferHAC;                                     ///<AudioBuffer缓冲管理器(从HAC名中取得文件)
 }//namespace hgl
-#endif//AUDIO_BUFFER_INCLUDE

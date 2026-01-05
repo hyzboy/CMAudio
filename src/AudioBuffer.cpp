@@ -1,4 +1,4 @@
-﻿#include<hgl/log/LogInfo.h>
+﻿#include<hgl/log/Log.h>
 #include<hgl/type/Pair.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioBuffer.h>
@@ -27,11 +27,8 @@ namespace hgl
 
         if(!plugin_name)RETURN_ERROR(0);
 
-        AudioPlugInInterface decode;
-        AudioFloatPlugInInterface decode_float;
-
-        hgl_zero(decode);
-        hgl_zero(decode_float);
+        AudioPlugInInterface decode{};
+        AudioFloatPlugInInterface decode_float{};
 
         if(!GetAudioInterface(plugin_name,&decode,&decode_float))
             RETURN_ERROR(0);        
@@ -140,7 +137,7 @@ namespace hgl
 
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::valueOf((int)aft));
+            LogError(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::numberOf((int)aft));
             alDeleteBuffers(1,&Index);
             RETURN_FALSE;
         }
@@ -173,7 +170,7 @@ namespace hgl
         
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::valueOf((int)aft));
+            LogError(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::numberOf((int)aft));
             ok=false;
         }
         else
@@ -203,7 +200,7 @@ namespace hgl
         
         if(!RangeCheck(aft))
         {
-            LOG_ERROR(OS_TEXT("Audio file type unknow! AudioFile: ")+OSString(filename));
+            LogError(OS_TEXT("Audio file type unknow! AudioFile: ")+OSString(filename));
             ok=false;
             RETURN_FALSE;
         }

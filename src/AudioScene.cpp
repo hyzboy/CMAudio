@@ -2,10 +2,13 @@
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/Listener.h>
 #include<hgl/audio/ReverbPreset.h>
-#include<hgl/al/al.h>
-#include<hgl/Time.h>
+#include<hgl/al/efx.h>
+#include<hgl/time/Time.h>
+
 namespace hgl
 {
+    using namespace openal;
+
     /**
      * 計算指定音源相對收聽者的音量
      */
@@ -23,7 +26,7 @@ namespace hgl
 
         const Vector3f &        lpos=l->GetPosition();
 
-        distance=length(lpos,s->cur_pos);
+        distance=math::Length(lpos,s->cur_pos);
 
         if(s->distance_model==AL_INVERSE_DISTANCE_CLAMPED||s->distance_model==AL_INVERSE_DISTANCE)
         {
@@ -76,7 +79,7 @@ namespace hgl
      */
     AudioScene::AudioScene(int max_source,AudioListener *al)
     {
-        source_pool.PreMalloc(max_source);
+        source_pool.Reserve(max_source);
 
         listener=al;
 
@@ -152,7 +155,7 @@ namespace hgl
         }
         
         source_list.Clear();
-        source_pool.ReleaseAll();
+        source_pool.Clear();
         
         scene_mutex.Unlock();
     }
@@ -206,7 +209,7 @@ namespace hgl
 
         if(!asi->source)
         {
-            if(!source_pool.Acquire(asi->source))
+            if(!source_pool.GetOrCreate(asi->source))
                 return(false);
         }
 
@@ -290,7 +293,7 @@ namespace hgl
                     asi->source->SetVelocity(velocity);
                     
                     // 计算标量速度用于记录
-                    asi->move_speed = length(asi->last_pos, asi->cur_pos) / time_diff;
+                    asi->move_speed = math::Length(asi->last_pos, asi->cur_pos) / time_diff;
                 }
             }
 
@@ -331,7 +334,7 @@ namespace hgl
         if(ct!=0)
             cur_time=ct;
         else
-            cur_time=GetDoubleTime();
+            cur_time=GetPreciseTime();
 
         float new_gain;
         int hear_count=0;
