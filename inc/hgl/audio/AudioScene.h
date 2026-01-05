@@ -63,21 +63,40 @@ namespace hgl
     public:
 
         /**
-         * 构造函数：初始化所有成员变量
+         * 构造函数：通过参数初始化所有成员变量
+         * @param buf 音频缓冲区
+         * @param pos 初始位置
+         * @param g 音量增益
+         * @param dist_model 距离衰减模型
+         * @param roll_off 环境衰减比率
+         * @param ref_dist 衰减距离
+         * @param max_dist 最大距离
+         * @param is_loop 是否循环播放
+         * @param doppler 多普勒效果强度
+         * @param air_abs 空气吸收因子
          */
-        AudioSourceItem()
-            : buffer(nullptr)
-            , loop(false)
-            , gain(1.0f)
-            , distance_model(0)
-            , rolloff_factor(1.0f)
-            , doppler_factor(0.0f)
-            , air_absorption_factor(0.0f)
-            , ref_distance(1.0f)
-            , max_distance(10000.0f)
+        AudioSourceItem(AudioBuffer *buf, 
+                       const Vector3f &pos,
+                       float g = 1.0f,
+                       uint dist_model = 0,
+                       float roll_off = 1.0f,
+                       float ref_dist = 1.0f,
+                       float max_dist = 10000.0f,
+                       bool is_loop = false,
+                       float doppler = 0.0f,
+                       float air_abs = 0.0f)
+            : buffer(buf)
+            , loop(is_loop)
+            , gain(g)
+            , distance_model(dist_model)
+            , rolloff_factor(roll_off)
+            , doppler_factor(doppler)
+            , air_absorption_factor(air_abs)
+            , ref_distance(ref_dist)
+            , max_distance(max_dist)
             , start_play_time(0)
             , is_play(false)
-            , position_initialized(false)
+            , position_initialized(true)  // 位置在构造时已初始化
             , last_time(0)
             , cur_time(0)
             , move_speed(0)
@@ -86,8 +105,8 @@ namespace hgl
         {
             velocity = Vector3f(0, 0, 0);
             direction = Vector3f(0, 0, 0);
-            last_pos = Vector3f(0, 0, 0);
-            cur_pos = Vector3f(0, 0, 0);
+            last_pos = pos;
+            cur_pos = pos;
         }
 
         /**
@@ -116,22 +135,11 @@ namespace hgl
          */
         void MoveTo(const Vector3f &pos,const double &ct)
         {
-            if(!position_initialized)
-            {
-                last_pos=cur_pos=pos;
-                last_time=cur_time=ct;
+            last_pos=cur_pos;
+            last_time=cur_time;
 
-                move_speed=0;
-                position_initialized=true;
-            }
-            else
-            {
-                last_pos=cur_pos;
-                last_time=cur_time;
-
-                cur_pos=pos;
-                cur_time=ct;
-            }
+            cur_pos=pos;
+            cur_time=ct;
         }
     };//struct AudioSourceItem
 
@@ -211,7 +219,14 @@ namespace hgl
                 bool                SetReverbPreset(ReverbPreset preset);                                ///<设置混响预设(使用OpenAL Soft官方预设)
                 bool                EnableReverb(bool enable);                                          ///<启用/禁用混响
 
-        virtual AudioSourceItem *   Create(AudioBuffer *,const Vector3f &pos,const float &gain=1);  ///<创建一個音源
+        virtual AudioSourceItem *   Create(AudioBuffer *buf,
+                                           const Vector3f &pos,
+                                           const float &gain=1.0f,
+                                           uint distance_model=0,
+                                           float rolloff_factor=1.0f,
+                                           bool loop=false,
+                                           float doppler_factor=0.0f,
+                                           float air_absorption_factor=0.0f);  ///<创建一個音源（所有参数通过构造函数设置）
         virtual void                Delete(AudioSourceItem *);                                      ///<删除一个音源
 
         virtual void                Clear();                                                        ///<清除所有音源

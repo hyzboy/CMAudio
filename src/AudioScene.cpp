@@ -89,22 +89,32 @@ namespace hgl
         reverb_enabled=false;
     }
 
-    AudioSourceItem *AudioScene::Create(AudioBuffer *buf,const Vector3f &pos,const float &gain)
+    AudioSourceItem *AudioScene::Create(AudioBuffer *buf,
+                                        const Vector3f &pos,
+                                        const float &gain,
+                                        uint distance_model,
+                                        float rolloff_factor,
+                                        bool loop,
+                                        float doppler_factor,
+                                        float air_absorption_factor)
     {
         if(!buf)
             return(nullptr);
 
-        AudioSourceItem *asi=new AudioSourceItem;  // 构造函数已初始化所有字段
-
-        // 设置必要的参数
-        asi->buffer=buf;
-        asi->gain=gain;
-        asi->distance_model=AL_INVERSE_DISTANCE_CLAMPED;
-        asi->rolloff_factor=1;
-        asi->ref_distance=ref_distance;
-        asi->max_distance=max_distance;
-        asi->last_pos=pos;
-        asi->cur_pos=pos;
+        // 使用默认距离模型（如果为0）
+        uint dist_model = (distance_model == 0) ? AL_INVERSE_DISTANCE_CLAMPED : distance_model;
+        
+        // 所有参数通过构造函数设置，保证API一致性
+        AudioSourceItem *asi = new AudioSourceItem(buf, 
+                                                   pos, 
+                                                   gain,
+                                                   dist_model,
+                                                   rolloff_factor,
+                                                   ref_distance,
+                                                   max_distance,
+                                                   loop,
+                                                   doppler_factor,
+                                                   air_absorption_factor);
 
         return asi;
     }
