@@ -88,32 +88,17 @@ namespace hgl
         if(!buf)
             return(nullptr);
 
-        AudioSourceItem *asi=new AudioSourceItem;
+        AudioSourceItem *asi=new AudioSourceItem;  // 构造函数已初始化所有字段
 
+        // 设置必要的参数
         asi->buffer=buf;
-
-        asi->loop=false;
-
         asi->gain=gain;
-
         asi->distance_model=AL_INVERSE_DISTANCE_CLAMPED;
         asi->rolloff_factor=1;
         asi->ref_distance=ref_distance;
         asi->max_distance=max_distance;
-
-        asi->start_play_time=0;
-        asi->is_play=false;
-        asi->position_initialized=false;  // 初始化新增的标志位
-
         asi->last_pos=pos;
         asi->cur_pos=pos;
-
-        asi->last_time=asi->cur_time=0;
-        asi->move_speed=0;
-
-        asi->last_gain=0;
-
-        asi->source=nullptr;
 
         return asi;
     }
@@ -246,7 +231,21 @@ namespace hgl
             }
             else
             {
-                asi->source->Play();        //继续播放
+                // 循环播放：先触发事件，允许用户控制是否继续
+                bool continue_play = OnStopped(asi);
+                if(continue_play)
+                {
+                    if(!asi->source->Play())  // 检查返回值
+                    {
+                        // 播放失败，释放音源
+                        ToMute(asi);
+                    }
+                }
+                else
+                {
+                    // 用户不希望继续播放
+                    ToMute(asi);
+                }
             }
         }
 
@@ -256,12 +255,17 @@ namespace hgl
 
             if(asi->last_pos!=asi->cur_pos)         //坐标不一样了
             {
-                asi->move_speed=length(asi->last_pos,asi->cur_pos)/(asi->cur_time-asi->last_time);
-                //根据离收听者的距离和速度进行多普勒调整
+                // 检查时间差，避免除零
+                double time_diff = asi->cur_time - asi->last_time;
+                if(time_diff > 0)
+                {
+                    asi->move_speed=length(asi->last_pos,asi->cur_pos)/time_diff;
+                    //根据离收听者的距离和速度进行多普勒调整
 
 //                 shift = DOPPLER_FACTOR * freq * (DOPPLER_VELOCITY - l.velocity) / (DOPPLER_VELOCITY + s.velocity)
 
-                asi->source->SetDopplerVelocity(asi->move_speed);       //由于计算未理清，暂用move_speed代替
+                    asi->source->SetDopplerVelocity(asi->move_speed);       //由于计算未理清，暂用move_speed代替
+                }
             }
 
             if(cur_time>asi->cur_time)          //更新时间和坐标

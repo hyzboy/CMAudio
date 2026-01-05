@@ -61,6 +61,33 @@ namespace hgl
     public:
 
         /**
+         * 构造函数：初始化所有成员变量
+         */
+        AudioSourceItem()
+            : buffer(nullptr)
+            , loop(false)
+            , gain(1.0f)
+            , distance_model(0)
+            , rolloff_factor(1.0f)
+            , doppler_factor(0.0f)
+            , ref_distance(1.0f)
+            , max_distance(10000.0f)
+            , start_play_time(0)
+            , is_play(false)
+            , position_initialized(false)
+            , last_time(0)
+            , cur_time(0)
+            , move_speed(0)
+            , last_gain(0)
+            , source(nullptr)
+        {
+            velocity = Vector3f(0, 0, 0);
+            direction = Vector3f(0, 0, 0);
+            last_pos = Vector3f(0, 0, 0);
+            cur_pos = Vector3f(0, 0, 0);
+        }
+
+        /**
          * 请求播放这个音源
          * @param play_time 开播时间(默认为0，表示自能听到后再响)
          */
@@ -153,7 +180,11 @@ namespace hgl
         AudioScene(int max_source,AudioListener *al);                                               ///<构造函数(指定最大音源数)
         virtual ~AudioScene()=default;                                                              ///<析构函数
 
-                void                SetListener(AudioListener *al){listener=al;}                    ///<設置收聽者
+                void                SetListener(AudioListener *al)                                 ///<設置收聽者
+                {
+                    if(al)  // 只有非空时才设置
+                        listener=al;
+                }
 
                 /**
                  * 设定距离场数据，无预设单位，按自行使用单位设定即可。但后期坐标等数据单位需与次相同
