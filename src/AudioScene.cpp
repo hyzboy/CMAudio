@@ -251,20 +251,23 @@ namespace hgl
 
         if(asi->doppler_factor>0)                   //需要多普勒效果
         {
-//             double shift=0;
-
             if(asi->last_pos!=asi->cur_pos)         //坐标不一样了
             {
                 // 检查时间差，避免除零
                 double time_diff = asi->cur_time - asi->last_time;
                 if(time_diff > 0)
                 {
-                    asi->move_speed=length(asi->last_pos,asi->cur_pos)/time_diff;
-                    //根据离收听者的距离和速度进行多普勒调整
-
-//                 shift = DOPPLER_FACTOR * freq * (DOPPLER_VELOCITY - l.velocity) / (DOPPLER_VELOCITY + s.velocity)
-
-                    asi->source->SetDopplerVelocity(asi->move_speed);       //由于计算未理清，暂用move_speed代替
+                    // 计算音源的速度矢量
+                    Vector3f velocity;
+                    velocity.x = (asi->cur_pos.x - asi->last_pos.x) / time_diff;
+                    velocity.y = (asi->cur_pos.y - asi->last_pos.y) / time_diff;
+                    velocity.z = (asi->cur_pos.z - asi->last_pos.z) / time_diff;
+                    
+                    // 设置矢量速度（OpenAL会自动计算多普勒效果）
+                    asi->source->SetVelocity(velocity);
+                    
+                    // 计算标量速度用于记录
+                    asi->move_speed = length(asi->last_pos, asi->cur_pos) / time_diff;
                 }
             }
 
