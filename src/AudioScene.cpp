@@ -92,32 +92,26 @@ namespace hgl
         reverb_enabled=false;
     }
 
-    AudioSourceItem *AudioScene::Create(AudioBuffer *buf,
-                                        const Vector3f &pos,
-                                        const float &gain,
-                                        uint distance_model,
-                                        float rolloff_factor,
-                                        bool loop,
-                                        float doppler_factor,
-                                        float air_absorption_factor)
+    AudioSourceItem *AudioScene::Create(const AudioSourceConfig &config)
     {
-        if(!buf)
+        if(!config.buffer)
             return(nullptr);
 
-        // 使用默认距离模型（如果为0）
-        uint dist_model = (distance_model == 0) ? AL_INVERSE_DISTANCE_CLAMPED : distance_model;
+        // 使用场景的默认距离参数更新配置
+        AudioSourceConfig finalConfig = config;
         
-        // 所有参数通过构造函数设置，保证API一致性
-        AudioSourceItem *asi = new AudioSourceItem(buf, 
-                                                   pos, 
-                                                   gain,
-                                                   dist_model,
-                                                   rolloff_factor,
-                                                   ref_distance,
-                                                   max_distance,
-                                                   loop,
-                                                   doppler_factor,
-                                                   air_absorption_factor);
+        // 如果配置中的距离参数使用了结构体默认值，则使用场景的默认值
+        if(finalConfig.ref_distance == 1.0f && ref_distance != 1.0f)
+            finalConfig.ref_distance = ref_distance;
+        if(finalConfig.max_distance == 10000.0f && max_distance != 10000.0f)
+            finalConfig.max_distance = max_distance;
+        
+        // 如果 distance_model 为 0，使用默认的衰减模型
+        if(finalConfig.distance_model == 0)
+            finalConfig.distance_model = AL_INVERSE_DISTANCE_CLAMPED;
+        
+        // 使用最终的配置结构体创建音源
+        AudioSourceItem *asi = new AudioSourceItem(finalConfig);
 
         return asi;
     }

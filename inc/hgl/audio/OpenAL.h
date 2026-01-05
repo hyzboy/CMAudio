@@ -7,7 +7,7 @@
 //          版本: 1.2
 // 对应OpenAL版本: 1.1
 //       对应语言: C/C++
-//    对应操作系统: Windows,MacOSX,iOS,Linux,BSD,Android
+//    对应操作系统: Windows,macOS,iOS,Linux,BSD,Android
 //
 // 第一版编写时间: 2003年10月5日
 // 当前版完成时间: 2026年1月05日
