@@ -1,5 +1,19 @@
-﻿file(GLOB CM_OPENAL_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/*.*)
-file(GLOB CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/*.*)
+﻿set(CM_OPENAL_HEADER    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/al.h
+                        ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/alc.h
+                        ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/efx.h
+                        ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/efx-creative.h
+                        ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/xram.h)
+
+set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManage.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioPlayer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioScene.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioSource.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ConeAngle.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Listener.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
                         alc.cpp
