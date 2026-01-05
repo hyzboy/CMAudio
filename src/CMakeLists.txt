@@ -27,6 +27,7 @@ set(CM_AUDIO_SOURCE
     AudioDecode.cpp
     AudioManager.cpp
     SpatialAudioWorld.cpp
+    ReverbPreset.cpp
     AudioPlayer.cpp
     AudioSource.cpp
     Listener.cpp)

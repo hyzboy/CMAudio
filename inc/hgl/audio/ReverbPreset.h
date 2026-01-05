@@ -1,13 +1,13 @@
 #pragma once
 
-#include<hgl/type/String.h>
+#include<hgl/type/EnumUtil.h>
 
 namespace hgl
 {
     /**
      * 混响预设枚举 - 包含所有 113 个 OpenAL Soft 官方预设
      */
-    enum class ReverbPreset
+    enum class AudioReverbPreset
     {
         Generic,                    ///< 通用
         Paddedcell,                 ///< 带衬垫的单元
@@ -129,34 +129,37 @@ namespace hgl
     /**
      * 混响预设属性
      */
-    struct ReverbPresetProperties
+    struct AudioReverbPresetProperties
     {
         u8char name_cn[32];          ///< 中文名称
         u8char name_en[32];          ///< 英文名称
         
-        float Density;               ///< 密度
-        float Diffusion;             ///< 扩散
-        float Gain;                  ///< 增益
-        float GainHF;                ///< 高频增益
-        float GainLF;                ///< 低频增益
-        float DecayTime;             ///< 衰减时间（秒）
-        float DecayHFRatio;          ///< 高频衰减比
-        float DecayLFRatio;          ///< 低频衰减比
-        float ReflectionsGain;       ///< 初期反射增益
-        float ReflectionsDelay;      ///< 初期反射延迟（秒）
-        float ReflectionsPan[3];     ///< 初期反射声相（XYZ）
-        float LateReverbGain;        ///< 后期混响增益
-        float LateReverbDelay;       ///< 后期混响延迟（秒）
-        float LateReverbPan[3];      ///< 后期混响声相（XYZ）
-        float EchoTime;              ///< 回声时间（秒）
-        float EchoDepth;             ///< 回声深度
-        float ModulationTime;        ///< 调制时间（秒）
-        float ModulationDepth;       ///< 调制深度
-        float AirAbsorptionGainHF;   ///< 高频空气吸收增益
-        float HFReference;           ///< 高频参考值
-        float LFReference;           ///< 低频参考值
-        float RoomRolloffFactor;     ///< 房间滚降因子
-        int   DecayHFLimit;          ///< 高频衰减限制（布尔表示为0/1）
+        struct
+        {
+            float Density;               ///< 密度
+            float Diffusion;             ///< 扩散
+            float Gain;                  ///< 增益
+            float GainHF;                ///< 高频增益
+            float GainLF;                ///< 低频增益
+            float DecayTime;             ///< 衰减时间（秒）
+            float DecayHFRatio;          ///< 高频衰减比
+            float DecayLFRatio;          ///< 低频衰减比
+            float ReflectionsGain;       ///< 初期反射增益
+            float ReflectionsDelay;      ///< 初期反射延迟（秒）
+            float ReflectionsPan[3];     ///< 初期反射声相（XYZ）
+            float LateReverbGain;        ///< 后期混响增益
+            float LateReverbDelay;       ///< 后期混响延迟（秒）
+            float LateReverbPan[3];      ///< 后期混响声相（XYZ）
+            float EchoTime;              ///< 回声时间（秒）
+            float EchoDepth;             ///< 回声深度
+            float ModulationTime;        ///< 调制时间（秒）
+            float ModulationDepth;       ///< 调制深度
+            float AirAbsorptionGainHF;   ///< 高频空气吸收增益
+            float HFReference;           ///< 高频参考值
+            float LFReference;           ///< 低频参考值
+            float RoomRolloffFactor;     ///< 房间滚降因子
+            int   DecayHFLimit;          ///< 高频衰减限制（布尔表示为0/1）
+        };
     };
 
     /**
@@ -164,10 +167,10 @@ namespace hgl
      * @param preset 预设枚举值
      * @return 预设属性指针，如果预设无效则返回nullptr
      */
-    const ReverbPresetProperties *GetReverbPresetProperties(ReverbPreset preset);
+    const AudioReverbPresetProperties *GetAudioReverbPresetProperties(AudioReverbPreset preset);
     
     /**
      * 获取混响预设数量
      */
-    int GetReverbPresetCount();
+    int GetAudioReverbPresetCount();
 }//namespace hgl

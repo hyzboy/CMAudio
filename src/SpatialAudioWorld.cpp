@@ -416,7 +416,7 @@ namespace hgl
         }
 
         // 设置默认混响参数（通用预设）
-        SetReverbPreset(ReverbPreset::Generic);
+        SetReverbPreset(AudioReverbPreset::Generic);
 
         reverb_enabled = true;
         return true;
@@ -448,7 +448,7 @@ namespace hgl
      * 将混响预设应用到效果
      * @param preset 混响预设属性结构
      */
-    void SpatialAudioWorld::ApplyReverbPreset(const ReverbPresetProperties &preset)
+    void SpatialAudioWorld::ApplyReverbPreset(const AudioReverbPresetProperties &preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return;
@@ -473,13 +473,13 @@ namespace hgl
      * @param preset 预设枚举值
      * @return 是否成功设置
      */
-    bool SpatialAudioWorld::SetReverbPreset(ReverbPreset preset)
+    bool SpatialAudioWorld::SetReverbPreset(AudioReverbPreset preset)
     {
         if(!alEffectf || reverb_effect == 0)
             return false;
 
         // 获取预设属性
-        const ReverbPresetProperties *props = GetReverbPresetProperties(preset);
+        const AudioReverbPresetProperties *props = GetAudioReverbPresetProperties(preset);
         if(!props)
             return false;
 

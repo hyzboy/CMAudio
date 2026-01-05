@@ -177,7 +177,7 @@ namespace hgl
 
         bool UpdateSource(SpatialAudioSource *);                                                    ///< 刷新音源处理
         
-        void ApplyReverbPreset(const ReverbPresetProperties &);                                     ///< 应用混响预设
+        void ApplyReverbPreset(const AudioReverbPresetProperties &);                                     ///< 应用混响预设
 
     public:     // 事件
 
@@ -218,7 +218,7 @@ namespace hgl
 
                 bool                InitReverb();                                                   ///< 初始化混响系统
                 void                CloseReverb();                                                  ///< 关闭混响系统
-                bool                SetReverbPreset(ReverbPreset preset);                           ///< 设置混响预设(使用 OpenAL Soft 官方预设)
+                bool                SetReverbPreset(AudioReverbPreset preset);                           ///< 设置混响预设(使用 OpenAL Soft 官方预设)
                 bool                EnableReverb(bool enable);                                      ///< 启用/禁用混响
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
