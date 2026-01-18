@@ -251,7 +251,7 @@ namespace hgl
 
             alSourceQueueBuffers(source,count,buffer);
             alSourcePlay(source);
-            start_time=GetPreciseTime();
+            start_time=GetTimeSec();
 
             ps=PlayState::Play;
             return(true);
@@ -351,7 +351,7 @@ namespace hgl
 
         if(processed<=0)return(true);
 
-        const PreciseTime cur_time=GetPreciseTime();
+        const PreciseTime cur_time=GetTimeSec();
 
         if(cur_time-start_time<fade_in_time)        //淡入时间
         {

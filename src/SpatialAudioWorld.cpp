@@ -332,7 +332,7 @@ namespace hgl
         if(ct!=0)
             cur_time=ct;
         else
-            cur_time=GetPreciseTime();
+            cur_time=GetTimeSec();
 
         float new_gain;
         int hear_count=0;
