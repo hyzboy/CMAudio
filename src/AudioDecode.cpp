@@ -41,6 +41,19 @@ namespace hgl
         return false;
     }
 
+    bool GetAudioMidiChannelInterface(const OSString &name,AudioMidiChannelInterface *amchi)
+    {
+        PlugIn *pi=audio_plug_in.LoadPlugin(name);
+
+        if(!pi)
+            return(false);
+
+        if(amchi)
+            return pi->GetInterface(5,amchi);
+
+        return false;
+    }
+
     void CloseAudioPlugIns()
     {
         audio_plug_in.Clear();
