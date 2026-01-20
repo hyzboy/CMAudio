@@ -95,7 +95,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // TinySoundFont outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
-    *freq = 44100;
+    *freq = sample_rate;
 
     // Calculate total time in seconds
     double total_time = 0.0;
@@ -106,7 +106,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     }
     total_time /= 1000.0; // Convert ms to seconds
     
-    size_t total_samples = (size_t)(total_time * 44100);
+    size_t total_samples = (size_t)(total_time * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
 
@@ -124,7 +124,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     while (out_size < pcm_total_bytes && msg)
     {
         // Process MIDI messages up to next render time
-        double next_time = current_time + (render_samples / 44100.0 * 1000.0); // in ms
+        double next_time = current_time + (render_samples / (double)sample_rate * 1000.0); // in ms
         
         while (msg && msg->time <= next_time)
         {
@@ -197,7 +197,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
-    stream->sample_rate = 44100;
+    stream->sample_rate = sample_rate;
     stream->current_time = 0.0;
     
     stream->midi = tml_load_memory(stream->midi_data, stream->midi_size);
@@ -249,7 +249,7 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
     size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
     
     // Process MIDI messages
-    double next_time = stream->current_time + (samples / 44100.0 * 1000.0); // in ms
+    double next_time = stream->current_time + (samples / (double)stream->sample_rate * 1000.0); // in ms
     
     while (stream->current_msg && stream->current_msg->time <= next_time)
     {

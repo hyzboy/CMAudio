@@ -64,7 +64,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // WildMIDI always outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
-    *freq = 44100;
+    *freq = sample_rate;
 
     // Calculate approximate total size based on MIDI duration
     unsigned long approx_samples = info->approx_total_samples;
@@ -142,7 +142,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 
     // WildMIDI always outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
-    stream->sample_rate = 44100;
+    stream->sample_rate = sample_rate;
     *rate = stream->sample_rate;
 
     // Calculate total time from approximate total samples

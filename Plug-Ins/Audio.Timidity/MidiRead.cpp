@@ -57,7 +57,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Libtimidity outputs stereo 16-bit by default
     *format = AL_FORMAT_STEREO16;
-    *freq = 44100;
+    *freq = sample_rate;
 
     // Get song length in samples
     mid_song_start(song);
@@ -119,7 +119,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
-    stream->sample_rate = 44100;
+    stream->sample_rate = sample_rate;
     
     stream->song = mid_song_load_dls(stream->midi_data, stream->midi_size, 
                                      stream->sample_rate, MID_AUDIO_S16LSB, 2, 

@@ -101,12 +101,12 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // OPNMIDI outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
-    *freq = 44100;
+    *freq = sample_rate;
 
     // Get total time
     double total_time = opn2_totalTimeLength(device);
     
-    size_t total_samples = (size_t)(total_time * 44100);
+    size_t total_samples = (size_t)(total_time * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
 
@@ -307,7 +307,7 @@ void SetChipCount(int count)
     
     if (opnmidi_initialized && g_opn_device)
     {
-        opn2_setNumChips(g_opn_device, count);
+        opn2_setNumChips(g_opn_device, chip_count);
     }
 }
 

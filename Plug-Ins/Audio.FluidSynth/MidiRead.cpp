@@ -125,14 +125,14 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // FluidSynth outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
-    *freq = 44100;
+    *freq = sample_rate;
 
     // Get total playing time (in milliseconds)
     int total_ticks = fluid_player_get_total_ticks(player);
     int tempo = fluid_player_get_bpm(player);
     double total_time_sec = (double)total_ticks * 60.0 / (tempo * 1000.0);
     
-    size_t total_samples = (size_t)(total_time_sec * 44100);
+    size_t total_samples = (size_t)(total_time_sec * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
 
@@ -193,7 +193,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
-    stream->sample_rate = 44100;
+    stream->sample_rate = sample_rate;
     stream->playing = false;
     
     stream->player = new_fluid_player(fluid_synth);
