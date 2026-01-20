@@ -48,7 +48,6 @@ namespace hgl
     public:
 
         bool loop;                                          ///< 是否循环播放
-//         float min_gain,max_gain;
         float gain;                                         ///< 音量增益
 
         uint distance_model;                                ///< 音量衰减模型
@@ -66,7 +65,6 @@ namespace hgl
 
         double start_play_time;                             ///< 开始播放时间
         bool is_play;                                       ///< 是否需要播放
-        bool position_initialized;                          ///< 位置是否已初始化
 
         Vector3f last_pos;
         double last_time;
@@ -98,7 +96,6 @@ namespace hgl
             , max_distance(config.max_distance)
             , start_play_time(0)
             , is_play(false)
-            , position_initialized(true)  // 构造时位置已初始化
             , last_time(0)
             , cur_time(0)
             , move_speed(0)
@@ -149,6 +146,18 @@ namespace hgl
 
     /**
      * 空间音频场景管理
+     * 
+     * 内存管理说明：
+     * - SpatialAudioSource 对象由 Create() 使用 new 分配，由 Delete() 或 Clear() 释放
+     * - AudioSource 对象通过 source_pool 对象池管理，自动复用
+     * - 调用者负责管理 AudioBuffer 和 AudioListener 对象的生命周期
+     * 
+     * 线程安全说明：
+     * - 所有公共 API 方法（Create、Delete、Clear、Update、SetListener、SetDistance、
+     *   InitReverb、CloseReverb、SetReverbPreset、EnableReverb）都是线程安全的
+     * - 多线程环境下可以安全地从不同线程调用这些方法
+     * - SpatialAudioSource 对象的成员方法（Play、Stop、MoveTo）不是线程安全的，
+     *   应该在持有适当锁的情况下调用，或确保单线程访问
      */
     class SpatialAudioWorld                                                                         ///< 空间音频场景管理
     {
@@ -197,12 +206,16 @@ namespace hgl
     public:
 
         SpatialAudioWorld(int max_source,AudioListener *al);                                        ///< 构造函数(指定最大音源数)
-        virtual ~SpatialAudioWorld()=default;                                                       ///< 析构函数
+        virtual ~SpatialAudioWorld();                                                               ///< 析构函数
 
                 void                SetListener(AudioListener *al)                                  ///< 设置监听者
                 {
                     if(al)  // 仅在非空时设置
+                    {
+                        scene_mutex.Lock();
                         listener=al;
+                        scene_mutex.Unlock();
+                    }
                 }
 
                 /**
@@ -212,8 +225,10 @@ namespace hgl
                  */
                 void                SetDistance(const float &rd,const float &md)                    ///< 设定参考距离
                 {
+                    scene_mutex.Lock();
                     ref_distance=rd;
                     max_distance=md;
+                    scene_mutex.Unlock();
                 }
 
                 bool                InitReverb();                                                   ///< 初始化混响系统
