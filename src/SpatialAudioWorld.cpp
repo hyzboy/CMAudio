@@ -54,20 +54,12 @@ namespace hgl
             // 使用 std::clamp 进行边界限定
             distance = std::clamp(distance, s->ref_distance, s->max_distance);
 
-            // 额外检查：确保分母不为零（虽然前面已验证，但增加安全性）
-            if(s->max_distance <= s->ref_distance)
-                return 0.0f;
-
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_LINEAR_DISTANCE)
         {
-            // 额外检查：确保分母不为零
-            if(s->max_distance <= s->ref_distance)
-                return 0.0f;
-
             distance = std::min(distance, s->max_distance);
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
@@ -142,6 +134,7 @@ namespace hgl
         // 使用最终的配置结构体创建音源
         SpatialAudioSource *asi = new SpatialAudioSource(finalConfig);
 
+        // 在解锁前添加到列表，确保原子性
         source_list.Add(asi);
 
         scene_mutex.Unlock();
@@ -427,10 +420,6 @@ namespace hgl
             scene_mutex.Unlock();
             return false;  // EFX 不可用
         }
-
-        // 初始化为0，避免生成失败时产生无效句柄
-        aux_effect_slot=0;
-        reverb_effect=0;
 
         // 创建辅助效果槽
         alGenAuxiliaryEffectSlots(1, &aux_effect_slot);
