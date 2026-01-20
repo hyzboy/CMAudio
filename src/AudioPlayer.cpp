@@ -467,7 +467,7 @@ namespace hgl
 
             lock.Unlock();
 
-            WaitTime(wait_time);      //以让线程空出CPU时间片
+            SleepSecond(wait_time);      //以让线程空出CPU时间片
         }
     }
 
