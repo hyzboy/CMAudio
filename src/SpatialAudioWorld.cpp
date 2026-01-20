@@ -13,6 +13,11 @@ namespace hgl
 {
     using namespace openal;
 
+    // 常量定义
+    static constexpr float DEFAULT_REF_DISTANCE = 1.0f;
+    static constexpr float DEFAULT_MAX_DISTANCE = 10000.0f;
+    static constexpr double MIN_TIME_DIFF = 0.0001;  // 避免除以非常小的数导致数值不稳定
+
     /**
      * 计算指定音源相对于监听者的音量
      */
@@ -22,9 +27,9 @@ namespace hgl
 
         if(s->gain<=0)return(0);        // 本身音量为0
         
-        // 添加参数验证，避免除以零
-        if(s->ref_distance<=0.0f)return(1);
-        if(s->max_distance<=s->ref_distance)return(1);
+        // 参数验证：无效的距离参数返回0（静音）而非1，避免掩盖配置错误
+        if(s->ref_distance<=0.0f)return(0);
+        if(s->max_distance<=s->ref_distance)return(0);
 
         float distance;
 
@@ -49,12 +54,20 @@ namespace hgl
             // 使用 std::clamp 进行边界限定
             distance = std::clamp(distance, s->ref_distance, s->max_distance);
 
+            // 额外检查：确保分母不为零（虽然前面已验证，但增加安全性）
+            if(s->max_distance <= s->ref_distance)
+                return 0.0f;
+
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
         if(s->distance_model==AL_LINEAR_DISTANCE)
         {
+            // 额外检查：确保分母不为零
+            if(s->max_distance <= s->ref_distance)
+                return 0.0f;
+
             distance = std::min(distance, s->max_distance);
             float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
@@ -87,8 +100,8 @@ namespace hgl
 
         listener=al;
 
-        ref_distance=1;
-        max_distance=10000;
+        ref_distance=DEFAULT_REF_DISTANCE;
+        max_distance=DEFAULT_MAX_DISTANCE;
         
         // 初始化混响相关变量
         aux_effect_slot=0;
@@ -96,18 +109,30 @@ namespace hgl
         reverb_enabled=false;
     }
 
+    /**
+     * 音频场景管理类析构函数
+     * 清理所有资源，包括音源和OpenAL混响效果
+     */
+    SpatialAudioWorld::~SpatialAudioWorld()
+    {
+        CloseReverb();  // 显式释放OpenAL混响资源
+        Clear();        // 释放所有空间音源
+    }
+
     SpatialAudioSource *SpatialAudioWorld::Create(const SpatialAudioSourceConfig &config)
     {
         if(!config.buffer)
             return(nullptr);
 
+        scene_mutex.Lock();
+
         // 使用场景的默认距离参数更新配置
         SpatialAudioSourceConfig finalConfig = config;
         
         // 如果配置中的距离参数为结构体默认值，则使用场景的默认值
-        if(finalConfig.ref_distance == 1.0f && ref_distance != 1.0f)
+        if(finalConfig.ref_distance == DEFAULT_REF_DISTANCE && ref_distance != DEFAULT_REF_DISTANCE)
             finalConfig.ref_distance = ref_distance;
-        if(finalConfig.max_distance == 10000.0f && max_distance != 10000.0f)
+        if(finalConfig.max_distance == DEFAULT_MAX_DISTANCE && max_distance != DEFAULT_MAX_DISTANCE)
             finalConfig.max_distance = max_distance;
         
         // 如果 distance_model 为 0，使用默认的衰减模型
@@ -116,6 +141,10 @@ namespace hgl
         
         // 使用最终的配置结构体创建音源
         SpatialAudioSource *asi = new SpatialAudioSource(finalConfig);
+
+        source_list.Add(asi);
+
+        scene_mutex.Unlock();
 
         return asi;
     }
@@ -185,7 +214,7 @@ namespace hgl
         double time_off=0;
 
         if(asi->start_play_time>0
-         &&asi->start_play_time<cur_time)
+         &&asi->start_play_time<=cur_time)      // 修复：使用 <= 以处理精确时间匹配
         {
             time_off=cur_time-asi->start_play_time;
 
@@ -277,9 +306,9 @@ namespace hgl
         {
             if(asi->last_pos!=asi->cur_pos)         // 位置发生变化
             {
-                // 检查时间差，避免除以零
+                // 检查时间差，避免除以零或数值不稳定
                 double time_diff = asi->cur_time - asi->last_time;
-                if(time_diff > 0)
+                if(time_diff > MIN_TIME_DIFF)       // 使用最小时间阈值避免数值问题
                 {
                     // 计算音源的速度矢量
                     Vector3f velocity;
@@ -391,19 +420,33 @@ namespace hgl
      */
     bool SpatialAudioWorld::InitReverb()
     {
+        scene_mutex.Lock();
+
         if(!alGenAuxiliaryEffectSlots || !alGenEffects)
+        {
+            scene_mutex.Unlock();
             return false;  // EFX 不可用
+        }
+
+        // 初始化为0，避免生成失败时产生无效句柄
+        aux_effect_slot=0;
+        reverb_effect=0;
 
         // 创建辅助效果槽
         alGenAuxiliaryEffectSlots(1, &aux_effect_slot);
         if(alGetError() != AL_NO_ERROR)
+        {
+            scene_mutex.Unlock();
             return false;
+        }
 
         // 创建混响效果
         alGenEffects(1, &reverb_effect);
         if(alGetError() != AL_NO_ERROR)
         {
             alDeleteAuxiliaryEffectSlots(1, &aux_effect_slot);
+            aux_effect_slot = 0;
+            scene_mutex.Unlock();
             return false;
         }
 
@@ -412,6 +455,7 @@ namespace hgl
         if(alGetError() != AL_NO_ERROR)
         {
             CloseReverb();
+            scene_mutex.Unlock();
             return false;
         }
 
@@ -419,6 +463,8 @@ namespace hgl
         SetReverbPreset(AudioReverbPreset::Generic);
 
         reverb_enabled = true;
+        
+        scene_mutex.Unlock();
         return true;
     }
 
@@ -427,6 +473,8 @@ namespace hgl
      */
     void SpatialAudioWorld::CloseReverb()
     {
+        scene_mutex.Lock();
+        
         reverb_enabled = false;
 
         if(reverb_effect != 0)
@@ -442,6 +490,8 @@ namespace hgl
                 alDeleteAuxiliaryEffectSlots(1, &aux_effect_slot);
             aux_effect_slot = 0;
         }
+        
+        scene_mutex.Unlock();
     }
 
     /**
@@ -475,13 +525,21 @@ namespace hgl
      */
     bool SpatialAudioWorld::SetReverbPreset(AudioReverbPreset preset)
     {
+        scene_mutex.Lock();
+        
         if(!alEffectf || reverb_effect == 0)
+        {
+            scene_mutex.Unlock();
             return false;
+        }
 
         // 获取预设属性
         const AudioReverbPresetProperties *props = GetAudioReverbPresetProperties(preset);
         if(!props)
+        {
+            scene_mutex.Unlock();
             return false;
+        }
 
         // 应用预设
         ApplyReverbPreset(*props);
@@ -490,7 +548,10 @@ namespace hgl
         if(alAuxiliaryEffectSloti)
             alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, reverb_effect);
 
-        return (alGetError() == AL_NO_ERROR);
+        bool result = (alGetError() == AL_NO_ERROR);
+        
+        scene_mutex.Unlock();
+        return result;
     }
 
     /**
@@ -500,8 +561,13 @@ namespace hgl
      */
     bool SpatialAudioWorld::EnableReverb(bool enable)
     {
+        scene_mutex.Lock();
+        
         if(aux_effect_slot == 0)
+        {
+            scene_mutex.Unlock();
             return false;
+        }
 
         reverb_enabled = enable;
 
@@ -515,6 +581,9 @@ namespace hgl
             alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, reverb_effect);
         }
 
-        return (alGetError() == AL_NO_ERROR);
+        bool result = (alGetError() == AL_NO_ERROR);
+        
+        scene_mutex.Unlock();
+        return result;
     }
 }//namespace hgl

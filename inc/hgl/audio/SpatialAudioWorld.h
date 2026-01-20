@@ -48,7 +48,6 @@ namespace hgl
     public:
 
         bool loop;                                          ///< 是否循环播放
-//         float min_gain,max_gain;
         float gain;                                         ///< 音量增益
 
         uint distance_model;                                ///< 音量衰减模型
@@ -66,7 +65,6 @@ namespace hgl
 
         double start_play_time;                             ///< 开始播放时间
         bool is_play;                                       ///< 是否需要播放
-        bool position_initialized;                          ///< 位置是否已初始化
 
         Vector3f last_pos;
         double last_time;
@@ -98,7 +96,6 @@ namespace hgl
             , max_distance(config.max_distance)
             , start_play_time(0)
             , is_play(false)
-            , position_initialized(true)  // 构造时位置已初始化
             , last_time(0)
             , cur_time(0)
             , move_speed(0)
@@ -197,7 +194,7 @@ namespace hgl
     public:
 
         SpatialAudioWorld(int max_source,AudioListener *al);                                        ///< 构造函数(指定最大音源数)
-        virtual ~SpatialAudioWorld()=default;                                                       ///< 析构函数
+        virtual ~SpatialAudioWorld();                                                               ///< 析构函数
 
                 void                SetListener(AudioListener *al)                                  ///< 设置监听者
                 {
