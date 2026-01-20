@@ -116,7 +116,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     // Get total playing time (in milliseconds)
     int total_ticks = fluid_player_get_total_ticks(player);
     int tempo = fluid_player_get_bpm(player);
-    double total_time_sec = (double)total_ticks / (tempo * 1000.0) * 60.0;
+    double total_time_sec = (double)total_ticks * 60.0 / (tempo * 1000.0);
     
     size_t total_samples = (size_t)(total_time_sec * 44100);
     const size_t total_stereo_samples = total_samples * 2; // stereo
@@ -204,7 +204,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     // Get total time
     int total_ticks = fluid_player_get_total_ticks(stream->player);
     int tempo = fluid_player_get_bpm(stream->player);
-    *total_time = (double)total_ticks / (tempo * 1000.0) * 60.0;
+    *total_time = (double)total_ticks * 60.0 / (tempo * 1000.0);
     
     // Start playback
     fluid_player_play(stream->player);
