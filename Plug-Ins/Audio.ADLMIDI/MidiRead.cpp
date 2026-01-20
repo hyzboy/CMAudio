@@ -336,10 +336,14 @@ const char* GetDefaultBank()
     if (path)
         return path;
     
-    // Return bank ID as description
-    static char bank_desc[64];
-    snprintf(bank_desc, sizeof(bank_desc), "Built-in Bank ID %d", bank_id);
-    return bank_desc;
+    // Return built-in bank description
+    // Note: This returns a constant string, which is thread-safe
+    switch (bank_id)
+    {
+        case 0: return "Built-in Bank 0 (Generic)";
+        case 58: return "Built-in Bank 58 (DMX OP2)";
+        default: return "Built-in Bank (Custom ID)";
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
