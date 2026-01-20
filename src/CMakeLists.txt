@@ -8,6 +8,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioPlayer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIInstrument.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIPlayer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIOrchestraPlayer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SpatialAudioWorld.h
@@ -31,6 +32,7 @@ set(CM_AUDIO_SOURCE
     SpatialAudioWorld.cpp
     ReverbPreset.cpp
     AudioPlayer.cpp
+    MIDIInstrument.cpp
     MIDIPlayer.cpp
     MIDIOrchestraPlayer.cpp
     AudioSource.cpp
