@@ -50,18 +50,19 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Get song length in samples
     mid_song_start(song);
-    size_t total_samples = mid_song_get_total_time(song) * 44100 / 1000; // Convert ms to samples
+    size_t total_time_ms = mid_song_get_total_time(song);
+    size_t total_samples = (total_time_ms * 44100) / 1000; // Convert ms to samples
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
 
     int16_t *ptr = new int16_t[total_stereo_samples];
-    int out_size = 0;
+    size_t out_size = 0;
     int read_size;
 
     // Read all MIDI data converted to PCM
-    while (out_size < (int)pcm_total_bytes)
+    while (out_size < pcm_total_bytes)
     {
-        read_size = mid_song_read_wave(song, (void*)((char*)ptr + out_size), pcm_total_bytes - out_size);
+        read_size = mid_song_read_wave(song, (char*)ptr + out_size, pcm_total_bytes - out_size);
         
         if (read_size <= 0)
             break;
@@ -69,7 +70,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
         out_size += read_size;
     }
 
-    *size = out_size;
+    *size = (int)out_size;
     *data = ptr;
 
     mid_song_free(song);

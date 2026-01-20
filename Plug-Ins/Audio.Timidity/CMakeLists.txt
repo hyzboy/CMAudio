@@ -18,7 +18,8 @@ IF(AUDIO_TIMIDITY_INCLUDE_DIR AND AUDIO_TIMIDITY_LIBRARY)
     MESSAGE(STATUS "Found libtimidity: ${AUDIO_TIMIDITY_LIBRARY}")
     INCLUDE_DIRECTORIES(${AUDIO_TIMIDITY_INCLUDE_DIR})
     
-    add_cm_plugin(CMP.Audio.Timidity "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_TIMIDITY_LIBRARY})
+    # Use the same plugin name as WildMIDI so only one MIDI plugin is active
+    add_cm_plugin(CMP.Audio.MIDI "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_TIMIDITY_LIBRARY})
 ELSE()
     MESSAGE(STATUS "libtimidity not found. Timidity MIDI plugin will not be built.")
     MESSAGE(STATUS "  To enable Timidity MIDI support, install libtimidity:")
