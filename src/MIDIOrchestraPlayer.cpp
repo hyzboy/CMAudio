@@ -236,8 +236,9 @@ namespace hgl
 
     bool MIDIOrchestraPlayer::LoadMIDI(const os_char *filename)
     {
-        // Force MIDI decoder
-        const os_char *plugin_name=OS_TEXT("MIDI");
+        // MIDIOrchestraPlayer requires FluidSynth for optimal per-channel rendering
+        // FluidSynth provides the best audio quality and native multi-channel support
+        const os_char *plugin_name=OS_TEXT("FluidSynth");
 
         decode=new AudioPlugInInterface;
 
@@ -246,7 +247,8 @@ namespace hgl
             delete decode;
             decode=nullptr;
 
-            LogError(OS_TEXT("Failed to load MIDI decode plugin: MIDI"));
+            LogError(OS_TEXT("Failed to load FluidSynth plugin - MIDIOrchestraPlayer requires FluidSynth for optimal multi-channel MIDI rendering"));
+            LogError(OS_TEXT("Please ensure FluidSynth plugin (Audio.FluidSynth) is installed"));
             return(false);
         }
 
@@ -257,11 +259,12 @@ namespace hgl
             LogWarning(OS_TEXT("MIDI config interface not available"));
         }
 
-        // Get MIDI channel interface
+        // Get MIDI channel interface - required for per-channel control
         midi_channels=GetAudioMidiChannelInterface(decode);
         if(!midi_channels)
         {
-            LogError(OS_TEXT("MIDI channel interface not available - required for orchestra player"));
+            LogError(OS_TEXT("MIDI channel interface not available - FluidSynth plugin may be outdated"));
+            LogError(OS_TEXT("MIDIOrchestraPlayer requires AudioMidiChannelInterface for per-channel rendering"));
             return(false);
         }
 

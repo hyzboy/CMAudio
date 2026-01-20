@@ -58,6 +58,13 @@ namespace hgl
     /**
     * 3D空间MIDI交响乐团播放器
     * 
+    * 依赖要求 / Dependencies:
+    * - 需要 FluidSynth 插件 (Audio.FluidSynth)
+    * - FluidSynth 提供最佳音质和完整的多通道分离支持
+    * 
+    * Requires FluidSynth plugin (Audio.FluidSynth)
+    * FluidSynth provides best audio quality and complete multi-channel separation
+    * 
     * 特性 / Features:
     * - 每个MIDI通道独立的AudioSource和3D位置
     * - 模拟真实乐队的空间布局

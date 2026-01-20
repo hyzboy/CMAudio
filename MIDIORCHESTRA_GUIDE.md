@@ -1,5 +1,49 @@
 # MIDIOrchestraPlayer使用指南 / MIDIOrchestraPlayer Usage Guide
 
+## 依赖要求 / Requirements
+
+**中文：**
+⚠️ **重要**: MIDIOrchestraPlayer 专门使用 FluidSynth 插件进行MIDI解码。
+
+FluidSynth 被锁定为唯一支持的解码器，原因如下：
+- 🎵 **最佳音质**: FluidSynth 提供专业级音频质量，特别适合交响乐模拟
+- 🎛️ **完整的多通道支持**: 原生支持per-channel渲染，无需workaround
+- ⚡ **高效的通道分离**: API层面直接支持独立通道解码
+- 🔧 **完整的AudioMidiChannelInterface实现**: 支持所有12个通道控制方法
+
+**安装FluidSynth插件：**
+```bash
+# Ubuntu/Debian
+sudo apt-get install libfluidsynth-dev fluid-soundfont-gm
+
+# 或从源码编译 Audio.FluidSynth 插件
+cd CMAudio/Plug-Ins/Audio.FluidSynth
+mkdir build && cd build
+cmake ..
+make && sudo make install
+```
+
+**English:**
+⚠️ **Important**: MIDIOrchestraPlayer exclusively uses the FluidSynth plugin for MIDI decoding.
+
+FluidSynth is locked as the only supported decoder for these reasons:
+- 🎵 **Best Audio Quality**: FluidSynth provides professional-grade audio quality, especially suitable for orchestra simulation
+- 🎛️ **Complete Multi-channel Support**: Native per-channel rendering without workarounds
+- ⚡ **Efficient Channel Separation**: Direct support for independent channel decoding at API level
+- 🔧 **Full AudioMidiChannelInterface Implementation**: Supports all 12 channel control methods
+
+**Installing FluidSynth Plugin:**
+```bash
+# Ubuntu/Debian
+sudo apt-get install libfluidsynth-dev fluid-soundfont-gm
+
+# Or build Audio.FluidSynth plugin from source
+cd CMAudio/Plug-Ins/Audio.FluidSynth
+mkdir build && cd build
+cmake ..
+make && sudo make install
+```
+
 ## 概述 / Overview
 
 **中文：**

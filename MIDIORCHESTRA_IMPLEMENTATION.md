@@ -1,5 +1,35 @@
 # MIDIOrchestraPlayer 实现总结 / Implementation Summary
 
+## 技术要求 / Technical Requirements
+
+**中文：**
+MIDIOrchestraPlayer 专门使用 **FluidSynth** 作为唯一的MIDI解码引擎。
+
+**为什么锁定FluidSynth？**
+1. **音质最优**: FluidSynth 的SoundFont合成提供专业级音质，远超其他开源MIDI库
+2. **完整的API支持**: FluidSynth API原生支持per-channel渲染，无需通过静音其他通道的workaround
+3. **高效的通道分离**: 可以直接对单个通道进行解码，不需要解码全部通道后再分离
+4. **成熟的生态**: FluidSynth有完整的`fluid_synth_*`系列API支持所有MIDI操作
+
+**与其他MIDI库的对比：**
+- TinySoundFont: 支持多通道但需要workaround，音质略逊
+- WildMIDI/Libtimidity: 缺少细粒度通道控制API
+- OPNMIDI/ADLMIDI: 主要用于芯片音乐模拟，不适合交响乐
+
+**English:**
+MIDIOrchestraPlayer exclusively uses **FluidSynth** as the only MIDI decoding engine.
+
+**Why Lock to FluidSynth?**
+1. **Best Audio Quality**: FluidSynth's SoundFont synthesis provides professional-grade audio quality, superior to other open-source MIDI libraries
+2. **Complete API Support**: FluidSynth API natively supports per-channel rendering without requiring workarounds like muting other channels
+3. **Efficient Channel Separation**: Can directly decode individual channels without decoding all channels first
+4. **Mature Ecosystem**: FluidSynth has complete `fluid_synth_*` API series supporting all MIDI operations
+
+**Comparison with Other MIDI Libraries:**
+- TinySoundFont: Supports multi-channel but requires workarounds, slightly lower audio quality
+- WildMIDI/Libtimidity: Lack fine-grained channel control APIs
+- OPNMIDI/ADLMIDI: Primarily for chip music emulation, not suitable for orchestra simulation
+
 ## 概述 / Overview
 
 **中文：** 
