@@ -57,14 +57,15 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Calculate approximate total size based on MIDI duration
     unsigned long approx_samples = info->approx_total_samples;
-    const int pcm_total_bytes = approx_samples * 2 * 2; // stereo, 16-bit
+    const size_t total_samples = approx_samples * 2; // stereo
+    const size_t pcm_total_bytes = total_samples * sizeof(int16_t);
 
-    int16_t *ptr = new int16_t[approx_samples * 2]; // stereo
+    int16_t *ptr = new int16_t[total_samples];
     int out_size = 0;
     int read_size;
 
     // Read all MIDI data converted to PCM
-    while (out_size < pcm_total_bytes)
+    while (out_size < (int)pcm_total_bytes)
     {
         read_size = WildMidi_GetOutput(handle, (int8_t*)((char*)ptr + out_size), pcm_total_bytes - out_size);
         
@@ -152,9 +153,11 @@ void CloseMIDI(void *ptr)
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    int result;
-
-    result = WildMidi_GetOutput(stream->handle, (int8_t*)data, buf_max);
+    
+    if (!stream || !stream->handle)
+        return 0;
+    
+    int result = WildMidi_GetOutput(stream->handle, (int8_t*)data, buf_max);
 
     if (result <= 0)
         return 0;
@@ -166,14 +169,20 @@ void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
-    // Close and reopen to ensure clean restart
+    if (!stream)
+        return;
+    
+    // Close current handle
     if (stream->handle)
     {
         WildMidi_Close(stream->handle);
         stream->handle = nullptr;
     }
     
+    // Reopen to ensure clean restart
     stream->handle = WildMidi_OpenBuffer(stream->midi_data, stream->midi_size);
+    
+    // Note: If reopen fails, handle will be nullptr and subsequent ReadMIDI calls will return 0
 }
 
 //--------------------------------------------------------------------------------------------------
