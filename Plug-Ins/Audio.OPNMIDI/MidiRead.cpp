@@ -288,8 +288,8 @@ void SetSampleRate(int rate)
 void SetPolyphony(int poly)
 {
     // OPNMIDI polyphony is controlled by chip count
-    // Each chip provides 6 channels, so chip_count = poly / 6
-    chip_count = (poly + 5) / 6;  // Round up
+    // Each chip provides 6 channels, use ceiling division
+    chip_count = (poly + 5) / 6;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
     

@@ -290,8 +290,8 @@ void SetSampleRate(int rate)
 void SetPolyphony(int poly)
 {
     // ADLMIDI polyphony is controlled by chip count
-    // Each chip provides 18 channels, so chip_count = poly / 18
-    chip_count = (poly + 17) / 18;  // Round up
+    // Each chip provides 18 channels, use ceiling division
+    chip_count = (poly + 17) / 18;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
     
