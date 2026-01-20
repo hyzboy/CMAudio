@@ -229,8 +229,6 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 }
 
 void CloseMIDI(void *ptr)
-
-void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
