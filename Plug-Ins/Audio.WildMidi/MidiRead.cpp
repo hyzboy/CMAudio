@@ -13,24 +13,27 @@ using namespace openal;
 
 // WildMIDI global initialization state
 static bool wildmidi_initialized = false;
-static const char* default_config_path = "/etc/timidity/timidity.cfg";  // Default path, can be customized
 
-struct midi_memory
+// Get config path from environment or use default
+static const char* GetConfigPath()
 {
-    unsigned char *data;
-    size_t pos;
-    size_t size;
-};
-
-// Memory-based I/O callbacks for WildMIDI (not directly used by WildMidi_OpenBuffer, but kept for reference)
-// WildMIDI uses WildMidi_OpenBuffer for memory-based playback
+    const char* config_path = getenv("WILDMIDI_CFG");
+    if (config_path && *config_path)
+        return config_path;
+    
+#ifdef _WIN32
+    return "C:\\timidity\\timidity.cfg";  // Windows default
+#else
+    return "/etc/timidity/timidity.cfg";  // Unix/Linux default
+#endif
+}
 
 ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **data, ALsizei *size, ALsizei *freq, ALboolean *loop)
 {
     if (!wildmidi_initialized)
     {
-        // Try to initialize WildMIDI with default config
-        if (WildMidi_Init(default_config_path, 44100, 0) == -1)
+        const char* config_path = GetConfigPath();
+        if (WildMidi_Init(config_path, 44100, 0) == -1)
         {
             return;  // Failed to initialize
         }
@@ -53,18 +56,17 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     *freq = 44100;
 
     // Calculate approximate total size based on MIDI duration
-    // WildMIDI returns approximate time in milliseconds
     unsigned long approx_samples = info->approx_total_samples;
     const int pcm_total_bytes = approx_samples * 2 * 2; // stereo, 16-bit
 
-    char *ptr = new char[pcm_total_bytes];
+    int16_t *ptr = new int16_t[approx_samples * 2]; // stereo
     int out_size = 0;
     int read_size;
 
     // Read all MIDI data converted to PCM
     while (out_size < pcm_total_bytes)
     {
-        read_size = WildMidi_GetOutput(handle, (int8_t*)(ptr + out_size), pcm_total_bytes - out_size);
+        read_size = WildMidi_GetOutput(handle, (int8_t*)((char*)ptr + out_size), pcm_total_bytes - out_size);
         
         if (read_size <= 0)
             break;
@@ -81,13 +83,15 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 void ClearMIDI(ALenum, ALvoid *data, ALsizei, ALsizei)
 {
     if (data)
-        delete[] (char *)data;
+        delete[] (int16_t *)data;
 }
 
 //--------------------------------------------------------------------------------------------------
 struct MidiStream
 {
     midi *handle;
+    unsigned char *midi_data;
+    size_t midi_size;
     unsigned long sample_rate;
 };
 
@@ -95,8 +99,8 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 {
     if (!wildmidi_initialized)
     {
-        // Try to initialize WildMIDI with default config
-        if (WildMidi_Init(default_config_path, 44100, 0) == -1)
+        const char* config_path = GetConfigPath();
+        if (WildMidi_Init(config_path, 44100, 0) == -1)
         {
             return nullptr;  // Failed to initialize
         }
@@ -105,7 +109,11 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 
     MidiStream *stream = new MidiStream;
     
-    stream->handle = WildMidi_OpenBuffer((unsigned char*)memory, memory_size);
+    // Store MIDI data for potential restart
+    stream->midi_data = (unsigned char*)memory;
+    stream->midi_size = memory_size;
+    
+    stream->handle = WildMidi_OpenBuffer(stream->midi_data, stream->midi_size);
     if (!stream->handle)
     {
         delete stream;
@@ -158,9 +166,14 @@ void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
-    // WildMIDI doesn't have a direct seek to beginning, so we need to use FastSeek
-    unsigned long int samples = 0;
-    WildMidi_FastSeek(stream->handle, &samples);
+    // Close and reopen to ensure clean restart
+    if (stream->handle)
+    {
+        WildMidi_Close(stream->handle);
+        stream->handle = nullptr;
+    }
+    
+    stream->handle = WildMidi_OpenBuffer(stream->midi_data, stream->midi_size);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -187,7 +200,7 @@ static OutInterface out_interface =
 };
 
 //--------------------------------------------------------------------------------------------------
-const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(WildMIDI 0.4.x,2024-01-20)");
+const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(WildMIDI 0.4.x)");
 
 HGL_PLUGIN_FUNC uint32 GetPlugInVersion()
 {

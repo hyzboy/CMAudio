@@ -33,9 +33,14 @@ sudo pacman -S wildmidi timidity++
 ### Configuration
 
 WildMIDI requires a Timidity configuration file for instrument patches. The plugin looks for the config at:
-- `/etc/timidity/timidity.cfg` (default)
+- Environment variable `WILDMIDI_CFG` (if set)
+- `/etc/timidity/timidity.cfg` (Linux/Unix default)
+- `C:\timidity\timidity.cfg` (Windows default)
 
-You can customize this path by modifying the `default_config_path` variable in `MidiRead.cpp`.
+You can set a custom configuration path:
+```bash
+export WILDMIDI_CFG=/path/to/your/timidity.cfg
+```
 
 ### Timidity Configuration
 
