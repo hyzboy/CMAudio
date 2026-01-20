@@ -8,6 +8,7 @@ add_subdirectory(Audio.Opus)
 add_subdirectory(Audio.WildMidi)
 add_subdirectory(Audio.Timidity)
 add_subdirectory(Audio.FluidSynth)
+add_subdirectory(Audio.TinySoundFont)
 
 IF(AUDIO_VORBIS_DECODE_LIBRARY STREQUAL TREMOLO)
 	add_subdirectory(Audio.Tremolo)
