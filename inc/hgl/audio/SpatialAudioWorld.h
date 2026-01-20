@@ -146,6 +146,18 @@ namespace hgl
 
     /**
      * 空间音频场景管理
+     * 
+     * 内存管理说明：
+     * - SpatialAudioSource 对象由 Create() 使用 new 分配，由 Delete() 或 Clear() 释放
+     * - AudioSource 对象通过 source_pool 对象池管理，自动复用
+     * - 调用者负责管理 AudioBuffer 和 AudioListener 对象的生命周期
+     * 
+     * 线程安全说明：
+     * - 所有公共 API 方法（Create、Delete、Clear、Update、SetListener、SetDistance、
+     *   InitReverb、CloseReverb、SetReverbPreset、EnableReverb）都是线程安全的
+     * - 多线程环境下可以安全地从不同线程调用这些方法
+     * - SpatialAudioSource 对象的成员方法（Play、Stop、MoveTo）不是线程安全的，
+     *   应该在持有适当锁的情况下调用，或确保单线程访问
      */
     class SpatialAudioWorld                                                                         ///< 空间音频场景管理
     {
@@ -199,7 +211,11 @@ namespace hgl
                 void                SetListener(AudioListener *al)                                  ///< 设置监听者
                 {
                     if(al)  // 仅在非空时设置
+                    {
+                        scene_mutex.Lock();
                         listener=al;
+                        scene_mutex.Unlock();
+                    }
                 }
 
                 /**
@@ -209,8 +225,10 @@ namespace hgl
                  */
                 void                SetDistance(const float &rd,const float &md)                    ///< 设定参考距离
                 {
+                    scene_mutex.Lock();
                     ref_distance=rd;
                     max_distance=md;
+                    scene_mutex.Unlock();
                 }
 
                 bool                InitReverb();                                                   ///< 初始化混响系统
