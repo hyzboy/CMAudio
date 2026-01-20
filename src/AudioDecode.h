@@ -26,6 +26,21 @@ namespace hgl
         uint    (AL_APIENTRY *Read      )(void *,float *,uint);
     };//struct AudioPlugInInterface
 
+    struct AudioMidiConfigInterface
+    {
+        void    (AL_APIENTRY *SetSoundFont      )(const char *);      // Set soundfont/bank file path for MIDI synthesis
+        void    (AL_APIENTRY *SetBankID         )(int);               // Set bank ID for chip emulators (OPNMIDI/ADLMIDI)
+        void    (AL_APIENTRY *SetVolume         )(float);             // Set global volume (0.0-1.0)
+        void    (AL_APIENTRY *SetSampleRate     )(int);               // Set sample rate (default: 44100)
+        void    (AL_APIENTRY *SetPolyphony      )(int);               // Set max polyphony/voices (FluidSynth only)
+        void    (AL_APIENTRY *SetChipCount      )(int);               // Set number of emulated chips (OPNMIDI/ADLMIDI)
+        void    (AL_APIENTRY *EnableReverb      )(bool);              // Enable/disable reverb (FluidSynth only)
+        void    (AL_APIENTRY *EnableChorus      )(bool);              // Enable/disable chorus (FluidSynth only)
+        const char* (AL_APIENTRY *GetVersion    )();                  // Get plugin version string
+        const char* (AL_APIENTRY *GetDefaultBank)();                  // Get default bank/soundfont path
+    };//struct AudioMidiConfigInterface
+
     bool GetAudioInterface(const OSString &,AudioPlugInInterface *,AudioFloatPlugInInterface *);
+    bool GetAudioMidiInterface(const OSString &,AudioMidiConfigInterface *);
 }//namespace hgl
 #endif//HGL_AUDIO_DECODE_INCLUDE

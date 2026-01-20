@@ -28,6 +28,19 @@ namespace hgl
         return result>0;
     }
 
+    bool GetAudioMidiInterface(const OSString &name,AudioMidiConfigInterface *amci)
+    {
+        PlugIn *pi=audio_plug_in.LoadPlugin(name);
+
+        if(!pi)
+            return(false);
+
+        if(amci)
+            return pi->GetInterface(4,amci);
+
+        return false;
+    }
+
     void CloseAudioPlugIns()
     {
         audio_plug_in.Clear();

@@ -14,9 +14,20 @@ using namespace openal;
 // Timidity global initialization state
 static bool timidity_initialized = false;
 
-// Get config path from environment or use default
+// Configuration state
+static char custom_soundfont_path[512] = {0};
+static float global_volume = 1.0f;
+static int sample_rate = 44100;
+static int polyphony = 64;
+
+// Get config path from custom setting, environment, or use default
 static const char* GetConfigPath()
 {
+    // Priority 1: Custom path set via API
+    if (custom_soundfont_path[0] != '\0')
+        return custom_soundfont_path;
+    
+    // Priority 2: Environment variable
     const char* config_path = getenv("TIMIDITY_CFG");
     if (config_path && *config_path)
         return config_path;
@@ -40,7 +51,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
         timidity_initialized = true;
     }
 
-    MidSong *song = mid_song_load_dls(memory, memory_size, 44100, MID_AUDIO_S16LSB, 2, 44100 * 2 * 2);
+    MidSong *song = mid_song_load_dls(memory, memory_size, sample_rate, MID_AUDIO_S16LSB, 2, sample_rate * 2 * 2);
     if (!song)
         return;
 
@@ -51,7 +62,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     // Get song length in samples
     mid_song_start(song);
     size_t total_time_ms = mid_song_get_total_time(song);
-    size_t total_samples = (total_time_ms * 44100) / 1000; // Convert ms to samples
+    size_t total_samples = (total_time_ms * sample_rate) / 1000; // Convert ms to samples
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
 
@@ -185,6 +196,74 @@ void RestartMIDI(void *ptr)
 }
 
 //--------------------------------------------------------------------------------------------------
+// MIDI Configuration Interface
+//--------------------------------------------------------------------------------------------------
+
+void SetSoundFont(const char* path)
+{
+    if (path && path[0] != '\0')
+    {
+        strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
+        custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
+        
+        // Requires reinitialization to take effect
+    }
+}
+
+void SetBankID(int bank_id)
+{
+    // Timidity doesn't use bank IDs like chip emulators
+    // This is a no-op for Timidity
+}
+
+void SetVolume(float volume)
+{
+    global_volume = volume;
+    // Timidity doesn't have a simple global volume API
+    // Volume would need to be applied in post-processing
+}
+
+void SetSampleRate(int rate)
+{
+    sample_rate = rate;
+    // Requires reinitialization to take effect
+}
+
+void SetPolyphony(int poly)
+{
+    polyphony = poly;
+    // Timidity manages polyphony automatically
+}
+
+void SetChipCount(int count)
+{
+    // Timidity doesn't use chip emulation
+    // This is a no-op for Timidity
+}
+
+void EnableReverb(bool enable)
+{
+    // Timidity doesn't have built-in reverb control
+    // This is a no-op for Timidity
+}
+
+void EnableChorus(bool enable)
+{
+    // Timidity doesn't have built-in chorus control
+    // This is a no-op for Timidity
+}
+
+const char* GetVersion()
+{
+    return "Libtimidity MIDI Synthesizer";
+}
+
+const char* GetDefaultBank()
+{
+    return GetConfigPath();
+}
+
+//--------------------------------------------------------------------------------------------------
 struct OutInterface
 {
     void (*Load)(ALbyte *, ALsizei, ALenum *, ALvoid **, ALsizei *, ALsizei *, ALboolean *);
@@ -207,6 +286,34 @@ static OutInterface out_interface =
     RestartMIDI
 };
 
+struct MidiConfigInterface
+{
+    void (*SetSoundFont)(const char *);
+    void (*SetBankID)(int);
+    void (*SetVolume)(float);
+    void (*SetSampleRate)(int);
+    void (*SetPolyphony)(int);
+    void (*SetChipCount)(int);
+    void (*EnableReverb)(bool);
+    void (*EnableChorus)(bool);
+    const char* (*GetVersion)();
+    const char* (*GetDefaultBank)();
+};
+
+static MidiConfigInterface midi_config_interface =
+{
+    SetSoundFont,
+    SetBankID,
+    SetVolume,
+    SetSampleRate,
+    SetPolyphony,
+    SetChipCount,
+    EnableReverb,
+    EnableChorus,
+    GetVersion,
+    GetDefaultBank
+};
+
 //--------------------------------------------------------------------------------------------------
 const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(Libtimidity)");
 
@@ -225,11 +332,15 @@ bool GetPlugInInterface(uint32 ver, void *data)
     if (ver == 2)
     {
         memcpy(data, &out_interface, sizeof(OutInterface));
+        return true;
     }
-    else
-        return false;
-
-    return true;
+    else if (ver == 4)
+    {
+        memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
+        return true;
+    }
+    
+    return false;
 }
 
 static PlugInInterface pii =

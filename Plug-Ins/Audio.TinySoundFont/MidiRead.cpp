@@ -19,9 +19,20 @@ using namespace openal;
 static tsf* g_tsf = nullptr;
 static bool tsf_initialized = false;
 
-// Get soundfont path from environment or use default
+// Configuration state
+static char custom_soundfont_path[512] = {0};
+static float global_volume = 1.0f;
+static int sample_rate = 44100;
+static int polyphony = 64;
+
+// Get soundfont path from custom setting, environment, or use default
 static const char* GetSoundFontPath()
 {
+    // Priority 1: Custom path set via API
+    if (custom_soundfont_path[0] != '\0')
+        return custom_soundfont_path;
+    
+    // Priority 2: Environment variable
     const char* sf_path = getenv("TSF_SOUNDFONT");
     if (sf_path && *sf_path)
         return sf_path;
@@ -64,8 +75,9 @@ static bool InitTinySoundFont()
             return false;
     }
     
-    // Set output mode to stereo 16-bit @ 44.1kHz
-    tsf_set_output(g_tsf, TSF_STEREO_INTERLEAVED, 44100, 0.0f);
+    // Set output mode using configuration state
+    tsf_set_output(g_tsf, TSF_STEREO_INTERLEAVED, sample_rate, 0.0f);
+    tsf_set_volume(g_tsf, global_volume);
     
     tsf_initialized = true;
     return true;
@@ -217,6 +229,8 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 }
 
 void CloseMIDI(void *ptr)
+
+void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
@@ -297,6 +311,90 @@ void RestartMIDI(void *ptr)
 }
 
 //--------------------------------------------------------------------------------------------------
+// MIDI Configuration Interface
+//--------------------------------------------------------------------------------------------------
+
+void SetSoundFont(const char* path)
+{
+    if (path && path[0] != '\0')
+    {
+        strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
+        custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
+        
+        // If already initialized, reload the soundfont
+        if (tsf_initialized && g_tsf)
+        {
+            tsf_close(g_tsf);
+            g_tsf = tsf_load_filename(path);
+            if (g_tsf)
+            {
+                tsf_set_output(g_tsf, TSF_STEREO_INTERLEAVED, sample_rate, 0.0f);
+                tsf_set_volume(g_tsf, global_volume);
+            }
+            else
+            {
+                tsf_initialized = false;
+            }
+        }
+    }
+}
+
+void SetBankID(int bank_id)
+{
+    // TinySoundFont doesn't use bank IDs like chip emulators
+    // This is a no-op for TinySoundFont
+}
+
+void SetVolume(float volume)
+{
+    global_volume = volume;
+    if (tsf_initialized && g_tsf)
+    {
+        tsf_set_volume(g_tsf, volume);
+    }
+}
+
+void SetSampleRate(int rate)
+{
+    sample_rate = rate;
+    // Requires reinitialization to take effect
+}
+
+void SetPolyphony(int poly)
+{
+    polyphony = poly;
+    // TinySoundFont manages polyphony automatically
+}
+
+void SetChipCount(int count)
+{
+    // TinySoundFont doesn't use chip emulation
+    // This is a no-op for TinySoundFont
+}
+
+void EnableReverb(bool enable)
+{
+    // TinySoundFont doesn't have built-in reverb
+    // This is a no-op for TinySoundFont
+}
+
+void EnableChorus(bool enable)
+{
+    // TinySoundFont doesn't have built-in chorus
+    // This is a no-op for TinySoundFont
+}
+
+const char* GetVersion()
+{
+    return "TinySoundFont MIDI Synthesizer";
+}
+
+const char* GetDefaultBank()
+{
+    return GetSoundFontPath();
+}
+
+//--------------------------------------------------------------------------------------------------
 struct OutInterface
 {
     void (*Load)(ALbyte *, ALsizei, ALenum *, ALvoid **, ALsizei *, ALsizei *, ALboolean *);
@@ -319,6 +417,34 @@ static OutInterface out_interface =
     RestartMIDI
 };
 
+struct MidiConfigInterface
+{
+    void (*SetSoundFont)(const char *);
+    void (*SetBankID)(int);
+    void (*SetVolume)(float);
+    void (*SetSampleRate)(int);
+    void (*SetPolyphony)(int);
+    void (*SetChipCount)(int);
+    void (*EnableReverb)(bool);
+    void (*EnableChorus)(bool);
+    const char* (*GetVersion)();
+    const char* (*GetDefaultBank)();
+};
+
+static MidiConfigInterface midi_config_interface =
+{
+    SetSoundFont,
+    SetBankID,
+    SetVolume,
+    SetSampleRate,
+    SetPolyphony,
+    SetChipCount,
+    EnableReverb,
+    EnableChorus,
+    GetVersion,
+    GetDefaultBank
+};
+
 //--------------------------------------------------------------------------------------------------
 const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(TinySoundFont)");
 
@@ -337,11 +463,15 @@ bool GetPlugInInterface(uint32 ver, void *data)
     if (ver == 2)
     {
         memcpy(data, &out_interface, sizeof(OutInterface));
+        return true;
     }
-    else
-        return false;
-
-    return true;
+    else if (ver == 4)
+    {
+        memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
+        return true;
+    }
+    
+    return false;
 }
 
 static PlugInInterface pii =

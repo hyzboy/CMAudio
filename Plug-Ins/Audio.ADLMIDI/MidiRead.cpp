@@ -15,25 +15,59 @@ using namespace openal;
 static ADL_MIDIPlayer* g_adl_device = nullptr;
 static bool adlmidi_initialized = false;
 
+// Configuration state
+static char custom_bank_path[512] = {0};
+static int bank_id = 58;  // Default: DMX OP2 bank
+static float global_volume = 1.0f;
+static int sample_rate = 44100;
+static int chip_count = 4;
+
+static const char* GetBankPath()
+{
+    // Priority 1: Custom path set via API
+    if (custom_bank_path[0] != '\0')
+        return custom_bank_path;
+    
+    // Priority 2: Use built-in banks (nullptr)
+    return nullptr;
+}
+
 static bool InitADLMIDI()
 {
     if (adlmidi_initialized && g_adl_device)
         return true;
         
-    // Create AdLib/OPL3 device with 44.1kHz sample rate
-    g_adl_device = adl_init(44100);
+    // Create AdLib/OPL3 device using configuration
+    g_adl_device = adl_init(sample_rate);
     if (!g_adl_device)
         return false;
     
-    // Set 4-chip mode for higher polyphony (SoundBlaster16 used 1 chip)
-    adl_setNumChips(g_adl_device, 4);
+    // Set chip count for polyphony
+    adl_setNumChips(g_adl_device, chip_count);
     
-    // Use built-in bank (AdLib/OPL3 patches)
-    // Bank 58 is "DMX OP2" - common DOS game bank
-    if (adl_setBank(g_adl_device, 58) < 0)
+    // Set volume
+    adl_setVolumeRangeModel(g_adl_device, ADLMIDI_VolumeModel_AUTO);
+    
+    // Load bank
+    const char* bank_path = GetBankPath();
+    if (bank_path != nullptr)
     {
-        // Try default bank (0) if 58 fails
-        adl_setBank(g_adl_device, 0);
+        // Load from file if custom path is set
+        if (adl_openBankFile(g_adl_device, bank_path) < 0)
+        {
+            adl_close(g_adl_device);
+            g_adl_device = nullptr;
+            return false;
+        }
+    }
+    else
+    {
+        // Use built-in bank ID
+        if (adl_setBank(g_adl_device, bank_id) < 0)
+        {
+            // Try default bank (0) if selected bank fails
+            adl_setBank(g_adl_device, 0);
+        }
     }
     
     adlmidi_initialized = true;
@@ -46,12 +80,16 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
         return;
 
     // Create temporary device for this load operation
-    ADL_MIDIPlayer* device = adl_init(44100);
+    ADL_MIDIPlayer* device = adl_init(sample_rate);
     if (!device)
         return;
     
-    adl_setNumChips(device, 4);
-    adl_setBank(device, 58);  // DMX OP2 bank
+    adl_setNumChips(device, chip_count);
+    const char* bank_path = GetBankPath();
+    if (bank_path)
+        adl_openBankFile(device, bank_path);
+    else
+        adl_setBank(device, bank_id);
     
     // Load MIDI from memory
     if (adl_openData(device, memory, memory_size) < 0)
@@ -137,8 +175,12 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
         return nullptr;
     }
     
-    adl_setNumChips(stream->device, 4);
-    adl_setBank(stream->device, 58);  // DMX OP2 bank
+    adl_setNumChips(stream->device, chip_count);
+    const char* bank_path = GetBankPath();
+    if (bank_path)
+        adl_openBankFile(stream->device, bank_path);
+    else
+        adl_setBank(stream->device, bank_id);
     
     // Load MIDI from memory
     if (adl_openData(stream->device, stream->midi_data, stream->midi_size) < 0)
@@ -201,6 +243,106 @@ void RestartMIDI(void *ptr)
 }
 
 //--------------------------------------------------------------------------------------------------
+// MIDI Configuration Interface
+//--------------------------------------------------------------------------------------------------
+
+void SetSoundFont(const char* path)
+{
+    // ADLMIDI uses bank files (.wopl), not SoundFonts
+    // This maps to SetBankPath for consistency
+    if (path && path[0] != '\0')
+    {
+        strncpy(custom_bank_path, path, sizeof(custom_bank_path) - 1);
+        custom_bank_path[sizeof(custom_bank_path) - 1] = '\0';
+        
+        // If already initialized, reload the bank
+        if (adlmidi_initialized && g_adl_device)
+        {
+            adl_openBankFile(g_adl_device, path);
+        }
+    }
+}
+
+void SetBankID(int id)
+{
+    bank_id = id;
+    if (adlmidi_initialized && g_adl_device)
+    {
+        adl_setBank(g_adl_device, id);
+    }
+}
+
+void SetVolume(float volume)
+{
+    global_volume = volume;
+    if (adlmidi_initialized && g_adl_device)
+    {
+        adl_setVolume(g_adl_device, volume);
+    }
+}
+
+void SetSampleRate(int rate)
+{
+    sample_rate = rate;
+    // Requires reinitialization to take effect
+}
+
+void SetPolyphony(int poly)
+{
+    // ADLMIDI polyphony is controlled by chip count
+    // Each chip provides 18 channels, so chip_count = poly / 18
+    chip_count = (poly + 17) / 18;  // Round up
+    if (chip_count < 1) chip_count = 1;
+    if (chip_count > 100) chip_count = 100;
+    
+    if (adlmidi_initialized && g_adl_device)
+    {
+        adl_setNumChips(g_adl_device, chip_count);
+    }
+}
+
+void SetChipCount(int count)
+{
+    chip_count = count;
+    if (chip_count < 1) chip_count = 1;
+    if (chip_count > 100) chip_count = 100;
+    
+    if (adlmidi_initialized && g_adl_device)
+    {
+        adl_setNumChips(g_adl_device, count);
+    }
+}
+
+void EnableReverb(bool enable)
+{
+    // ADLMIDI doesn't have built-in reverb
+    // This is a no-op for ADLMIDI
+}
+
+void EnableChorus(bool enable)
+{
+    // ADLMIDI doesn't have built-in chorus
+    // This is a no-op for ADLMIDI
+}
+
+const char* GetVersion()
+{
+    return "ADLMIDI - OPL3 Chip Emulator";
+}
+
+const char* GetDefaultBank()
+{
+    const char* path = GetBankPath();
+    if (path)
+        return path;
+    
+    // Return bank ID as description
+    static char bank_desc[64];
+    snprintf(bank_desc, sizeof(bank_desc), "Built-in Bank ID %d", bank_id);
+    return bank_desc;
+}
+
+//--------------------------------------------------------------------------------------------------
 struct OutInterface
 {
     void (*Load)(ALbyte *, ALsizei, ALenum *, ALvoid **, ALsizei *, ALsizei *, ALboolean *);
@@ -223,6 +365,34 @@ static OutInterface out_interface =
     RestartMIDI
 };
 
+struct MidiConfigInterface
+{
+    void (*SetSoundFont)(const char *);
+    void (*SetBankID)(int);
+    void (*SetVolume)(float);
+    void (*SetSampleRate)(int);
+    void (*SetPolyphony)(int);
+    void (*SetChipCount)(int);
+    void (*EnableReverb)(bool);
+    void (*EnableChorus)(bool);
+    const char* (*GetVersion)();
+    const char* (*GetDefaultBank)();
+};
+
+static MidiConfigInterface midi_config_interface =
+{
+    SetSoundFont,
+    SetBankID,
+    SetVolume,
+    SetSampleRate,
+    SetPolyphony,
+    SetChipCount,
+    EnableReverb,
+    EnableChorus,
+    GetVersion,
+    GetDefaultBank
+};
+
 //--------------------------------------------------------------------------------------------------
 const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(ADLMIDI - OPL3 芯片模拟)");
 
@@ -241,11 +411,15 @@ bool GetPlugInInterface(uint32 ver, void *data)
     if (ver == 2)
     {
         memcpy(data, &out_interface, sizeof(OutInterface));
+        return true;
     }
-    else
-        return false;
-
-    return true;
+    else if (ver == 4)
+    {
+        memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
+        return true;
+    }
+    
+    return false;
 }
 
 static PlugInInterface pii =

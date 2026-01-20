@@ -16,9 +16,22 @@ static fluid_settings_t* fluid_settings = nullptr;
 static fluid_synth_t* fluid_synth = nullptr;
 static bool fluidsynth_initialized = false;
 
-// Get soundfont path from environment or use default
+// Configuration state
+static char custom_soundfont_path[512] = {0};
+static float global_volume = 1.0f;
+static int sample_rate = 44100;
+static int polyphony = 256;
+static bool reverb_enabled = true;
+static bool chorus_enabled = true;
+
+// Get soundfont path from custom setting, environment, or use default
 static const char* GetSoundFontPath()
 {
+    // Priority 1: Custom path set via API
+    if (custom_soundfont_path[0] != '\0')
+        return custom_soundfont_path;
+    
+    // Priority 2: Environment variable
     const char* sf_path = getenv("FLUIDSYNTH_SF2");
     if (sf_path && *sf_path)
         return sf_path;
@@ -41,11 +54,12 @@ static bool InitFluidSynth()
     if (!fluid_settings)
         return false;
     
-    // Configure settings for real-time synthesis
-    fluid_settings_setnum(fluid_settings, "synth.sample-rate", 44100.0);
-    fluid_settings_setint(fluid_settings, "synth.polyphony", 256);
-    fluid_settings_setint(fluid_settings, "synth.reverb.active", 1);
-    fluid_settings_setint(fluid_settings, "synth.chorus.active", 1);
+    // Configure settings using configuration state
+    fluid_settings_setnum(fluid_settings, "synth.sample-rate", (double)sample_rate);
+    fluid_settings_setint(fluid_settings, "synth.polyphony", polyphony);
+    fluid_settings_setint(fluid_settings, "synth.reverb.active", reverb_enabled ? 1 : 0);
+    fluid_settings_setint(fluid_settings, "synth.chorus.active", chorus_enabled ? 1 : 0);
+    fluid_settings_setnum(fluid_settings, "synth.gain", (double)global_volume);
     
     fluid_synth = new_fluid_synth(fluid_settings);
     if (!fluid_synth)
@@ -285,6 +299,89 @@ void RestartMIDI(void *ptr)
 }
 
 //--------------------------------------------------------------------------------------------------
+// MIDI Configuration Interface
+//--------------------------------------------------------------------------------------------------
+
+void SetSoundFont(const char* path)
+{
+    if (path && path[0] != '\0')
+    {
+        strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
+        custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
+        
+        // If already initialized, reload the soundfont
+        if (fluidsynth_initialized && fluid_synth)
+        {
+            fluid_synth_sfload(fluid_synth, path, 1);
+        }
+    }
+}
+
+void SetBankID(int bank_id)
+{
+    // FluidSynth doesn't use bank IDs like chip emulators
+    // This is a no-op for FluidSynth
+}
+
+void SetVolume(float volume)
+{
+    global_volume = volume;
+    if (fluidsynth_initialized && fluid_settings)
+    {
+        fluid_settings_setnum(fluid_settings, "synth.gain", (double)volume);
+    }
+}
+
+void SetSampleRate(int rate)
+{
+    sample_rate = rate;
+    // Requires reinitialization to take effect
+}
+
+void SetPolyphony(int poly)
+{
+    polyphony = poly;
+    if (fluidsynth_initialized && fluid_synth)
+    {
+        fluid_synth_set_polyphony(fluid_synth, poly);
+    }
+}
+
+void SetChipCount(int count)
+{
+    // FluidSynth doesn't use chip emulation
+    // This is a no-op for FluidSynth
+}
+
+void EnableReverb(bool enable)
+{
+    reverb_enabled = enable;
+    if (fluidsynth_initialized && fluid_synth)
+    {
+        fluid_synth_set_reverb_on(fluid_synth, enable ? 1 : 0);
+    }
+}
+
+void EnableChorus(bool enable)
+{
+    chorus_enabled = enable;
+    if (fluidsynth_initialized && fluid_synth)
+    {
+        fluid_synth_set_chorus_on(fluid_synth, enable ? 1 : 0);
+    }
+}
+
+const char* GetVersion()
+{
+    return "FluidSynth 2.x MIDI Synthesizer";
+}
+
+const char* GetDefaultBank()
+{
+    return GetSoundFontPath();
+}
+
+//--------------------------------------------------------------------------------------------------
 struct OutInterface
 {
     void (*Load)(ALbyte *, ALsizei, ALenum *, ALvoid **, ALsizei *, ALsizei *, ALboolean *);
@@ -307,6 +404,34 @@ static OutInterface out_interface =
     RestartMIDI
 };
 
+struct MidiConfigInterface
+{
+    void (*SetSoundFont)(const char *);
+    void (*SetBankID)(int);
+    void (*SetVolume)(float);
+    void (*SetSampleRate)(int);
+    void (*SetPolyphony)(int);
+    void (*SetChipCount)(int);
+    void (*EnableReverb)(bool);
+    void (*EnableChorus)(bool);
+    const char* (*GetVersion)();
+    const char* (*GetDefaultBank)();
+};
+
+static MidiConfigInterface midi_config_interface =
+{
+    SetSoundFont,
+    SetBankID,
+    SetVolume,
+    SetSampleRate,
+    SetPolyphony,
+    SetChipCount,
+    EnableReverb,
+    EnableChorus,
+    GetVersion,
+    GetDefaultBank
+};
+
 //--------------------------------------------------------------------------------------------------
 const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(FluidSynth)");
 
@@ -325,11 +450,15 @@ bool GetPlugInInterface(uint32 ver, void *data)
     if (ver == 2)
     {
         memcpy(data, &out_interface, sizeof(OutInterface));
+        return true;
     }
-    else
-        return false;
-
-    return true;
+    else if (ver == 4)
+    {
+        memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
+        return true;
+    }
+    
+    return false;
 }
 
 static PlugInInterface pii =
