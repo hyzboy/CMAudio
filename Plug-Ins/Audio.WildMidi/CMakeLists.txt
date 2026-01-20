@@ -17,7 +17,7 @@ IF(AUDIO_WILDMIDI_INCLUDE_DIR AND AUDIO_WILDMIDI_LIBRARY)
     MESSAGE(STATUS "Found WildMIDI: ${AUDIO_WILDMIDI_LIBRARY}")
     INCLUDE_DIRECTORIES(${AUDIO_WILDMIDI_INCLUDE_DIR})
     
-    add_cm_plugin(CMP.Audio.MIDI "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_WILDMIDI_LIBRARY})
+    add_cm_plugin(CMP.Audio.WildMidi "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_WILDMIDI_LIBRARY})
 ELSE()
     MESSAGE(STATUS "WildMIDI not found. MIDI plugin will not be built.")
     MESSAGE(STATUS "  To enable MIDI support, install WildMIDI:")

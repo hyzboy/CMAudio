@@ -36,7 +36,7 @@ namespace hgl
         void    (AL_APIENTRY *SetChipCount      )(int);               // Set number of emulated chips (OPNMIDI/ADLMIDI)
         void    (AL_APIENTRY *EnableReverb      )(bool);              // Enable/disable reverb (FluidSynth only)
         void    (AL_APIENTRY *EnableChorus      )(bool);              // Enable/disable chorus (FluidSynth only)
-        const char* (AL_APIENTRY *GetVersion    )();                  // Get plugin version string
+        const char* (AL_APIENTRY *GetVersionString)();                // Get plugin version string
         const char* (AL_APIENTRY *GetDefaultBank)();                  // Get default bank/soundfont path
     };//struct AudioMidiConfigInterface
 

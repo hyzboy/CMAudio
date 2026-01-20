@@ -382,7 +382,7 @@ void EnableChorus(bool enable)
     // This is a no-op for TinySoundFont
 }
 
-const char* GetVersion()
+const char* GetVersionString()
 {
     return "TinySoundFont MIDI Synthesizer";
 }
@@ -425,7 +425,7 @@ struct MidiConfigInterface
     void (*SetChipCount)(int);
     void (*EnableReverb)(bool);
     void (*EnableChorus)(bool);
-    const char* (*GetVersion)();
+    const char* (*GetVersionString)();
     const char* (*GetDefaultBank)();
 };
 
@@ -439,7 +439,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetVersionString,
     GetDefaultBank
 };
 

@@ -117,10 +117,12 @@ namespace hgl
         decode=nullptr;
         midi_config=nullptr;
         midi_channels=nullptr;
+        
+        audio_manager=nullptr;
 
         state=MIDIOrchestraState::None;
 
-        orchestra_center.Set(0,0,0);
+        orchestra_center=ZeroVector3f;
         orchestra_scale=1.0f;
 
         current_layout=OrchestraLayout::Standard;
@@ -137,16 +139,9 @@ namespace hgl
 
     void MIDIOrchestraPlayer::InitializeChannelSources()
     {
-        AudioManager *am=AudioManager::GetInstance();
-        if(!am)
-        {
-            LogError(OS_TEXT("AudioManager not available"));
-            return;
-        }
-
         for(int i=0;i<MAX_MIDI_CHANNELS;i++)
         {
-            sources[i]=am->CreateSource();
+            sources[i]=new AudioSource;
             if(!sources[i])
             {
                 LogError(OS_TEXT("Failed to create AudioSource for channel ") + OSString(i));
@@ -162,24 +157,20 @@ namespace hgl
             sources[i]->SetGain(channel_positions[i].gain);
 
             // Set reasonable 3D audio parameters
-            sources[i]->SetRefDist(1.0f);    // Reference distance
-            sources[i]->SetMaxDist(50.0f);   // Maximum distance
-            sources[i]->SetRolloff(1.0f);    // Rolloff factor
+            sources[i]->SetDistance(1.0f,50.0f);   // Maximum distance
+            sources[i]->SetRolloffFactor(1.0f);    // Rolloff factor
         }
     }
 
     void MIDIOrchestraPlayer::ReleaseChannelSources()
     {
-        AudioManager *am=AudioManager::GetInstance();
-        if(!am)return;
-
         for(int i=0;i<MAX_MIDI_CHANNELS;i++)
         {
             if(sources[i])
             {
                 sources[i]->Stop();
                 alDeleteBuffers(3, buffers[i]);
-                am->ReleaseSource(sources[i]);
+                delete sources[i];
                 sources[i]=nullptr;
             }
 
@@ -455,7 +446,7 @@ namespace hgl
         {
             if(state==MIDIOrchestraState::None)
             {
-                WaitTime(0.1);
+                SleepSecond(0.1);
                 continue;
             }
 
@@ -468,7 +459,7 @@ namespace hgl
                 }
 
                 while(state==MIDIOrchestraState::Pause)
-                    WaitTime(0.1);
+                    SleepSecond(0.1);
 
                 for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)
                 {
@@ -544,7 +535,7 @@ namespace hgl
                 }
             }
 
-            WaitTime(0.05); // 50ms update interval
+            SleepSecond(0.05); // 50ms update interval
         }
 
         return true;

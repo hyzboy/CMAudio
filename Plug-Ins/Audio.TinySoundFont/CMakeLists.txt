@@ -10,7 +10,7 @@ MESSAGE(STATUS "  Set TSF_SOUNDFONT environment variable to specify SoundFont pa
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Use the same plugin name as other MIDI plugins so only one is active
-add_cm_plugin(CMP.Audio.MIDI "Plug-Ins//Audio" MidiRead.cpp)
+add_cm_plugin(CMP.Audio.TinySoundFont "Plug-Ins//Audio" MidiRead.cpp)
 
 MESSAGE(STATUS "  Default SoundFont paths:")
 MESSAGE(STATUS "    Linux: /usr/share/sounds/sf2/FluidR3_GM.sf2")

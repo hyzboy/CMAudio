@@ -37,7 +37,7 @@ namespace hgl
 
         audiosource.SetLoop(false);
 
-        source=audiosource.index;
+        source=audiosource.GetIndex();
 
         alGenBuffers(3,buffer);
     }
@@ -400,7 +400,7 @@ namespace hgl
 
                 lock.Unlock();
 
-                WaitTime(wait_time);
+                SleepSecond(wait_time);
                 continue;
             }
 
@@ -458,7 +458,7 @@ namespace hgl
 
             lock.Unlock();
 
-            WaitTime(wait_time);
+            SleepSecond(wait_time);
         }
 
         return(true);

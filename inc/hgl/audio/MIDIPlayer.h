@@ -119,7 +119,7 @@ namespace hgl
 
     public: //播放器状态属性
 
-                        uint            GetIndex()const{return audiosource.index;}                  ///<获取音源索引
+                        uint            GetIndex()const{return audiosource.GetIndex();}             ///<获取音源索引
 
                         double          GetTotalTime()const{return total_time;}                     ///<获取音频总时长
 
@@ -130,24 +130,24 @@ namespace hgl
                         bool            IsLoop();                                                   ///<是否循环播放
                         void            SetLoop(bool);                                              ///<设置循环播放
 
-                        float           GetGain()const{return audiosource.gain;}                    ///<获取音量增益
+                        float           GetGain()const{return audiosource.GetGain();}               ///<获取音量增益
                         float           GetMinGain()const{return audiosource.GetMinGain();}         ///<获取音量最小增益
                         float           GetMaxGain()const{return audiosource.GetMaxGain();}         ///<获取音量最大增益
 
                         void            SetGain(float val){audiosource.SetGain(val);}               ///<设置音量增益
 
-                        float           GetPitch()const{return audiosource.pitch;}                  ///<获取播放频率
+                        float           GetPitch()const{return audiosource.GetPitch();}             ///<获取播放频率
                         void            SetPitch(float val){audiosource.SetPitch(val);}             ///<设置播放频率
 
     public: //空间音频属性
 
-        const Vector3f &        GetPosition()const{return audiosource.position;}
+        const Vector3f &        GetPosition()const{return audiosource.GetPosition();}
         void                    SetPosition(const Vector3f &pos){audiosource.SetPosition(pos);}
 
-        const Vector3f &        GetVelocity()const{return audiosource.velocity;}
+        const Vector3f &        GetVelocity()const{return audiosource.GetVelocity();}
         void                    SetVelocity(const Vector3f &vel){audiosource.SetVelocity(vel);}
 
-        const Vector3f &        GetDirection()const{return audiosource.direction;}
+        const Vector3f &        GetDirection()const{return audiosource.GetDirection();}
         void                    SetDirection(const Vector3f &dir){audiosource.SetDirection(dir);}
 
     public: //MIDI配置接口

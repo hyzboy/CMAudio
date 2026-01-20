@@ -23,6 +23,8 @@ namespace hgl
     struct AudioMidiChannelInterface;
     struct MidiChannelInfo;
 
+    class AudioManager;
+
     /**
      * 乐器的3D位置配置
      * Instrument 3D position configuration
@@ -43,7 +45,7 @@ namespace hgl
         Standard,                   ///< 标准交响乐团布局 / Standard symphony layout
         Chamber,                    ///< 室内乐布局 / Chamber music layout
         Jazz,                       ///< 爵士乐布局 / Jazz ensemble layout
-        Rock,                       ///< 摇滚乐队布局 / Rock band layout
+        Rock,                       ///< 摊滚乐队布局 / Rock band layout
         Custom                      ///< 自定义布局 / Custom layout
     };
 
@@ -108,6 +110,8 @@ namespace hgl
         AudioPlugInInterface *decode;
         AudioMidiInterface *midi_config;                                                        ///<MIDI配置接口
         AudioMidiChannelInterface *midi_channels;                                              ///<MIDI通道接口
+
+        AudioManager *audio_manager;                                                            ///<音频管理器
 
         ALenum format;                                                                          ///<音频数据格式
         ALsizei rate;                                                                           ///<音频数据采样率
@@ -332,4 +336,5 @@ namespace hgl
          */
         void FadeOut(float gap){AutoGain(1,gap,0);}
     };//class MIDIOrchestraPlayer
+
 }//namespace hgl
