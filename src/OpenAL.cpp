@@ -759,6 +759,38 @@ namespace openal
     }
     
     /**
+     * 加载HRTF扩展函数（内部辅助函数）
+     * @return 是否成功加载所有必需的HRTF函数
+     */
+    static bool LoadHRTFFunctions()
+    {
+        if(!AudioDevice || !alcGetProcAddress)
+            return false;
+            
+        if(!alcResetDeviceSOFT)
+        {
+            alcResetDeviceSOFT = (alcResetDeviceSOFTPROC)alcGetProcAddress(AudioDevice, "alcResetDeviceSOFT");
+            if(!alcResetDeviceSOFT)
+            {
+                GLogError(OS_TEXT("Failed to load alcResetDeviceSOFT function"));
+                return false;
+            }
+        }
+        
+        if(!alcGetStringiSOFT)
+        {
+            alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
+            if(!alcGetStringiSOFT)
+            {
+                GLogWarning(OS_TEXT("Failed to load alcGetStringiSOFT function (profile names unavailable)"));
+                // 不返回false，因为这个函数只用于获取配置文件名称，不是必需的
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
      * 启用/禁用HRTF
      * @param enable 是否启用HRTF
      * @return 是否成功
@@ -777,20 +809,10 @@ namespace openal
             return false;
         }
         
-        // 加载HRTF扩展函数（如果尚未加载）
-        if(!alcResetDeviceSOFT && alcGetProcAddress)
+        // 加载HRTF扩展函数
+        if(!LoadHRTFFunctions())
         {
-            alcResetDeviceSOFT = (alcResetDeviceSOFTPROC)alcGetProcAddress(AudioDevice, "alcResetDeviceSOFT");
-            if(!alcResetDeviceSOFT)
-            {
-                GLogError(OS_TEXT("Failed to load alcResetDeviceSOFT function"));
-                return false;
-            }
-        }
-        
-        if(!alcGetStringiSOFT && alcGetProcAddress)
-        {
-            alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
+            return false;
         }
         
         // 设置HRTF属性
@@ -907,11 +929,8 @@ namespace openal
         if(!IsHRTFSupported())
             return nullptr;
             
-        // 加载alcGetStringiSOFT函数（如果尚未加载）
-        if(!alcGetStringiSOFT && alcGetProcAddress)
-        {
-            alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
-        }
+        // 加载HRTF扩展函数
+        LoadHRTFFunctions();
         
         if(!alcGetStringiSOFT)
             return nullptr;
