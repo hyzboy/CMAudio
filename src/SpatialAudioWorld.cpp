@@ -267,7 +267,13 @@ namespace hgl
                     asi->source = lowest_priority_source->source;
                     lowest_priority_source->source = nullptr;
                     
-                    // 停止被抢占的音源（不使用ToMute以避免淡出效果）
+                    // 立即降低增益并停止，避免爆音（比完整淡出更快但比直接停止更平滑）
+                    float current_gain = asi->source->GetGain();
+                    if(current_gain > 0.1f)
+                    {
+                        asi->source->SetGain(current_gain * 0.1f);  // 快速降低到10%
+                    }
+                    
                     asi->source->Stop();
                     asi->source->Unlink();
                 }
