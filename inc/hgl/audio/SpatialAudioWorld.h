@@ -78,6 +78,9 @@ namespace hgl
         
         // 多普勒平滑状态
         Vector3f smoothed_velocity;                         ///< 平滑后的速度（用于多普勒效果）
+        
+        // 分层更新管理
+        uint64 last_update_frame;                           ///< 上次更新的帧号（用于分层更新）
 
         double last_gain;                                   ///< 上一次的音量
         
@@ -113,6 +116,7 @@ namespace hgl
             , cur_time(0)
             , move_speed(0)
             , last_gain(0)
+            , last_update_frame(0)
             , is_fading(false)
             , fade_start_time(0)
             , fade_duration(0)
@@ -183,6 +187,7 @@ namespace hgl
     protected:
 
         double cur_time;                                                                            ///< 当前时间
+        uint64 update_frame_counter;                                                                ///< 更新帧计数器（用于分层更新）
 
         float ref_distance;                                                                         ///< 默认参考距离
         float max_distance;                                                                         ///< 默认最大距离

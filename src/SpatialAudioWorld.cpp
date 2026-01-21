@@ -22,6 +22,48 @@ namespace hgl
     static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，0-1范围：值越小越平滑但响应慢，值越大越灵敏但平滑效果弱）
     static constexpr double VOICE_STEAL_GAIN_REDUCTION = 0.1;  // 音源抢占时的增益降低系数（降低到原来的10%以避免爆音）
     static constexpr float VOICE_STEAL_MIN_GAIN_THRESHOLD = 0.01f;  // 音源抢占时需要降低增益的最小阈值
+    
+    // 分层更新管理常量
+    static constexpr double IMPORTANCE_DISTANCE_WEIGHT = 0.3;  // 距离权重（距离越近越重要）
+    static constexpr double IMPORTANCE_GAIN_WEIGHT = 0.3;      // 增益权重
+    static constexpr double IMPORTANCE_PRIORITY_WEIGHT = 0.4;  // 优先级权重
+    static constexpr uint TIER1_UPDATE_INTERVAL = 1;           // 高重要性：每帧更新
+    static constexpr uint TIER2_UPDATE_INTERVAL = 2;           // 中等重要性：每2帧更新
+    static constexpr uint TIER3_UPDATE_INTERVAL = 5;           // 低重要性：每5帧更新
+    static constexpr double TIER1_THRESHOLD = 0.6;             // 高重要性阈值
+    static constexpr double TIER2_THRESHOLD = 0.3;             // 中等重要性阈值
+
+    /**
+     * 计算音源的综合重要性分数
+     * @param asi 音源
+     * @param listener_pos 监听者位置
+     * @return 重要性分数(0-1范围，1为最重要)
+     */
+    static double CalculateImportance(const SpatialAudioSource *asi, const Vector3f &listener_pos)
+    {
+        if(!asi)return 0.0;
+        
+        // 计算距离因子（距离越近越重要，归一化到0-1范围）
+        float distance = math::Length(listener_pos, asi->cur_pos);
+        double distance_factor = 1.0;
+        if(asi->max_distance > 0)
+        {
+            distance_factor = 1.0 - std::min(distance / asi->max_distance, 1.0f);
+        }
+        
+        // 计算增益因子（归一化到0-1范围）
+        double gain_factor = std::min(static_cast<double>(asi->gain), 1.0);
+        
+        // 计算优先级因子（假设优先级通常在0-2范围，归一化）
+        double priority_factor = std::min(static_cast<double>(asi->priority) / 2.0, 1.0);
+        
+        // 综合重要性 = 距离权重*距离因子 + 增益权重*增益因子 + 优先级权重*优先级因子
+        double importance = distance_factor * IMPORTANCE_DISTANCE_WEIGHT +
+                           gain_factor * IMPORTANCE_GAIN_WEIGHT +
+                           priority_factor * IMPORTANCE_PRIORITY_WEIGHT;
+        
+        return importance;
+    }
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -96,6 +138,8 @@ namespace hgl
         source_pool.Reserve(max_source);
 
         listener=al;
+        
+        update_frame_counter=0;
 
         ref_distance=DEFAULT_REF_DISTANCE;
         max_distance=DEFAULT_MAX_DISTANCE;
@@ -463,6 +507,11 @@ namespace hgl
             cur_time=ct;
         else
             cur_time=GetTimeSec();
+        
+        // 递增帧计数器（用于分层更新）
+        update_frame_counter++;
+        
+        const Vector3f &listener_pos = listener->GetPosition();
 
         float new_gain;
         int hear_count=0;
@@ -495,10 +544,29 @@ namespace hgl
                 {
                     if(!ToHear(*ptr))       // 之前没声，尝试转为播放
                         new_gain=0;         // 没有足够可用音源或已播放结束，仍然听不到
+                    else
+                        (*ptr)->last_update_frame = update_frame_counter;  // 记录更新帧
                 }
                 else
                 {
-                    UpdateSource(*ptr);     // 刷新音源处理
+                    // 分层更新：根据综合重要性决定更新频率
+                    double importance = CalculateImportance(*ptr, listener_pos);
+                    uint update_interval;
+                    
+                    if(importance >= TIER1_THRESHOLD)
+                        update_interval = TIER1_UPDATE_INTERVAL;  // 高重要性：每帧更新
+                    else if(importance >= TIER2_THRESHOLD)
+                        update_interval = TIER2_UPDATE_INTERVAL;  // 中等重要性：每2帧更新
+                    else
+                        update_interval = TIER3_UPDATE_INTERVAL;  // 低重要性：每5帧更新
+                    
+                    // 检查是否需要在当前帧更新此音源
+                    if((update_frame_counter - (*ptr)->last_update_frame) >= update_interval)
+                    {
+                        UpdateSource(*ptr);     // 刷新音源处理
+                        (*ptr)->last_update_frame = update_frame_counter;
+                    }
+                    
                     OnContinuedHear(*ptr);  // 持续可听
                 }
             }
