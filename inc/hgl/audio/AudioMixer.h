@@ -39,12 +39,6 @@ namespace hgl
                                void** output, uint* outputSize,
                                float pitch, const AudioDataInfo& info);
             
-            /**
-             * 混合多个采样点
-             */
-            int16_t MixSamples(int16_t* samples, int count, bool normalize);
-            int8_t MixSamples8(int8_t* samples, int count, bool normalize);
-            
         public:
             
             AudioMixer();
