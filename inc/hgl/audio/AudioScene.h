@@ -146,7 +146,7 @@ namespace hgl
              */
             bool GenerateScene(void** outputData, uint* outputSize,
                              float duration,
-                             uint outputFormat = 0x1101,  // AL_FORMAT_MONO16
+                             uint outputFormat = AL_FORMAT_MONO16,
                              uint outputSampleRate = 44100);
         };
         

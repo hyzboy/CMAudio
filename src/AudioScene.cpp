@@ -47,6 +47,12 @@ namespace hgl
                 return;
             }
             
+            if(config.format == 0 || config.sampleRate == 0)
+            {
+                LogError(OS_TEXT("Invalid format or sample rate for: ") + name);
+                return;
+            }
+            
             SourceEntry* entry = new SourceEntry();
             entry->config = config;
             entry->name = name;
@@ -118,10 +124,6 @@ namespace hgl
             
             LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration) + OS_TEXT(" seconds"));
             
-            // 创建主混音器来合并所有源
-            AudioMixer mainMixer;
-            mainMixer.SetConfig(globalConfig);
-            
             // 解析音频格式信息
             AudioDataInfo formatInfo;
             formatInfo.format = targetFormat;
@@ -161,8 +163,9 @@ namespace hgl
             uint totalSize = totalSamples * bytesPerFrame;
             
             // 分配并初始化输出缓冲区
-            *outputData = new char[totalSize];
-            memset(*outputData, 0, totalSize);
+            char* outputBuffer = new char[totalSize];
+            memset(outputBuffer, 0, totalSize);
+            *outputData = outputBuffer;
             *outputSize = totalSize;
             *outputFormat = targetFormat;
             *outputSampleRate = targetSampleRate;
@@ -182,6 +185,8 @@ namespace hgl
                        OS_TEXT(" instances"));
                 
                 // 为每个实例创建混音器
+                float currentTimeOffset = 0.0f;
+                
                 for(uint i = 0; i < count; i++)
                 {
                     AudioMixer instanceMixer;
@@ -189,28 +194,28 @@ namespace hgl
                                                 srcConfig.format, srcConfig.sampleRate);
                     
                     // 生成随机时间偏移
-                    float timeOffset;
                     if(i == 0)
                     {
-                        timeOffset = RandomFloat(0.0f, srcConfig.minInterval);
+                        // 第一个实例可以在开始时或稍后出现
+                        currentTimeOffset = RandomFloat(0.0f, srcConfig.minInterval);
                     }
                     else
                     {
-                        // 基于前一个实例的间隔
+                        // 后续实例基于前一个实例累加间隔
                         float interval = RandomFloat(srcConfig.minInterval, srcConfig.maxInterval);
-                        timeOffset = interval * i;
-                        
-                        // 确保不超出持续时间
-                        if(timeOffset >= duration)
-                            break;
+                        currentTimeOffset += interval;
                     }
+                    
+                    // 确保不超出持续时间
+                    if(currentTimeOffset >= duration)
+                        break;
                     
                     // 生成随机音量和音调
                     float volume = RandomFloat(srcConfig.minVolume, srcConfig.maxVolume);
                     float pitch = RandomFloat(srcConfig.minPitch, srcConfig.maxPitch);
                     
                     // 添加单个轨道
-                    instanceMixer.AddTrack(timeOffset, volume, pitch);
+                    instanceMixer.AddTrack(currentTimeOffset, volume, pitch);
                     
                     // 混音到临时缓冲区
                     void* instanceData = nullptr;
@@ -221,9 +226,11 @@ namespace hgl
                         // 将实例数据混合到输出
                         if(formatInfo.bitsPerSample == 16)
                         {
-                            int16_t* outputSamples = (int16_t*)*outputData;
+                            int16_t* outputSamples = (int16_t*)outputBuffer;
                             const int16_t* instanceSamples = (const int16_t*)instanceData;
-                            uint sampleCount = std::min(instanceSize, totalSize) / 2;
+                            uint outputSampleCount = totalSize / sizeof(int16_t);
+                            uint instanceSampleCount = instanceSize / sizeof(int16_t);
+                            uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
                             
                             for(uint s = 0; s < sampleCount; s++)
                             {
@@ -238,9 +245,11 @@ namespace hgl
                         }
                         else if(formatInfo.bitsPerSample == 8)
                         {
-                            int8_t* outputSamples = (int8_t*)*outputData;
+                            int8_t* outputSamples = (int8_t*)outputBuffer;
                             const int8_t* instanceSamples = (const int8_t*)instanceData;
-                            uint sampleCount = std::min(instanceSize, totalSize);
+                            uint outputSampleCount = totalSize / sizeof(int8_t);
+                            uint instanceSampleCount = instanceSize / sizeof(int8_t);
+                            uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
                             
                             for(uint s = 0; s < sampleCount; s++)
                             {
