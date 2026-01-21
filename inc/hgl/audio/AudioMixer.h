@@ -2,7 +2,7 @@
 
 #include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/audio/AudioBuffer.h>
-#include<hgl/type/List.h>
+#include<hgl/type/ObjectList.h>
 #include<hgl/log/Log.h>
 
 namespace hgl
@@ -19,6 +19,11 @@ namespace hgl
             OBJECT_LOGGER
             
         private:
+            
+            // Pitch shifting constants
+            static constexpr float MIN_PITCH = 0.5f;
+            static constexpr float MAX_PITCH = 2.0f;
+            static constexpr float DEFAULT_PITCH = 1.0f;
             
             ObjectList<MixingTrack> tracks;         ///< 混音轨道列表
             MixerConfig config;                     ///< 混音器配置

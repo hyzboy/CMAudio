@@ -124,11 +124,6 @@ namespace hgl
             tracks.Clear();
         }
         
-        // Pitch shifting constants
-        const float MIN_PITCH = 0.5f;
-        const float MAX_PITCH = 2.0f;
-        const float DEFAULT_PITCH = 1.0f;
-        
         /**
          * 应用音调变化(简单的线性插值重采样)
          */
@@ -150,6 +145,15 @@ namespace hgl
             
             // 计算输出大小
             uint sampleCount = inputSize / (info.bitsPerSample / 8) / info.channels;
+            
+            // 验证输入不为空
+            if(sampleCount == 0)
+            {
+                *outputSize = 0;
+                *output = nullptr;
+                return;
+            }
+            
             uint outputSampleCount = (uint)(sampleCount / pitch);
             *outputSize = outputSampleCount * (info.bitsPerSample / 8) * info.channels;
             *output = new char[*outputSize];
@@ -281,10 +285,13 @@ namespace hgl
                     
                     for(uint i = 0; i < trackSampleCount && (startSample + i) < outputSampleCount; i++)
                     {
+                        uint outputBaseIndex = (startSample + i) * sourceInfo.channels;
+                        uint inputBaseIndex = i * sourceInfo.channels;
+                        
                         for(uint ch = 0; ch < sourceInfo.channels; ch++)
                         {
-                            uint outputSampleIndex = ((startSample + i) * sourceInfo.channels + ch);
-                            uint inputSampleIndex = (i * sourceInfo.channels + ch);
+                            uint outputSampleIndex = outputBaseIndex + ch;
+                            uint inputSampleIndex = inputBaseIndex + ch;
                             
                             // 应用音量并混合
                             int32_t sample = trackSamples[inputSampleIndex];
@@ -307,10 +314,13 @@ namespace hgl
                     
                     for(uint i = 0; i < trackSampleCount && (startSample + i) < outputSampleCount; i++)
                     {
+                        uint outputBaseIndex = (startSample + i) * sourceInfo.channels;
+                        uint inputBaseIndex = i * sourceInfo.channels;
+                        
                         for(uint ch = 0; ch < sourceInfo.channels; ch++)
                         {
-                            uint outputSampleIndex = ((startSample + i) * sourceInfo.channels + ch);
-                            uint inputSampleIndex = (i * sourceInfo.channels + ch);
+                            uint outputSampleIndex = outputBaseIndex + ch;
+                            uint inputSampleIndex = inputBaseIndex + ch;
                             
                             // 应用音量并混合
                             int16_t sample = trackSamples[inputSampleIndex];
