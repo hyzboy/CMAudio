@@ -73,6 +73,9 @@ namespace hgl
         double cur_time;
 
         double move_speed;
+        
+        // 多普勒平滑状态
+        Vector3f smoothed_velocity;                         ///< 平滑后的速度（用于多普勒效果）
 
         double last_gain;                                   ///< 上一次的音量
         
@@ -116,6 +119,7 @@ namespace hgl
         {
             velocity = Vector3f(0, 0, 0);
             direction = Vector3f(0, 0, 0);
+            smoothed_velocity = Vector3f(0, 0, 0);
             last_pos = config.position;
             cur_pos = config.position;
         }
