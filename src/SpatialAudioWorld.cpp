@@ -41,12 +41,12 @@ namespace hgl
      */
     static double CalculateImportance(const SpatialAudioSource *asi, const Vector3f &listener_pos)
     {
-        if(!asi)return 0.0;
+        if (!asi) return 0.0;
         
         // 计算距离因子（距离越近越重要，归一化到0-1范围）
         float distance = math::Length(listener_pos, asi->cur_pos);
         double distance_factor = 1.0;
-        if(asi->max_distance > 0)
+        if (asi->max_distance > 0)
         {
             distance_factor = 1.0 - std::min(distance / asi->max_distance, 1.0f);
         }
@@ -560,8 +560,12 @@ namespace hgl
                     else
                         update_interval = TIER3_UPDATE_INTERVAL;  // 低重要性：每5帧更新
                     
-                    // 检查是否需要在当前帧更新此音源
-                    if((update_frame_counter - (*ptr)->last_update_frame) >= update_interval)
+                    // 检查是否需要在当前帧更新此音源（使用模运算避免溢出）
+                    uint64 frames_since_update = (update_frame_counter >= (*ptr)->last_update_frame) 
+                        ? (update_frame_counter - (*ptr)->last_update_frame)
+                        : (UINT64_MAX - (*ptr)->last_update_frame + update_frame_counter + 1);  // 处理溢出
+                    
+                    if (frames_since_update >= update_interval)
                     {
                         UpdateSource(*ptr);     // 刷新音源处理
                         (*ptr)->last_update_frame = update_frame_counter;
