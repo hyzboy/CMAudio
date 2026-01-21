@@ -19,6 +19,8 @@ namespace hgl
             // 初始化内存池
             poolBuffer = nullptr;
             poolBufferSize = 0;
+            tempBuffer = nullptr;
+            tempBufferSize = 0;
         }
         
         AudioScene::~AudioScene()
@@ -30,6 +32,13 @@ namespace hgl
             {
                 delete[] poolBuffer;
                 poolBuffer = nullptr;
+            }
+            
+            // 释放临时缓冲区
+            if(tempBuffer)
+            {
+                delete[] tempBuffer;
+                tempBuffer = nullptr;
             }
         }
         
@@ -58,6 +67,28 @@ namespace hgl
             
             poolBuffer = new char[targetSize];
             poolBufferSize = targetSize;
+        }
+        
+        /**
+         * 确保临时缓冲区有足够大小
+         * @param requiredSize 需要的大小(字节)
+         */
+        void AudioScene::EnsureTempBuffer(uint requiredSize)
+        {
+            if(requiredSize <= tempBufferSize)
+                return;  // 当前缓冲区足够大
+            
+            // 使用1.5倍增长策略
+            uint targetSize = requiredSize + (requiredSize >> 1);
+            
+            LogInfo(OS_TEXT("Expanding temp buffer from ") + OSString::numberOf((int)tempBufferSize) +
+                   OS_TEXT(" to ") + OSString::numberOf((int)targetSize) + OS_TEXT(" bytes"));
+            
+            if(tempBuffer)
+                delete[] tempBuffer;
+            
+            tempBuffer = new char[targetSize];
+            tempBufferSize = targetSize;
         }
         
         /**
@@ -284,18 +315,24 @@ namespace hgl
                     // 添加单个轨道
                     instanceMixer.AddTrack(currentTimeOffset, volume, pitch);
                     
-                    // 混音到临时缓冲区
+                    // 混音到临时缓冲区(使用temp buffer避免频繁分配)
                     void* instanceData = nullptr;
                     uint instanceSize = 0;
                     
                     if(instanceMixer.Mix(&instanceData, &instanceSize, duration))
                     {
+                        // 确保临时缓冲区足够大以容纳实例数据
+                        EnsureTempBuffer(instanceSize);
+                        
+                        // 复制到临时缓冲区(这样可以让AudioMixer内部复用它的池)
+                        memcpy(tempBuffer, instanceData, instanceSize);
+                        
                         // 将实例数据混合到输出
                         if(formatInfo.isFloat && formatInfo.bitsPerSample == 32)
                         {
                             // Float混音 - 简单直接相加，无需担心溢出
                             float* outputSamples = (float*)outputBuffer;
-                            const float* instanceSamples = (const float*)instanceData;
+                            const float* instanceSamples = (const float*)tempBuffer;
                             uint outputSampleCount = totalSize / sizeof(float);
                             uint instanceSampleCount = instanceSize / sizeof(float);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -308,7 +345,7 @@ namespace hgl
                         else if(formatInfo.bitsPerSample == 16)
                         {
                             int16_t* outputSamples = (int16_t*)outputBuffer;
-                            const int16_t* instanceSamples = (const int16_t*)instanceData;
+                            const int16_t* instanceSamples = (const int16_t*)tempBuffer;
                             uint outputSampleCount = totalSize / sizeof(int16_t);
                             uint instanceSampleCount = instanceSize / sizeof(int16_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -327,7 +364,7 @@ namespace hgl
                         else if(formatInfo.bitsPerSample == 8)
                         {
                             int8_t* outputSamples = (int8_t*)outputBuffer;
-                            const int8_t* instanceSamples = (const int8_t*)instanceData;
+                            const int8_t* instanceSamples = (const int8_t*)tempBuffer;
                             uint outputSampleCount = totalSize / sizeof(int8_t);
                             uint instanceSampleCount = instanceSize / sizeof(int8_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -343,8 +380,6 @@ namespace hgl
                                 outputSamples[s] = (int8_t)mixed;
                             }
                         }
-                        
-                        delete[] (char*)instanceData;
                     }
                 }
             }
