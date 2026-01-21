@@ -37,6 +37,11 @@ namespace hgl
     static constexpr double TIER1_THRESHOLD = 0.6;                 // 高重要性阈值
     static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
     
+    // 频率相关衰减常量
+    static constexpr float FREQ_ATTEN_MIN_CUTOFF = 1000.0f;        // 最小截止频率（Hz）- 远距离
+    static constexpr float FREQ_ATTEN_MAX_CUTOFF = 20000.0f;       // 最大截止频率（Hz）- 近距离（无衰减）
+    static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 低频增益（远距离时保留30%）
+    
     // 编译时检查权重总和为1.0（使用精确比较，因为这些是编译时常量）
     constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
                                   IMPORTANCE_VELOCITY_WEIGHT + IMPORTANCE_DISTANCE_WEIGHT;
@@ -170,6 +175,10 @@ namespace hgl
         aux_effect_slot=0;
         reverb_effect=0;
         reverb_enabled=false;
+        
+        // 初始化频率相关衰减变量
+        frequency_dependent_attenuation=false;
+        lowpass_filter=0;
     }
 
     /**
@@ -178,6 +187,7 @@ namespace hgl
      */
     SpatialAudioWorld::~SpatialAudioWorld()
     {
+        CloseFrequencyAttenuation();  // 释放频率相关衰减资源
         CloseReverb();  // 显式释放OpenAL混响资源
         Clear();        // 释放所有空间音源
     }
@@ -498,6 +508,40 @@ namespace hgl
             }
         }
 
+        // 频率相关衰减：根据距离动态调整低通滤波器
+        // 模拟空气中高频衰减比低频快的物理现象
+        if(frequency_dependent_attenuation && lowpass_filter != 0 && listener)
+        {
+            const Vector3f &listener_pos = listener->GetPosition();
+            float distance = math::Length(listener_pos, asi->cur_pos);
+            
+            // 计算距离因子（0=近距离，1=最大距离）
+            float distance_factor = 0.0f;
+            if(asi->max_distance > asi->ref_distance)
+            {
+                distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
+            }
+            
+            // 根据距离调整截止频率：近距离=20kHz（无衰减），远距离=1kHz（高频大幅衰减）
+            float cutoff_frequency = FREQ_ATTEN_MAX_CUTOFF - (FREQ_ATTEN_MAX_CUTOFF - FREQ_ATTEN_MIN_CUTOFF) * distance_factor;
+            
+            // 远距离时降低高频增益，模拟空气吸收
+            float gain_hf = 1.0f - distance_factor * (1.0f - FREQ_ATTEN_MIN_GAIN);
+            
+            // 设置低通滤波器参数
+            if(alFilterf)
+            {
+                alFilterf(lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
+                alFilterf(lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
+            }
+            
+            // 将滤波器应用到音源的直达声
+            if(alSourcei)
+            {
+                alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, lowpass_filter);
+            }
+        }
+
         return(true);
     }
 
@@ -777,5 +821,80 @@ namespace hgl
         
         scene_mutex.Unlock();
         return result;
+    }
+
+    /**
+     * 初始化频率相关衰减系统
+     * 创建低通滤波器，用于模拟空气中高频衰减更快的物理现象
+     */
+    bool SpatialAudioWorld::InitFrequencyAttenuation()
+    {
+        scene_mutex.Lock();
+
+        if(!alGenFilters)
+        {
+            scene_mutex.Unlock();
+            return false;  // EFX 滤波器不可用
+        }
+
+        // 创建低通滤波器
+        alGenFilters(1, &lowpass_filter);
+        if(alGetError() != AL_NO_ERROR)
+        {
+            scene_mutex.Unlock();
+            return false;
+        }
+
+        // 设置为低通滤波器类型
+        alFilteri(lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+        if(alGetError() != AL_NO_ERROR)
+        {
+            CloseFrequencyAttenuation();
+            scene_mutex.Unlock();
+            return false;
+        }
+
+        frequency_dependent_attenuation = true;
+        
+        scene_mutex.Unlock();
+        return true;
+    }
+
+    /**
+     * 关闭频率相关衰减系统
+     */
+    void SpatialAudioWorld::CloseFrequencyAttenuation()
+    {
+        scene_mutex.Lock();
+        
+        frequency_dependent_attenuation = false;
+
+        if(lowpass_filter != 0)
+        {
+            if(alDeleteFilters)
+                alDeleteFilters(1, &lowpass_filter);
+            lowpass_filter = 0;
+        }
+        
+        scene_mutex.Unlock();
+    }
+
+    /**
+     * 启用/禁用频率相关衰减
+     */
+    bool SpatialAudioWorld::EnableFrequencyAttenuation(bool enable)
+    {
+        scene_mutex.Lock();
+        
+        if(enable && lowpass_filter == 0)
+        {
+            scene_mutex.Unlock();
+            return InitFrequencyAttenuation();
+        }
+        
+        frequency_dependent_attenuation = enable;
+        
+        scene_mutex.Unlock();
+        return true;
     }
 }//namespace hgl

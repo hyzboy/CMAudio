@@ -202,6 +202,10 @@ namespace hgl
         uint aux_effect_slot;                                                                       ///< 辅助效果槽
         uint reverb_effect;                                                                         ///< 混响效果
         bool reverb_enabled;                                                                        ///< 混响是否启用
+        
+        // 频率相关衰减（模拟空气中高频衰减更快）
+        bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
+        uint lowpass_filter;                                                                        ///< 低通滤波器对象
 
     protected:
 
@@ -259,6 +263,10 @@ namespace hgl
                 void                CloseReverb();                                                  ///< 关闭混响系统
                 bool                SetReverbPreset(AudioReverbPreset preset);                           ///< 设置混响预设(使用 OpenAL Soft 官方预设)
                 bool                EnableReverb(bool enable);                                      ///< 启用/禁用混响
+
+                bool                InitFrequencyAttenuation();                                     ///< 初始化频率相关衰减
+                void                CloseFrequencyAttenuation();                                    ///< 关闭频率相关衰减
+                bool                EnableFrequencyAttenuation(bool enable);                        ///< 启用/禁用频率相关衰减
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
         virtual void                Delete(SpatialAudioSource *);                                   ///< 删除一个音源
