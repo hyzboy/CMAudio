@@ -81,6 +81,10 @@ namespace hgl
         
         // 分层更新管理
         uint64 last_update_frame;                           ///< 上次更新的帧号（用于分层更新）
+        
+        // 频率相关衰减状态
+        uint lowpass_filter;                                ///< 低通滤波器对象（每个音源独立）
+        float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
         
@@ -117,6 +121,8 @@ namespace hgl
             , move_speed(0)
             , last_gain(0)
             , last_update_frame(0)
+            , lowpass_filter(0)
+            , last_filter_gainhf(-1.0f)
             , is_fading(false)
             , fade_start_time(0)
             , fade_duration(0)
@@ -205,8 +211,6 @@ namespace hgl
         
         // 频率相关衰减（模拟空气中高频衰减更快）
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
-        uint lowpass_filter;                                                                        ///< 低通滤波器对象
-        float last_filter_gainhf;                                                                   ///< 上次应用的高频增益（用于避免重复设置）
 
     protected:
 
