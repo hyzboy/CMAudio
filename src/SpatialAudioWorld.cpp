@@ -926,6 +926,25 @@ namespace hgl
         }
         
         scene_mutex.Lock();
+        
+        // 如果禁用，清理所有现有滤波器
+        if(!enable && frequency_dependent_attenuation)
+        {
+            int count = source_list.GetCount();
+            SpatialAudioSource **items = source_list.GetData();
+            
+            for(int i = 0; i < count; i++)
+            {
+                SpatialAudioSource *asi = items[i];
+                if(asi && asi->lowpass_filter != 0)
+                {
+                    if(alDeleteFilters)
+                        alDeleteFilters(1, &asi->lowpass_filter);
+                    asi->lowpass_filter = 0;
+                }
+            }
+        }
+        
         frequency_dependent_attenuation = enable;
         scene_mutex.Unlock();
         
