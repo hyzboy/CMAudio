@@ -18,10 +18,21 @@ Three example programs are provided:
 - **High precision** - maintains quality with many overlapping sounds
 - **Flexible output**: Can output as int16 or float32
 
+### Soft Clipper (NEW)
+- **Soft Clipper algorithm**: Optional tanh-based soft clipping for float32 data
+- **Smooth distortion**: When audio exceeds [-1.0, 1.0], applies gradual compression instead of harsh cutoff
+- **Toggle on/off**: Use `MixerConfig::useSoftClipper` to enable/disable
+- **Best for**: High-density mixes (10+ tracks) where peaks may exceed normal range
+- **Comparison**:
+  - **Hard clipping** (default): Abruptly cuts peaks at ±1.0 (can sound harsh)
+  - **Normalize**: Scales entire mix to fit (changes overall volume)
+  - **Soft clipping**: Gradually compresses peaks (more musical, preserves dynamic range)
+
 ### Benefits
 - Better quality when mixing 10+ tracks
 - No accumulation of rounding errors
 - Industry-standard approach (FMOD, Wwise, Unity all use float internally)
+- Soft clipper provides natural-sounding peak limiting
 
 ## Prerequisites
 

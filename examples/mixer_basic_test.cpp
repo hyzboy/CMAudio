@@ -38,7 +38,12 @@ int main(int argc, char** argv)
     AudioMixer mixer;
     mixer.SetSourceAudio(data, dataSize, format, sampleRate);
     mixer.SetOutputSampleRate(44100);  // Upsample to 44.1kHz
-
+    
+    // Optional: Enable soft clipper for smoother peak handling
+    // MixerConfig config;
+    // config.useSoftClipper = true;  // Use tanh-based soft clipping instead of hard clipping
+    // mixer.SetConfig(config);
+    
     // Add multiple tracks with different parameters
     std::cout << std::endl << "Adding tracks:" << std::endl;
     

@@ -297,6 +297,31 @@ namespace hgl
         }
         
         /**
+         * 软削波函数 - 使用tanh提供平滑的削波效果
+         * tanh函数提供S形曲线，当输入接近±1时平滑压缩
+         * 相比硬削波，软削波产生的失真更自然、更悦耳
+         */
+        float AudioMixer::SoftClip(float sample)
+        {
+            // tanh函数提供自然的软削波
+            // 输入范围 (-∞, +∞)，输出范围 (-1.0, +1.0)
+            // 当|sample| < 1.0时，几乎线性
+            // 当|sample| > 1.0时，平滑压缩到±1.0
+            return tanhf(sample);
+        }
+        
+        /**
+         * 应用软削波到float缓冲区
+         */
+        void AudioMixer::ApplySoftClipping(float* buffer, uint count)
+        {
+            for(uint i = 0; i < count; i++)
+            {
+                buffer[i] = SoftClip(buffer[i]);
+            }
+        }
+        
+        /**
          * 执行混音 - 完全使用float内部处理
          */
         bool AudioMixer::Mix(void** outputData, uint* outputSize, float loopLength)
@@ -389,9 +414,16 @@ namespace hgl
             
             delete[] sourceFloat;
             
-            // 可选：应用归一化
-            if(config.normalize)
+            // 应用软削波或归一化
+            if(config.useSoftClipper)
             {
+                // 使用软削波处理越界数据
+                LogInfo(OS_TEXT("Applying soft clipping (tanh)"));
+                ApplySoftClipping(mixBuffer, outputSampleCount);
+            }
+            else if(config.normalize)
+            {
+                // 使用传统归一化（硬削波）
                 // 查找峰值
                 float peak = 0.0f;
                 for(uint i = 0; i < outputSampleCount; i++)
@@ -413,6 +445,7 @@ namespace hgl
                     }
                 }
             }
+            // 如果都不启用，则可能存在超出[-1.0, 1.0]的数据，在转换时会被硬削波
             
             // 转换为目标格式
             ConvertFromFloat(mixBuffer, outputSampleCount, outputData, outputSize, outputFormat);

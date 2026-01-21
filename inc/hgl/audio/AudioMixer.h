@@ -61,6 +61,21 @@ namespace hgl
             void Resample(const float* input, uint inputCount, uint inputSampleRate,
                          float** output, uint* outputCount, uint outputSampleRate);
             
+            /**
+             * 软削波函数 - 使用tanh提供平滑的削波效果
+             * 将超出[-1.0, 1.0]范围的信号平滑压缩，避免硬削波的刺耳失真
+             * @param sample 输入采样值
+             * @return 削波后的采样值
+             */
+            static float SoftClip(float sample);
+            
+            /**
+             * 应用软削波到float缓冲区
+             * @param buffer float采样缓冲区
+             * @param count 采样数量
+             */
+            static void ApplySoftClipping(float* buffer, uint count);
+            
         public:
             
             AudioMixer();
