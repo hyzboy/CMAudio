@@ -38,9 +38,9 @@ namespace hgl
     static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
     
     // 编译时检查权重总和为1.0
-    static_assert(std::abs((IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
-                            IMPORTANCE_VELOCITY_WEIGHT + IMPORTANCE_DISTANCE_WEIGHT) - 1.0) < 0.0001,
-                  "Importance weights must sum to 1.0");
+    constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
+                                  IMPORTANCE_VELOCITY_WEIGHT + IMPORTANCE_DISTANCE_WEIGHT;
+    static_assert(weight_sum > 0.9999 && weight_sum < 1.0001, "Importance weights must sum to 1.0");
 
     /**
      * 计算音源的综合重要性分数
