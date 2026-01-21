@@ -12,7 +12,7 @@ namespace hgl
     {
         /**
          * Simple WAV file writer for mono audio
-         * Supports AL_FORMAT_MONO8 and AL_FORMAT_MONO16
+         * Supports AL_FORMAT_MONO8, AL_FORMAT_MONO16, and AL_FORMAT_MONO_FLOAT32
          */
         class WavWriter
         {
@@ -54,7 +54,7 @@ namespace hgl
             /**
              * Open a WAV file for writing
              * @param filename Output filename
-             * @param format AL_FORMAT_MONO8 or AL_FORMAT_MONO16
+             * @param format AL_FORMAT_MONO8, AL_FORMAT_MONO16, or AL_FORMAT_MONO_FLOAT32
              * @param sampleRate Sample rate in Hz
              * @return true if successful
              */
@@ -65,12 +65,25 @@ namespace hgl
                 file = fopen(filename, "wb");
                 if (!file) return false;
 
-                // Determine bits per sample from format
+                // Determine bits per sample and audio format from format
                 uint16_t bitsPerSample = 0;
+                uint16_t audioFormat = 1;  // 1 = PCM, 3 = IEEE float
+                
                 if (format == AL_FORMAT_MONO8)
+                {
                     bitsPerSample = 8;
+                    audioFormat = 1;
+                }
                 else if (format == AL_FORMAT_MONO16)
+                {
                     bitsPerSample = 16;
+                    audioFormat = 1;
+                }
+                else if (format == AL_FORMAT_MONO_FLOAT32)
+                {
+                    bitsPerSample = 32;
+                    audioFormat = 3;  // IEEE float
+                }
                 else
                 {
                     fclose(file);
@@ -85,7 +98,7 @@ namespace hgl
                 memcpy(header.waveID, "WAVE", 4);
                 memcpy(header.fmtID, "fmt ", 4);
                 header.fmtSize = 16;
-                header.audioFormat = 1;  // PCM
+                header.audioFormat = audioFormat;  // PCM (1) or IEEE float (3)
                 header.numChannels = 1;  // Mono
                 header.sampleRate = sampleRate;
                 header.bitsPerSample = bitsPerSample;

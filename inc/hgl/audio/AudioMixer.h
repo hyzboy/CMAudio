@@ -32,6 +32,7 @@ namespace hgl
             const void* sourceData;                 ///< 源音频数据指针
             uint sourceDataSize;                    ///< 源音频数据大小
             uint outputSampleRate;                  ///< 输出采样率 (0=使用源采样率)
+            uint outputFormat;                      ///< 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
             
             /**
              * 获取音频格式信息
@@ -39,18 +40,26 @@ namespace hgl
             bool ParseAudioFormat(uint format, AudioDataInfo& info);
             
             /**
-             * 应用简单的音调变化(线性插值重采样)
+             * 将整数采样转换为浮点 (-1.0 到 1.0)
              */
-            void ApplyPitchShift(const void* input, uint inputSize, 
-                               void** output, uint* outputSize,
-                               float pitch, const AudioDataInfo& info);
+            void ConvertToFloat(const void* input, uint inputSize, float** output, uint* outputCount, const AudioDataInfo& info);
             
             /**
-             * 应用采样率转换
+             * 将浮点采样转换为整数格式
              */
-            void Resample(const void* input, uint inputSize, uint inputSampleRate,
-                         void** output, uint* outputSize, uint outputSampleRate,
-                         const AudioDataInfo& info);
+            void ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, uint targetFormat);
+            
+            /**
+             * 应用简单的音调变化(线性插值重采样) - float版本
+             */
+            void ApplyPitchShift(const float* input, uint inputCount, 
+                               float** output, uint* outputCount, float pitch);
+            
+            /**
+             * 应用采样率转换 - float版本
+             */
+            void Resample(const float* input, uint inputCount, uint inputSampleRate,
+                         float** output, uint* outputCount, uint outputSampleRate);
             
         public:
             
@@ -112,9 +121,20 @@ namespace hgl
             void SetOutputSampleRate(uint sampleRate) { outputSampleRate = sampleRate; }
             
             /**
+             * 设置输出格式
+             * @param format 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
+             */
+            void SetOutputFormat(uint format) { outputFormat = format; }
+            
+            /**
              * 获取输出采样率
              */
             uint GetOutputSampleRate() const { return outputSampleRate > 0 ? outputSampleRate : sourceInfo.sampleRate; }
+            
+            /**
+             * 获取输出格式
+             */
+            uint GetOutputFormat() const { return outputFormat; }
             
             /**
              * 执行混音

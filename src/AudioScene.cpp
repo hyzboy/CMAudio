@@ -157,6 +157,7 @@ namespace hgl
             AudioDataInfo formatInfo;
             formatInfo.format = outputFormat;
             formatInfo.channels = 1;  // 仅支持单声道
+            formatInfo.isFloat = false;
             
             switch(outputFormat)
             {
@@ -166,6 +167,11 @@ namespace hgl
                     
                 case AL_FORMAT_MONO16:
                     formatInfo.bitsPerSample = 16;
+                    break;
+                    
+                case AL_FORMAT_MONO_FLOAT32:
+                    formatInfo.bitsPerSample = 32;
+                    formatInfo.isFloat = true;
                     break;
                     
                 default:
@@ -209,6 +215,7 @@ namespace hgl
                     instanceMixer.SetSourceAudio(srcConfig.data, srcConfig.dataSize, 
                                                 srcConfig.format, srcConfig.sampleRate);
                     instanceMixer.SetOutputSampleRate(outputSampleRate);  // 设置输出采样率
+                    instanceMixer.SetOutputFormat(outputFormat);  // 设置输出格式
                     
                     // 生成随机时间偏移
                     if(i == 0)
@@ -241,7 +248,21 @@ namespace hgl
                     if(instanceMixer.Mix(&instanceData, &instanceSize, duration))
                     {
                         // 将实例数据混合到输出
-                        if(formatInfo.bitsPerSample == 16)
+                        if(formatInfo.isFloat && formatInfo.bitsPerSample == 32)
+                        {
+                            // Float混音 - 简单直接相加，无需担心溢出
+                            float* outputSamples = (float*)outputBuffer;
+                            const float* instanceSamples = (const float*)instanceData;
+                            uint outputSampleCount = totalSize / sizeof(float);
+                            uint instanceSampleCount = instanceSize / sizeof(float);
+                            uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
+                            
+                            for(uint s = 0; s < sampleCount; s++)
+                            {
+                                outputSamples[s] += instanceSamples[s];
+                            }
+                        }
+                        else if(formatInfo.bitsPerSample == 16)
                         {
                             int16_t* outputSamples = (int16_t*)outputBuffer;
                             const int16_t* instanceSamples = (const int16_t*)instanceData;

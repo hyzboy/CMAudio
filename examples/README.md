@@ -10,6 +10,19 @@ Three example programs are provided:
 2. **scene_city_test** - AudioScene demo with city environment (TOML config)
 3. **scene_swarm_test** - AudioScene demo with bee swarm (TOML config)
 
+## Key Features
+
+### Float-Based Internal Mixing
+- **All mixing operations use float internally** (-1.0 to 1.0 range)
+- **No clipping distortion** when mixing multiple tracks
+- **High precision** - maintains quality with many overlapping sounds
+- **Flexible output**: Can output as int16 or float32
+
+### Benefits
+- Better quality when mixing 10+ tracks
+- No accumulation of rounding errors
+- Industry-standard approach (FMOD, Wwise, Unity all use float internally)
+
 ## Prerequisites
 
 ### Required WAV Files
