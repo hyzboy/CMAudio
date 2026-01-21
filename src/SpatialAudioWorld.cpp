@@ -265,18 +265,21 @@ namespace hgl
                 // 如果找到了优先级更低的音源，抢占它的物理音源
                 if(lowest_priority_source)
                 {
-                    asi->source = lowest_priority_source->source;
-                    lowest_priority_source->source = nullptr;
+                    AudioSource *stolen_source = lowest_priority_source->source;
                     
-                    // 立即降低增益并停止，避免爆音（比完整淡出更快但比直接停止更平滑）
-                    float current_gain = asi->source->GetGain();
+                    // 立即降低被抢占音源的增益，避免爆音（比完整淡出更快但比直接停止更平滑）
+                    float current_gain = stolen_source->GetGain();
                     if(current_gain > VOICE_STEAL_GAIN_REDUCTION)
                     {
-                        asi->source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
+                        stolen_source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
                     }
                     
-                    asi->source->Stop();
-                    asi->source->Unlink();
+                    stolen_source->Stop();
+                    stolen_source->Unlink();
+                    
+                    // 将被抢占的物理音源分配给当前音源
+                    asi->source = stolen_source;
+                    lowest_priority_source->source = nullptr;
                 }
                 else
                 {
