@@ -75,6 +75,13 @@ namespace hgl
         double move_speed;
 
         double last_gain;                                   ///< 上一次的音量
+        
+        // 淡入淡出状态
+        bool is_fading;                                     ///< 是否正在执行淡入淡出
+        double fade_start_time;                             ///< 淡入淡出开始时间
+        double fade_duration;                               ///< 淡入淡出持续时间
+        double fade_start_gain;                             ///< 淡入淡出开始时的增益
+        double fade_target_gain;                            ///< 淡入淡出目标增益
 
         AudioSource *source;
 
@@ -100,6 +107,11 @@ namespace hgl
             , cur_time(0)
             , move_speed(0)
             , last_gain(0)
+            , is_fading(false)
+            , fade_start_time(0)
+            , fade_duration(0)
+            , fade_start_gain(0)
+            , fade_target_gain(0)
             , source(nullptr)
         {
             velocity = Vector3f(0, 0, 0);

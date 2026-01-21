@@ -17,6 +17,7 @@ namespace hgl
     static constexpr float DEFAULT_REF_DISTANCE = 1.0f;
     static constexpr float DEFAULT_MAX_DISTANCE = 10000.0f;
     static constexpr double MIN_TIME_DIFF = 0.0001;  // 避免除以非常小的数导致数值不稳定
+    static constexpr double FADE_DURATION = 0.02;    // 淡入淡出持续时间（20毫秒）
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -187,11 +188,15 @@ namespace hgl
 
         OnToMute(asi);
 
-        asi->source->Stop();
-        asi->source->Unlink();
-        source_pool.Release(asi->source);
+        // 启动淡出效果
+        asi->is_fading = true;
+        asi->fade_start_time = cur_time;
+        asi->fade_duration = FADE_DURATION;
+        asi->fade_start_gain = asi->source->GetGain();
+        asi->fade_target_gain = 0.0;
 
-        asi->source=nullptr;
+        // 立即开始淡出
+        asi->source->SetGain(asi->fade_start_gain);
 
         return(true);
     }
@@ -256,6 +261,14 @@ namespace hgl
         asi->source->SetCurTime(time_off);
         asi->source->Play(asi->loop);
 
+        // 启动淡入效果
+        asi->is_fading = true;
+        asi->fade_start_time = cur_time;
+        asi->fade_duration = FADE_DURATION;
+        asi->fade_start_gain = 0.0;
+        asi->fade_target_gain = asi->gain;
+        asi->source->SetGain(0.0);  // 从0开始淡入
+
         OnToHear(asi);
 
         return(true);
@@ -265,6 +278,36 @@ namespace hgl
     {
         if(!asi)return(false);
         if(!asi->source)return(false);
+
+        // 处理淡入淡出效果
+        if(asi->is_fading)
+        {
+            double elapsed = cur_time - asi->fade_start_time;
+            
+            if(elapsed >= asi->fade_duration)
+            {
+                // 淡入淡出完成
+                asi->source->SetGain(asi->fade_target_gain);
+                asi->is_fading = false;
+                
+                // 如果是淡出到静音，现在停止并释放音源
+                if(asi->fade_target_gain == 0.0)
+                {
+                    asi->source->Stop();
+                    asi->source->Unlink();
+                    source_pool.Release(asi->source);
+                    asi->source = nullptr;
+                    return(true);
+                }
+            }
+            else
+            {
+                // 计算当前增益（线性插值）
+                double t = elapsed / asi->fade_duration;
+                double current_gain = asi->fade_start_gain + (asi->fade_target_gain - asi->fade_start_gain) * t;
+                asi->source->SetGain(current_gain);
+            }
+        }
 
         if(asi->source->GetState()==AL_STOPPED)    // 停止播放状态
         {
