@@ -4,11 +4,13 @@
 
 namespace hgl
 {
-    /**
-     * 插值算法类型枚举
-     * Interpolation algorithm type enum
-     */
-    enum class InterpolationType
+    namespace audio
+    {
+        /**
+         * 插值算法类型枚举
+         * Interpolation algorithm type enum
+         */
+        enum class InterpolationType
     {
         Linear,         ///< 线性插值 - 最快，但可能产生突变
         Cosine,         ///< 余弦插值 - 平滑过渡，适合音频
@@ -158,4 +160,5 @@ namespace hgl
             }
         }
     };
+    }//namespace audio
 }//namespace hgl

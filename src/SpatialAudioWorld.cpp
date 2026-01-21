@@ -179,7 +179,7 @@ namespace hgl
         frequency_dependent_attenuation=false;
         
         // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
-        fade_interpolation_type=InterpolationType::Cosine;
+        fade_interpolation_type=audio::InterpolationType::Cosine;
     }
 
     /**
@@ -442,7 +442,7 @@ namespace hgl
             {
                 // 计算当前增益（使用配置的插值算法）
                 double t = elapsed / asi->fade_duration;
-                double current_gain = Interpolation::Interpolate(
+                double current_gain = audio::Interpolation::Interpolate(
                     fade_interpolation_type,
                     (float)asi->fade_start_gain,
                     (float)asi->fade_target_gain,
@@ -987,7 +987,7 @@ namespace hgl
     /**
      * 设置音源的方向性增益图
      */
-    void SpatialAudioWorld::SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type)
+    void SpatialAudioWorld::SetDirectionalPattern(SpatialAudioSource *asi, audio::GainPatternType pattern_type)
     {
         if (!asi)
             return;
@@ -1000,7 +1000,7 @@ namespace hgl
     /**
      * 设置音源的自定义方向性增益图
      */
-    void SpatialAudioWorld::SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count)
+    void SpatialAudioWorld::SetCustomDirectionalPattern(SpatialAudioSource *asi, const audio::PolarGainSample *samples, int count)
     {
         if (!asi || !samples || count <= 0)
             return;

@@ -62,7 +62,7 @@ namespace hgl
         float ref_distance;                                 ///< 参考距离
         float max_distance;                                 ///< 最大距离
         ConeAngle cone_angle;
-        DirectionalGainPattern directional_pattern;         ///< 方向性增益图（用于更复杂的方向性建模）
+        audio::DirectionalGainPattern directional_pattern;  ///< 方向性增益图（用于更复杂的方向性建模）
         Vector3f velocity;
         Vector3f direction;
 
@@ -216,7 +216,7 @@ namespace hgl
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
         
         // 淡入淡出插值类型
-        InterpolationType fade_interpolation_type;                                                  ///< 淡入淡出插值算法类型
+        audio::InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
 
     protected:
 
@@ -285,7 +285,7 @@ namespace hgl
                  * @param asi 音源指针
                  * @param pattern_type 预定义模式类型
                  */
-                void                SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type);
+                void                SetDirectionalPattern(SpatialAudioSource *asi, audio::GainPatternType pattern_type);
 
                 /**
                  * 设置音源的自定义方向性增益图
@@ -294,20 +294,20 @@ namespace hgl
                  * @param samples 极坐标样本点数组
                  * @param count 样本点数量
                  */
-                void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count);
+                void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const audio::PolarGainSample *samples, int count);
 
                 /**
                  * 设置淡入淡出插值算法类型
                  * Set fade interpolation algorithm type
                  * @param type 插值类型（Linear: 线性，快速但可能突变; Cosine: 余弦，平滑推荐）
                  */
-                void                SetFadeInterpolationType(InterpolationType type) { fade_interpolation_type = type; }
+                void                SetFadeInterpolationType(audio::InterpolationType type) { fade_interpolation_type = type; }
 
                 /**
                  * 获取淡入淡出插值算法类型
                  * Get fade interpolation algorithm type
                  */
-                InterpolationType   GetFadeInterpolationType() const { return fade_interpolation_type; }
+                audio::InterpolationType   GetFadeInterpolationType() const { return fade_interpolation_type; }
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
         virtual void                Delete(SpatialAudioSource *);                                   ///< 删除一个音源

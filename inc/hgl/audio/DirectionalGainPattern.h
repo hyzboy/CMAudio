@@ -8,11 +8,13 @@ namespace hgl
 {
     using namespace math;
 
-    /**
-     * 极坐标增益图模式枚举
-     * Polar gain pattern presets
-     */
-    enum class GainPatternType
+    namespace audio
+    {
+        /**
+         * 极坐标增益图模式枚举
+         * Polar gain pattern presets
+         */
+        enum class GainPatternType
     {
         Omnidirectional,    ///< 全向 - 各方向增益相同
         Cardioid,           ///< 心形 - 前向增益最大，后向最小（类似单向麦克风）
@@ -111,4 +113,5 @@ namespace hgl
          */
         bool IsEnabled() const { return pattern_type != GainPatternType::Omnidirectional; }
     };
+    }//namespace audio
 }//namespace hgl
