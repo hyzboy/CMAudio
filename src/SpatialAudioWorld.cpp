@@ -25,26 +25,43 @@ namespace hgl
     static constexpr float VOICE_STEAL_MIN_GAIN_THRESHOLD = 0.01f;  // 音源抢占时需要降低增益的最小阈值
     
     // 分层更新管理常量
-    static constexpr double IMPORTANCE_DISTANCE_WEIGHT = 0.3;  // 距离权重（距离越近越重要）
-    static constexpr double IMPORTANCE_GAIN_WEIGHT = 0.3;      // 增益权重
-    static constexpr double IMPORTANCE_PRIORITY_WEIGHT = 0.4;  // 优先级权重
-    static constexpr uint TIER1_UPDATE_INTERVAL = 1;           // 高重要性：每帧更新
-    static constexpr uint TIER2_UPDATE_INTERVAL = 2;           // 中等重要性：每2帧更新
-    static constexpr uint TIER3_UPDATE_INTERVAL = 5;           // 低重要性：每5帧更新
-    static constexpr double TIER1_THRESHOLD = 0.6;             // 高重要性阈值
-    static constexpr double TIER2_THRESHOLD = 0.3;             // 中等重要性阈值
+    static constexpr double IMPORTANCE_AUDIBLE_GAIN_WEIGHT = 0.4;  // 实际可听增益权重（最重要）
+    static constexpr double IMPORTANCE_PRIORITY_WEIGHT = 0.3;      // 优先级权重
+    static constexpr double IMPORTANCE_VELOCITY_WEIGHT = 0.2;      // 速度权重（移动物体更重要）
+    static constexpr double IMPORTANCE_DISTANCE_WEIGHT = 0.1;      // 距离权重（作为辅助因素）
+    static constexpr uint TIER1_UPDATE_INTERVAL = 1;               // 高重要性：每帧更新
+    static constexpr uint TIER2_UPDATE_INTERVAL = 2;               // 中等重要性：每2帧更新
+    static constexpr uint TIER3_UPDATE_INTERVAL = 5;               // 低重要性：每5帧更新
+    static constexpr double TIER1_THRESHOLD = 0.6;                 // 高重要性阈值
+    static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
 
     /**
      * 计算音源的综合重要性分数
      * @param asi 音源
+     * @param audible_gain 实际可听增益（经过距离衰减后）
      * @param listener_pos 监听者位置
      * @return 重要性分数(0-1范围，1为最重要)
      */
-    static double CalculateImportance(const SpatialAudioSource *asi, const Vector3f &listener_pos)
+    static double CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos)
     {
         if (!asi) return 0.0;
         
-        // 计算距离因子（距离越近越重要，归一化到0-1范围）
+        // 1. 实际可听增益因子（最重要，这是用户真正听到的音量）
+        double audible_gain_factor = std::min(audible_gain, 1.0);
+        
+        // 2. 优先级因子（假设优先级通常在0-2范围，归一化）
+        double priority_factor = std::min(static_cast<double>(asi->priority) / 2.0, 1.0);
+        
+        // 3. 速度因子（移动的音源更重要，如接近的敌人、飞过的子弹等）
+        double velocity_factor = 0.0;
+        if (asi->doppler_factor > 0)  // 只有启用多普勒效果时才考虑速度
+        {
+            double speed = asi->move_speed;
+            // 将速度归一化（假设10单位/秒为高速）
+            velocity_factor = std::min(speed / 10.0, 1.0);
+        }
+        
+        // 4. 距离因子（作为辅助，距离越近可能意味着更需要精确更新）
         float distance = math::Length(listener_pos, asi->cur_pos);
         double distance_factor = 1.0;
         if (asi->max_distance > 0)
@@ -52,16 +69,11 @@ namespace hgl
             distance_factor = 1.0 - std::min(distance / asi->max_distance, 1.0f);
         }
         
-        // 计算增益因子（归一化到0-1范围）
-        double gain_factor = std::min(static_cast<double>(asi->gain), 1.0);
-        
-        // 计算优先级因子（假设优先级通常在0-2范围，归一化）
-        double priority_factor = std::min(static_cast<double>(asi->priority) / 2.0, 1.0);
-        
-        // 综合重要性 = 距离权重*距离因子 + 增益权重*增益因子 + 优先级权重*优先级因子
-        double importance = distance_factor * IMPORTANCE_DISTANCE_WEIGHT +
-                           gain_factor * IMPORTANCE_GAIN_WEIGHT +
-                           priority_factor * IMPORTANCE_PRIORITY_WEIGHT;
+        // 综合重要性 = 各因子加权和
+        double importance = audible_gain_factor * IMPORTANCE_AUDIBLE_GAIN_WEIGHT +
+                           priority_factor * IMPORTANCE_PRIORITY_WEIGHT +
+                           velocity_factor * IMPORTANCE_VELOCITY_WEIGHT +
+                           distance_factor * IMPORTANCE_DISTANCE_WEIGHT;
         
         return importance;
     }
@@ -551,7 +563,8 @@ namespace hgl
                 else
                 {
                     // 分层更新：根据综合重要性决定更新频率
-                    double importance = CalculateImportance(*ptr, listener_pos);
+                    // 使用实际可听增益（new_gain）而非原始增益，这更准确反映用户听到的音量
+                    double importance = CalculateImportance(*ptr, new_gain, listener_pos);
                     uint update_interval;
                     
                     if(importance >= TIER1_THRESHOLD)
