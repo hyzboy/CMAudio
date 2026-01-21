@@ -564,24 +564,26 @@ namespace hgl
                 if(asi->lowpass_filter != 0 && alFilterf)
                 {
                     alGetError();  // 清除之前的错误
+                    
+                    // 尝试设置两个参数，任一失败都放弃更新
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
-                    if(alGetError() != AL_NO_ERROR)
-                        return(true);
+                    bool gain_ok = (alGetError() == AL_NO_ERROR);
                         
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
-                    if(alGetError() != AL_NO_ERROR)
-                        return(true);
+                    bool gainhf_ok = (alGetError() == AL_NO_ERROR);
                     
-                    // 将滤波器应用到音源的直达声
-                    if(alSourcei)
+                    // 只有两个参数都设置成功才应用滤波器
+                    if(gain_ok && gainhf_ok && alSourcei)
                     {
                         alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
                         
                         if(alGetError() == AL_NO_ERROR)
                         {
-                            asi->last_filter_gainhf = gain_hf;
+                            asi->last_filter_gainhf = gain_hf;  // 只在成功应用后更新缓存值
                         }
+                        // 如果应用失败，不更新缓存，下次会重试
                     }
+                    // 如果参数设置失败，不更新缓存，下次会重试
                 }
             }
         }
