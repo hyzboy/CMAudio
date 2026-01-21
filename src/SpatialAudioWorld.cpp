@@ -195,9 +195,6 @@ namespace hgl
         asi->fade_start_gain = asi->source->GetGain();
         asi->fade_target_gain = 0.0;
 
-        // 立即开始淡出
-        asi->source->SetGain(asi->fade_start_gain);
-
         return(true);
     }
 
@@ -291,7 +288,7 @@ namespace hgl
                 asi->is_fading = false;
                 
                 // 如果是淡出到静音，现在停止并释放音源
-                if(asi->fade_target_gain == 0.0)
+                if(asi->fade_target_gain <= 0.001)  // 使用小阈值而非直接比较 0.0
                 {
                     asi->source->Stop();
                     asi->source->Unlink();
@@ -311,6 +308,10 @@ namespace hgl
 
         if(asi->source->GetState()==AL_STOPPED)    // 停止播放状态
         {
+            // 如果正在淡入淡出，不要中断
+            if(asi->is_fading)
+                return(true);
+                
             if(!asi->loop)                  // 不是循环播放
             {
                 if(OnStopped(asi))
