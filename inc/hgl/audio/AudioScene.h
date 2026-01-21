@@ -72,6 +72,11 @@ namespace hgl
             Map<OSString, SourceEntry*> sources;    ///< 音频源字典
             MixerConfig globalConfig;               ///< 全局混音配置
             
+            uint sourceFormat;                      ///< 所有音源的统一格式(首个添加的音源决定)
+            uint sourceSampleRate;                  ///< 所有音源的统一采样率(首个添加的音源决定)
+            uint outputFormat;                      ///< 输出音频格式
+            uint outputSampleRate;                  ///< 输出采样率
+            
             std::random_device rd;
             std::mt19937 rng;
             
@@ -123,31 +128,30 @@ namespace hgl
             const MixerConfig& GetGlobalConfig() const { return globalConfig; }
             
             /**
+             * 设置输出格式
+             * @param format 输出音频格式 (AL_FORMAT_MONO8/MONO16)
+             * @param sampleRate 输出采样率 (如44100, 48000)
+             */
+            void SetOutputFormat(uint format, uint sampleRate);
+            
+            /**
+             * 获取输出格式
+             */
+            uint GetOutputFormat() const { return outputFormat; }
+            
+            /**
+             * 获取输出采样率
+             */
+            uint GetOutputSampleRate() const { return outputSampleRate; }
+            
+            /**
              * 生成混音场景
              * @param outputData 输出数据指针(需要调用者释放)
              * @param outputSize 输出数据大小
-             * @param outputFormat 输出音频格式
-             * @param outputSampleRate 输出采样率
              * @param duration 场景持续时间(秒)
              * @return 是否成功
              */
-            bool GenerateScene(void** outputData, uint* outputSize,
-                             uint* outputFormat, uint* outputSampleRate,
-                             float duration);
-            
-            /**
-             * 生成混音场景(指定输出格式)
-             * @param outputData 输出数据指针(需要调用者释放)
-             * @param outputSize 输出数据大小
-             * @param duration 场景持续时间(秒)
-             * @param outputFormat 指定输出格式
-             * @param outputSampleRate 指定输出采样率
-             * @return 是否成功
-             */
-            bool GenerateScene(void** outputData, uint* outputSize,
-                             float duration,
-                             uint outputFormat = AL_FORMAT_MONO16,
-                             uint outputSampleRate = 44100);
+            bool GenerateScene(void** outputData, uint* outputSize, float duration);
         };
         
     }//namespace audio

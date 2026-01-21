@@ -11,6 +11,10 @@ namespace hgl
     {
         AudioScene::AudioScene() : rng(rd())
         {
+            sourceFormat = 0;
+            sourceSampleRate = 0;
+            outputFormat = AL_FORMAT_MONO16;    // 默认16位单声道
+            outputSampleRate = 44100;            // 默认44.1kHz
         }
         
         AudioScene::~AudioScene()
@@ -53,6 +57,26 @@ namespace hgl
                 return;
             }
             
+            // 如果是第一个音源，设置格式标准
+            if(sources.GetCount() == 0)
+            {
+                sourceFormat = config.format;
+                sourceSampleRate = config.sampleRate;
+                LogInfo(OS_TEXT("Set source format standard: format=") + OSString::numberOf((int)sourceFormat) +
+                       OS_TEXT(", sampleRate=") + OSString::numberOf((int)sourceSampleRate));
+            }
+            else
+            {
+                // 验证格式一致性
+                if(config.format != sourceFormat || config.sampleRate != sourceSampleRate)
+                {
+                    LogError(OS_TEXT("Format mismatch for: ") + name +
+                            OS_TEXT(". All sources must have format=") + OSString::numberOf((int)sourceFormat) +
+                            OS_TEXT(", sampleRate=") + OSString::numberOf((int)sourceSampleRate));
+                    return;
+                }
+            }
+            
             SourceEntry* entry = new SourceEntry();
             entry->config = config;
             entry->name = name;
@@ -90,14 +114,28 @@ namespace hgl
             }
             
             sources.Clear();
+            
+            // 重置格式标准
+            sourceFormat = 0;
+            sourceSampleRate = 0;
+        }
+        
+        /**
+         * 设置输出格式
+         */
+        void AudioScene::SetOutputFormat(uint format, uint sampleRate)
+        {
+            outputFormat = format;
+            outputSampleRate = sampleRate;
+            
+            LogInfo(OS_TEXT("Set output format: format=") + OSString::numberOf((int)outputFormat) +
+                   OS_TEXT(", sampleRate=") + OSString::numberOf((int)outputSampleRate));
         }
         
         /**
          * 生成混音场景
          */
-        bool AudioScene::GenerateScene(void** outputData, uint* outputSize,
-                                      uint* outputFormat, uint* outputSampleRate,
-                                      float duration)
+        bool AudioScene::GenerateScene(void** outputData, uint* outputSize, float duration)
         {
             if(sources.GetCount() == 0)
             {
@@ -111,25 +149,16 @@ namespace hgl
                 RETURN_FALSE;
             }
             
-            // 确定输出格式(使用第一个源的格式)
-            auto it = sources.GetIterator();
-            if(!it.Next())
-            {
-                RETURN_FALSE;
-            }
-            
-            SourceEntry* firstEntry = it.GetValue();
-            uint targetFormat = firstEntry->config.format;
-            uint targetSampleRate = firstEntry->config.sampleRate;
-            
-            LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration) + OS_TEXT(" seconds"));
+            LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration) + 
+                   OS_TEXT(" seconds, output format=") + OSString::numberOf((int)outputFormat) +
+                   OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputSampleRate));
             
             // 解析音频格式信息 - 仅支持单声道
             AudioDataInfo formatInfo;
-            formatInfo.format = targetFormat;
+            formatInfo.format = outputFormat;
             formatInfo.channels = 1;  // 仅支持单声道
             
-            switch(targetFormat)
+            switch(outputFormat)
             {
                 case AL_FORMAT_MONO8:
                     formatInfo.bitsPerSample = 8;
@@ -144,11 +173,11 @@ namespace hgl
                     RETURN_FALSE;
             }
             
-            formatInfo.sampleRate = targetSampleRate;
+            formatInfo.sampleRate = outputSampleRate;
             
             uint bytesPerSample = formatInfo.bitsPerSample / 8;
             uint bytesPerFrame = bytesPerSample;  // 单声道，每帧就是一个采样
-            uint totalSamples = (uint)(duration * targetSampleRate);
+            uint totalSamples = (uint)(duration * outputSampleRate);
             uint totalSize = totalSamples * bytesPerFrame;
             
             // 分配并初始化输出缓冲区
@@ -156,11 +185,9 @@ namespace hgl
             memset(outputBuffer, 0, totalSize);
             *outputData = outputBuffer;
             *outputSize = totalSize;
-            *outputFormat = targetFormat;
-            *outputSampleRate = targetSampleRate;
             
             // 为每个音源生成实例并混音
-            it = sources.GetIterator();
+            auto it = sources.GetIterator();
             while(it.Next())
             {
                 SourceEntry* entry = it.GetValue();
@@ -181,6 +208,7 @@ namespace hgl
                     AudioMixer instanceMixer;
                     instanceMixer.SetSourceAudio(srcConfig.data, srcConfig.dataSize, 
                                                 srcConfig.format, srcConfig.sampleRate);
+                    instanceMixer.SetOutputSampleRate(outputSampleRate);  // 设置输出采样率
                     
                     // 生成随机时间偏移
                     if(i == 0)
@@ -259,20 +287,6 @@ namespace hgl
             
             LogInfo(OS_TEXT("Scene generation completed successfully"));
             RETURN_TRUE;
-        }
-        
-        /**
-         * 生成混音场景(指定输出格式)
-         */
-        bool AudioScene::GenerateScene(void** outputData, uint* outputSize,
-                                      float duration,
-                                      uint outputFormat,
-                                      uint outputSampleRate)
-        {
-            uint format = outputFormat;
-            uint sampleRate = outputSampleRate;
-            
-            return GenerateScene(outputData, outputSize, &format, &sampleRate, duration);
         }
         
     }//namespace audio
