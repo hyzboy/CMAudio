@@ -38,9 +38,8 @@ namespace hgl
     static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
     
     // 频率相关衰减常量
-    static constexpr float FREQ_ATTEN_MIN_CUTOFF = 1000.0f;        // 最小截止频率（Hz）- 远距离
-    static constexpr float FREQ_ATTEN_MAX_CUTOFF = 20000.0f;       // 最大截止频率（Hz）- 近距离（无衰减）
-    static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 低频增益（远距离时保留30%）
+    static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 低频增益（远距离时保留30%高频）
+    static constexpr float FREQ_ATTEN_CHANGE_THRESHOLD = 0.05f;    // 滤波器更新阈值（5%变化才更新）
     
     // 编译时检查权重总和为1.0（使用精确比较，因为这些是编译时常量）
     constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
@@ -523,14 +522,11 @@ namespace hgl
                 distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
             }
             
-            // 根据距离调整截止频率：近距离=20kHz（无衰减），远距离=1kHz（高频大幅衰减）
-            // float cutoff_frequency = FREQ_ATTEN_MAX_CUTOFF - (FREQ_ATTEN_MAX_CUTOFF - FREQ_ATTEN_MIN_CUTOFF) * distance_factor;
-            
             // 远距离时降低高频增益，模拟空气吸收
             float gain_hf = 1.0f - distance_factor * (1.0f - FREQ_ATTEN_MIN_GAIN);
             
             // 只在高频增益变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
-            if(std::abs(gain_hf - last_filter_gainhf) > 0.05f)
+            if(std::abs(gain_hf - last_filter_gainhf) > FREQ_ATTEN_CHANGE_THRESHOLD)
             {
                 // 设置低通滤波器参数
                 if(alFilterf)
