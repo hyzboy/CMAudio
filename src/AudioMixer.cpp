@@ -14,6 +14,7 @@ namespace hgl
         {
             sourceData = nullptr;
             sourceDataSize = 0;
+            outputSampleRate = 0;  // 0表示使用源采样率
         }
         
         AudioMixer::~AudioMixer()
@@ -22,36 +23,25 @@ namespace hgl
         }
         
         /**
-         * 解析音频格式
+         * 解析音频格式 - 仅支持单声道
          */
         bool AudioMixer::ParseAudioFormat(uint format, AudioDataInfo& info)
         {
             info.format = format;
+            info.channels = 1;  // 仅支持单声道
             
             switch(format)
             {
                 case AL_FORMAT_MONO8:
-                    info.channels = 1;
                     info.bitsPerSample = 8;
                     break;
                     
                 case AL_FORMAT_MONO16:
-                    info.channels = 1;
-                    info.bitsPerSample = 16;
-                    break;
-                    
-                case AL_FORMAT_STEREO8:
-                    info.channels = 2;
-                    info.bitsPerSample = 8;
-                    break;
-                    
-                case AL_FORMAT_STEREO16:
-                    info.channels = 2;
                     info.bitsPerSample = 16;
                     break;
                     
                 default:
-                    LogError(OS_TEXT("Unsupported audio format: ") + OSString::numberOf(format));
+                    LogError(OS_TEXT("Unsupported audio format (only mono supported): ") + OSString::numberOf(format));
                     RETURN_FALSE;
             }
             
@@ -147,14 +137,14 @@ namespace hgl
             uint bytesPerSample = info.bitsPerSample / 8;
             
             // 验证有效的位深度
-            if(bytesPerSample == 0 || info.channels == 0)
+            if(bytesPerSample == 0)
             {
                 *outputSize = 0;
                 *output = nullptr;
                 return;
             }
             
-            uint sampleCount = inputSize / bytesPerSample / info.channels;
+            uint sampleCount = inputSize / bytesPerSample;  // 单声道，不需要除以channels
             
             // 验证输入不为空
             if(sampleCount == 0)
@@ -165,30 +155,30 @@ namespace hgl
             }
             
             uint outputSampleCount = (uint)(sampleCount / pitch);
-            *outputSize = outputSampleCount * bytesPerSample * info.channels;
+            *outputSize = outputSampleCount * bytesPerSample;
             *output = new char[*outputSize];
             
-            // 根据位深进行重采样
+            // 根据位深进行重采样(单声道)
             if(info.bitsPerSample == 16)
             {
                 const int16_t* inputSamples = (const int16_t*)input;
                 int16_t* outputSamples = (int16_t*)*output;
                 
-                for(uint i = 0; i < outputSampleCount * info.channels; i++)
+                for(uint i = 0; i < outputSampleCount; i++)
                 {
                     float sourcePos = i * pitch;
                     uint sourceIndex = (uint)sourcePos;
                     float fraction = sourcePos - sourceIndex;
                     
                     // 确保不会越界
-                    if(sourceIndex >= sampleCount * info.channels)
-                        sourceIndex = sampleCount * info.channels - 1;
+                    if(sourceIndex >= sampleCount)
+                        sourceIndex = sampleCount - 1;
                     
                     // 线性插值
                     int16_t sample1 = inputSamples[sourceIndex];
                     int16_t sample2;
                     
-                    if(sourceIndex + 1 < sampleCount * info.channels)
+                    if(sourceIndex + 1 < sampleCount)
                         sample2 = inputSamples[sourceIndex + 1];
                     else
                         sample2 = sample1; // 最后一个采样，使用相同的值
@@ -201,24 +191,104 @@ namespace hgl
                 const int8_t* inputSamples = (const int8_t*)input;
                 int8_t* outputSamples = (int8_t*)*output;
                 
-                for(uint i = 0; i < outputSampleCount * info.channels; i++)
+                for(uint i = 0; i < outputSampleCount; i++)
                 {
                     float sourcePos = i * pitch;
                     uint sourceIndex = (uint)sourcePos;
                     float fraction = sourcePos - sourceIndex;
                     
                     // 确保不会越界
-                    if(sourceIndex >= sampleCount * info.channels)
-                        sourceIndex = sampleCount * info.channels - 1;
+                    if(sourceIndex >= sampleCount)
+                        sourceIndex = sampleCount - 1;
                     
                     // 线性插值
                     int8_t sample1 = inputSamples[sourceIndex];
                     int8_t sample2;
                     
-                    if(sourceIndex + 1 < sampleCount * info.channels)
+                    if(sourceIndex + 1 < sampleCount)
                         sample2 = inputSamples[sourceIndex + 1];
                     else
                         sample2 = sample1; // 最后一个采样，使用相同的值
+                        
+                    outputSamples[i] = (int8_t)(sample1 * (1.0f - fraction) + sample2 * fraction);
+                }
+            }
+        }
+        
+        /**
+         * 应用采样率转换(线性插值重采样)
+         */
+        void AudioMixer::Resample(const void* input, uint inputSize, uint inputSampleRate,
+                                 void** output, uint* outputSize, uint outputSampleRate,
+                                 const AudioDataInfo& info)
+        {
+            if(inputSampleRate == outputSampleRate || outputSampleRate == 0)
+            {
+                // 采样率相同，直接复制
+                *outputSize = inputSize;
+                *output = new char[inputSize];
+                memcpy(*output, input, inputSize);
+                return;
+            }
+            
+            // 计算重采样比例
+            float resampleRatio = (float)outputSampleRate / (float)inputSampleRate;
+            
+            uint bytesPerSample = info.bitsPerSample / 8;
+            uint inputSampleCount = inputSize / bytesPerSample;
+            uint outputSampleCount = (uint)(inputSampleCount * resampleRatio);
+            *outputSize = outputSampleCount * bytesPerSample;
+            *output = new char[*outputSize];
+            
+            // 根据位深进行重采样(单声道，所以不需要考虑channels)
+            if(info.bitsPerSample == 16)
+            {
+                const int16_t* inputSamples = (const int16_t*)input;
+                int16_t* outputSamples = (int16_t*)*output;
+                
+                for(uint i = 0; i < outputSampleCount; i++)
+                {
+                    float sourcePos = i / resampleRatio;
+                    uint sourceIndex = (uint)sourcePos;
+                    float fraction = sourcePos - sourceIndex;
+                    
+                    if(sourceIndex >= inputSampleCount)
+                        sourceIndex = inputSampleCount - 1;
+                    
+                    // 线性插值
+                    int16_t sample1 = inputSamples[sourceIndex];
+                    int16_t sample2;
+                    
+                    if(sourceIndex + 1 < inputSampleCount)
+                        sample2 = inputSamples[sourceIndex + 1];
+                    else
+                        sample2 = sample1;
+                        
+                    outputSamples[i] = (int16_t)(sample1 * (1.0f - fraction) + sample2 * fraction);
+                }
+            }
+            else if(info.bitsPerSample == 8)
+            {
+                const int8_t* inputSamples = (const int8_t*)input;
+                int8_t* outputSamples = (int8_t*)*output;
+                
+                for(uint i = 0; i < outputSampleCount; i++)
+                {
+                    float sourcePos = i / resampleRatio;
+                    uint sourceIndex = (uint)sourcePos;
+                    float fraction = sourcePos - sourceIndex;
+                    
+                    if(sourceIndex >= inputSampleCount)
+                        sourceIndex = inputSampleCount - 1;
+                    
+                    // 线性插值
+                    int8_t sample1 = inputSamples[sourceIndex];
+                    int8_t sample2;
+                    
+                    if(sourceIndex + 1 < inputSampleCount)
+                        sample2 = inputSamples[sourceIndex + 1];
+                    else
+                        sample2 = sample1;
                         
                     outputSamples[i] = (int8_t)(sample1 * (1.0f - fraction) + sample2 * fraction);
                 }
@@ -261,15 +331,18 @@ namespace hgl
                 }
             }
             
+            // 确定最终输出采样率
+            uint finalSampleRate = outputSampleRate > 0 ? outputSampleRate : sourceInfo.sampleRate;
+            
             // 计算输出采样数
-            uint outputSampleCount = (uint)(loopLength * sourceInfo.sampleRate);
-            *outputSize = outputSampleCount * bytesPerFrame;
+            uint outputSampleCount = (uint)(loopLength * finalSampleRate);
+            *outputSize = outputSampleCount * bytesPerSample;  // 单声道，不需要乘以channels
             *outputData = new char[*outputSize];
             memset(*outputData, 0, *outputSize);
             
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) + 
                    OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength) + 
-                   OS_TEXT(" seconds"));
+                   OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)finalSampleRate));
             
             // 为每个轨道应用变换并混音
             for(int trackIndex = 0; trackIndex < tracks.GetCount(); trackIndex++)
@@ -283,11 +356,23 @@ namespace hgl
                               &pitchShiftedData, &pitchShiftedSize,
                               track->pitch, sourceInfo);
                 
-                // 计算起始位置
-                uint startSample = (uint)(track->timeOffset * sourceInfo.sampleRate);
-                uint trackSampleCount = pitchShiftedSize / bytesPerFrame;
+                // 如果需要，应用采样率转换
+                void* resampledData = nullptr;
+                uint resampledSize = 0;
+                if(finalSampleRate != sourceInfo.sampleRate)
+                {
+                    Resample(pitchShiftedData, pitchShiftedSize, sourceInfo.sampleRate,
+                            &resampledData, &resampledSize, finalSampleRate, sourceInfo);
+                    delete[] (char*)pitchShiftedData;
+                    pitchShiftedData = resampledData;
+                    pitchShiftedSize = resampledSize;
+                }
                 
-                // 混合到输出
+                // 计算起始位置
+                uint startSample = (uint)(track->timeOffset * finalSampleRate);
+                uint trackSampleCount = pitchShiftedSize / bytesPerSample;
+                
+                // 混合到输出 (单声道，简化处理)
                 if(sourceInfo.bitsPerSample == 16)
                 {
                     int16_t* outputSamples = (int16_t*)*outputData;
@@ -295,26 +380,17 @@ namespace hgl
                     
                     for(uint i = 0; i < trackSampleCount && (startSample + i) < outputSampleCount; i++)
                     {
-                        uint outputBaseIndex = (startSample + i) * sourceInfo.channels;
-                        uint inputBaseIndex = i * sourceInfo.channels;
+                        // 应用音量并混合
+                        int32_t sample = trackSamples[i];
+                        sample = (int32_t)(sample * track->volume * config.masterVolume);
                         
-                        for(uint ch = 0; ch < sourceInfo.channels; ch++)
-                        {
-                            uint outputSampleIndex = outputBaseIndex + ch;
-                            uint inputSampleIndex = inputBaseIndex + ch;
-                            
-                            // 应用音量并混合
-                            int32_t sample = trackSamples[inputSampleIndex];
-                            sample = (int32_t)(sample * track->volume * config.masterVolume);
-                            
-                            int32_t mixed = outputSamples[outputSampleIndex] + sample;
-                            
-                            // 限幅
-                            if(mixed > 32767) mixed = 32767;
-                            if(mixed < -32768) mixed = -32768;
-                            
-                            outputSamples[outputSampleIndex] = (int16_t)mixed;
-                        }
+                        int32_t mixed = outputSamples[startSample + i] + sample;
+                        
+                        // 限幅
+                        if(mixed > 32767) mixed = 32767;
+                        if(mixed < -32768) mixed = -32768;
+                        
+                        outputSamples[startSample + i] = (int16_t)mixed;
                     }
                 }
                 else if(sourceInfo.bitsPerSample == 8)
@@ -324,26 +400,17 @@ namespace hgl
                     
                     for(uint i = 0; i < trackSampleCount && (startSample + i) < outputSampleCount; i++)
                     {
-                        uint outputBaseIndex = (startSample + i) * sourceInfo.channels;
-                        uint inputBaseIndex = i * sourceInfo.channels;
+                        // 应用音量并混合
+                        int16_t sample = trackSamples[i];
+                        sample = (int16_t)(sample * track->volume * config.masterVolume);
                         
-                        for(uint ch = 0; ch < sourceInfo.channels; ch++)
-                        {
-                            uint outputSampleIndex = outputBaseIndex + ch;
-                            uint inputSampleIndex = inputBaseIndex + ch;
-                            
-                            // 应用音量并混合
-                            int16_t sample = trackSamples[inputSampleIndex];
-                            sample = (int16_t)(sample * track->volume * config.masterVolume);
-                            
-                            int16_t mixed = outputSamples[outputSampleIndex] + sample;
-                            
-                            // 限幅
-                            if(mixed > 127) mixed = 127;
-                            if(mixed < -128) mixed = -128;
-                            
-                            outputSamples[outputSampleIndex] = (int8_t)mixed;
-                        }
+                        int16_t mixed = outputSamples[startSample + i] + sample;
+                        
+                        // 限幅
+                        if(mixed > 127) mixed = 127;
+                        if(mixed < -128) mixed = -128;
+                        
+                        outputSamples[startSample + i] = (int8_t)mixed;
                     }
                 }
                 

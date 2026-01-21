@@ -51,9 +51,9 @@ namespace hgl
          */
         struct AudioDataInfo
         {
-            uint format;            ///< 音频格式 (AL_FORMAT_*)
+            uint format;            ///< 音频格式 (AL_FORMAT_MONO8/MONO16)
             uint sampleRate;        ///< 采样率
-            uint channels;          ///< 声道数 (1=mono, 2=stereo)
+            uint channels;          ///< 声道数 (固定为1，仅支持单声道)
             uint bitsPerSample;     ///< 每个采样的位数 (8, 16)
             uint dataSize;          ///< 数据大小(字节)
             
@@ -61,7 +61,7 @@ namespace hgl
             {
                 format = 0;
                 sampleRate = 0;
-                channels = 0;
+                channels = 1;  // 固定为单声道
                 bitsPerSample = 0;
                 dataSize = 0;
             }

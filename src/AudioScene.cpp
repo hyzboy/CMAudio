@@ -124,41 +124,30 @@ namespace hgl
             
             LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration) + OS_TEXT(" seconds"));
             
-            // 解析音频格式信息
+            // 解析音频格式信息 - 仅支持单声道
             AudioDataInfo formatInfo;
             formatInfo.format = targetFormat;
+            formatInfo.channels = 1;  // 仅支持单声道
             
             switch(targetFormat)
             {
                 case AL_FORMAT_MONO8:
-                    formatInfo.channels = 1;
                     formatInfo.bitsPerSample = 8;
                     break;
                     
                 case AL_FORMAT_MONO16:
-                    formatInfo.channels = 1;
-                    formatInfo.bitsPerSample = 16;
-                    break;
-                    
-                case AL_FORMAT_STEREO8:
-                    formatInfo.channels = 2;
-                    formatInfo.bitsPerSample = 8;
-                    break;
-                    
-                case AL_FORMAT_STEREO16:
-                    formatInfo.channels = 2;
                     formatInfo.bitsPerSample = 16;
                     break;
                     
                 default:
-                    LogError(OS_TEXT("Unsupported audio format"));
+                    LogError(OS_TEXT("Unsupported audio format (only mono supported)"));
                     RETURN_FALSE;
             }
             
             formatInfo.sampleRate = targetSampleRate;
             
             uint bytesPerSample = formatInfo.bitsPerSample / 8;
-            uint bytesPerFrame = bytesPerSample * formatInfo.channels;
+            uint bytesPerFrame = bytesPerSample;  // 单声道，每帧就是一个采样
             uint totalSamples = (uint)(duration * targetSampleRate);
             uint totalSize = totalSamples * bytesPerFrame;
             

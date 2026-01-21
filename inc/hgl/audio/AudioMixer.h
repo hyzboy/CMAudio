@@ -12,7 +12,7 @@ namespace hgl
         /**
          * 音频混音器
          * 用于将多个音轨叠加混音成一个新的音频数据
-         * 支持时间偏移、音量调整、音调变化等变换
+         * 仅支持单声道音频，支持时间偏移、音量调整、音调变化、采样率转换等变换
          */
         class AudioMixer
         {
@@ -31,6 +31,7 @@ namespace hgl
             AudioDataInfo sourceInfo;               ///< 源音频数据信息
             const void* sourceData;                 ///< 源音频数据指针
             uint sourceDataSize;                    ///< 源音频数据大小
+            uint outputSampleRate;                  ///< 输出采样率 (0=使用源采样率)
             
             /**
              * 获取音频格式信息
@@ -43,6 +44,13 @@ namespace hgl
             void ApplyPitchShift(const void* input, uint inputSize, 
                                void** output, uint* outputSize,
                                float pitch, const AudioDataInfo& info);
+            
+            /**
+             * 应用采样率转换
+             */
+            void Resample(const void* input, uint inputSize, uint inputSampleRate,
+                         void** output, uint* outputSize, uint outputSampleRate,
+                         const AudioDataInfo& info);
             
         public:
             
@@ -96,6 +104,17 @@ namespace hgl
              * 获取混音器配置
              */
             const MixerConfig& GetConfig() const { return config; }
+            
+            /**
+             * 设置输出采样率
+             * @param sampleRate 输出采样率 (如44100, 48000), 0表示使用源采样率
+             */
+            void SetOutputSampleRate(uint sampleRate) { outputSampleRate = sampleRate; }
+            
+            /**
+             * 获取输出采样率
+             */
+            uint GetOutputSampleRate() const { return outputSampleRate > 0 ? outputSampleRate : sourceInfo.sampleRate; }
             
             /**
              * 执行混音
