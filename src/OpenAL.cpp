@@ -930,7 +930,8 @@ namespace openal
             return nullptr;
             
         // 加载HRTF扩展函数
-        LoadHRTFFunctions();
+        if(!LoadHRTFFunctions())
+            return nullptr;
         
         if(!alcGetStringiSOFT)
             return nullptr;
