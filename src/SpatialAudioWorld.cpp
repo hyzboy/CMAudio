@@ -269,7 +269,7 @@ namespace hgl
                     
                     // 立即降低被抢占音源的增益，避免爆音（比完整淡出更快但比直接停止更平滑）
                     float current_gain = stolen_source->GetGain();
-                    if(current_gain > VOICE_STEAL_GAIN_REDUCTION)
+                    if(current_gain > 0.01f)  // 只在增益足够大时才需要降低
                     {
                         stolen_source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
                     }
