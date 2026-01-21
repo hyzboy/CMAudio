@@ -179,6 +179,7 @@ namespace hgl
         // 初始化频率相关衰减变量
         frequency_dependent_attenuation=false;
         lowpass_filter=0;
+        last_filter_gainhf=-1.0f;  // 初始化为无效值，强制首次更新
     }
 
     /**
@@ -523,22 +524,28 @@ namespace hgl
             }
             
             // 根据距离调整截止频率：近距离=20kHz（无衰减），远距离=1kHz（高频大幅衰减）
-            float cutoff_frequency = FREQ_ATTEN_MAX_CUTOFF - (FREQ_ATTEN_MAX_CUTOFF - FREQ_ATTEN_MIN_CUTOFF) * distance_factor;
+            // float cutoff_frequency = FREQ_ATTEN_MAX_CUTOFF - (FREQ_ATTEN_MAX_CUTOFF - FREQ_ATTEN_MIN_CUTOFF) * distance_factor;
             
             // 远距离时降低高频增益，模拟空气吸收
             float gain_hf = 1.0f - distance_factor * (1.0f - FREQ_ATTEN_MIN_GAIN);
             
-            // 设置低通滤波器参数
-            if(alFilterf)
+            // 只在高频增益变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
+            if(std::abs(gain_hf - last_filter_gainhf) > 0.05f)
             {
-                alFilterf(lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
-                alFilterf(lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
-            }
-            
-            // 将滤波器应用到音源的直达声
-            if(alSourcei)
-            {
-                alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, lowpass_filter);
+                // 设置低通滤波器参数
+                if(alFilterf)
+                {
+                    alFilterf(lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
+                    alFilterf(lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
+                }
+                
+                // 将滤波器应用到音源的直达声
+                if(alSourcei)
+                {
+                    alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, lowpass_filter);
+                }
+                
+                last_filter_gainhf = gain_hf;
             }
         }
 
@@ -884,17 +891,16 @@ namespace hgl
      */
     bool SpatialAudioWorld::EnableFrequencyAttenuation(bool enable)
     {
-        scene_mutex.Lock();
-        
         if(enable && lowpass_filter == 0)
         {
-            scene_mutex.Unlock();
+            // 初始化会自己获取锁
             return InitFrequencyAttenuation();
         }
         
+        scene_mutex.Lock();
         frequency_dependent_attenuation = enable;
-        
         scene_mutex.Unlock();
+        
         return true;
     }
 }//namespace hgl

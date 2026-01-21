@@ -206,6 +206,7 @@ namespace hgl
         // 频率相关衰减（模拟空气中高频衰减更快）
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
         uint lowpass_filter;                                                                        ///< 低通滤波器对象
+        float last_filter_gainhf;                                                                   ///< 上次应用的高频增益（用于避免重复设置）
 
     protected:
 
