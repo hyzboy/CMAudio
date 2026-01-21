@@ -1,0 +1,17 @@
+/home/runner/work/CMAudio/CMAudio/build/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/CMakeFiles/rebuild_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/src/CMakeFiles/CM.CMAudio.Static.dir
+/home/runner/work/CMAudio/CMAudio/build/src/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/src/CMakeFiles/rebuild_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/CMakeFiles/rebuild_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Wav/CMakeFiles/CMP.Audio.Wav.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Wav/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Wav/CMakeFiles/rebuild_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Opus/CMakeFiles/CMP.Audio.Opus.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Opus/CMakeFiles/OpusTest.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Opus/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Opus/CMakeFiles/rebuild_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Vorbis/CMakeFiles/CMP.Audio.Vorbis.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Vorbis/CMakeFiles/edit_cache.dir
+/home/runner/work/CMAudio/CMAudio/build/Plug-Ins/Audio.Vorbis/CMakeFiles/rebuild_cache.dir
