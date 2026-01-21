@@ -38,7 +38,7 @@ namespace hgl
     static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
     
     // 频率相关衰减常量
-    static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 低频增益（远距离时保留30%高频）
+    static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 高频增益最小值（远距离时保留30%高频）
     static constexpr float FREQ_ATTEN_CHANGE_THRESHOLD = 0.05f;    // 滤波器更新阈值（5%变化才更新）
     
     // 编译时检查权重总和为1.0（使用精确比较，因为这些是编译时常量）
@@ -538,30 +538,48 @@ namespace hgl
                 // 创建per-source滤波器（如果尚未创建）
                 if(asi->lowpass_filter == 0)
                 {
+                    alGetError();  // 清除之前的错误
                     alGenFilters(1, &asi->lowpass_filter);
-                    if(alGetError() == AL_NO_ERROR && alFilteri)
+                    if(alGetError() != AL_NO_ERROR)
+                    {
+                        asi->lowpass_filter = 0;  // 创建失败，确保ID为0
+                        return(true);  // 继续执行，只是没有滤波器效果
+                    }
+                    
+                    if(alFilteri)
                     {
                         alFilteri(asi->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+                        if(alGetError() != AL_NO_ERROR)
+                        {
+                            // 设置失败，清理并返回
+                            if(alDeleteFilters)
+                                alDeleteFilters(1, &asi->lowpass_filter);
+                            asi->lowpass_filter = 0;
+                            return(true);
+                        }
                     }
                 }
                 
                 // 设置低通滤波器参数
                 if(asi->lowpass_filter != 0 && alFilterf)
                 {
+                    alGetError();  // 清除之前的错误
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
+                    if(alGetError() != AL_NO_ERROR)
+                        return(true);
+                        
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
+                    if(alGetError() != AL_NO_ERROR)
+                        return(true);
                     
-                    if(alGetError() == AL_NO_ERROR)
+                    // 将滤波器应用到音源的直达声
+                    if(alSourcei)
                     {
-                        // 将滤波器应用到音源的直达声
-                        if(alSourcei)
+                        alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
+                        
+                        if(alGetError() == AL_NO_ERROR)
                         {
-                            alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
-                            
-                            if(alGetError() == AL_NO_ERROR)
-                            {
-                                asi->last_filter_gainhf = gain_hf;
-                            }
+                            asi->last_filter_gainhf = gain_hf;
                         }
                     }
                 }
@@ -871,7 +889,7 @@ namespace hgl
 
     /**
      * 关闭频率相关衰减系统
-     * 清理所有音源的滤波器将在各自的ToMute中完成
+     * 立即清理所有音源的滤波器
      */
     void SpatialAudioWorld::CloseFrequencyAttenuation()
     {

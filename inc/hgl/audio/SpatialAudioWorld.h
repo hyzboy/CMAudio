@@ -83,7 +83,7 @@ namespace hgl
         uint64 last_update_frame;                           ///< 上次更新的帧号（用于分层更新）
         
         // 频率相关衰减状态
-        uint lowpass_filter;                                ///< 低通滤波器对象（每个音源独立）
+        uint lowpass_filter;                                ///< 低通滤波器ID（每个音源独立的OpenAL滤波器句柄）
         float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
