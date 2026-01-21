@@ -13,7 +13,9 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ConeAngle.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Listener.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h)
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixer.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
                         alc.cpp
@@ -30,7 +32,8 @@ set(CM_AUDIO_SOURCE
     ReverbPreset.cpp
     AudioPlayer.cpp
     AudioSource.cpp
-    Listener.cpp)
+    Listener.cpp
+    AudioMixer.cpp)
 
 source_group("OpenAL" FILES ${CM_OPENAL_HEADER}
                             ${CM_OPENAL_SOURCE})
