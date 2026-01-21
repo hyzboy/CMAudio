@@ -24,6 +24,7 @@ namespace hgl
         AudioBuffer *   buffer                  = nullptr;          ///< 音频缓冲区
         Vector3f        position                = Vector3f(0,0,0);  ///< 初始位置
         float           gain                    = 1.0f;             ///< 音量增益
+        float           priority                = 1.0f;             ///< 优先级（用于音源调度，默认为1.0）
         uint            distance_model          = 0;                ///< 距离衰减模型
         float           rolloff_factor          = 1.0f;             ///< 环境衰减系数
         float           ref_distance            = 1.0f;             ///< 参考距离
@@ -49,6 +50,7 @@ namespace hgl
 
         bool loop;                                          ///< 是否循环播放
         float gain;                                         ///< 音量增益
+        float priority;                                     ///< 优先级（用于音源调度）
 
         uint distance_model;                                ///< 音量衰减模型
         float rolloff_factor;                               ///< 环境衰减系数，默认为1
@@ -98,6 +100,7 @@ namespace hgl
             : buffer(config.buffer)
             , loop(config.loop)
             , gain(config.gain)
+            , priority(config.priority)
             , distance_model(config.distance_model)
             , rolloff_factor(config.rolloff_factor)
             , doppler_factor(config.doppler_factor)

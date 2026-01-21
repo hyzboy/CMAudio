@@ -234,7 +234,49 @@ namespace hgl
         if(!asi->source)
         {
             if(!source_pool.GetOrCreate(asi->source))
-                return(false);
+            {
+                // 物理音源耗尽，尝试进行音源抢占（voice stealing）
+                // 基于 gain * priority 找到当前优先级最低的音源
+                SpatialAudioSource *lowest_priority_source = nullptr;
+                double lowest_score = asi->gain * asi->priority;  // 当前音源的调度分数
+                
+                int count = source_list.GetCount();
+                SpatialAudioSource **items = source_list.GetData();
+                
+                for(int i = 0; i < count; i++)
+                {
+                    SpatialAudioSource *candidate = items[i];
+                    
+                    // 只考虑已分配物理音源且正在播放的音源
+                    if(candidate && candidate->source && candidate != asi)
+                    {
+                        double candidate_score = candidate->gain * candidate->priority;
+                        
+                        // 如果找到优先级更低的音源，记录它
+                        if(candidate_score < lowest_score)
+                        {
+                            lowest_score = candidate_score;
+                            lowest_priority_source = candidate;
+                        }
+                    }
+                }
+                
+                // 如果找到了优先级更低的音源，抢占它的物理音源
+                if(lowest_priority_source)
+                {
+                    asi->source = lowest_priority_source->source;
+                    lowest_priority_source->source = nullptr;
+                    
+                    // 停止被抢占的音源（不使用ToMute以避免淡出效果）
+                    asi->source->Stop();
+                    asi->source->Unlink();
+                }
+                else
+                {
+                    // 没有可抢占的音源，无法播放
+                    return(false);
+                }
+            }
         }
 
         asi->source->Link(asi->buffer);
