@@ -20,6 +20,7 @@ namespace hgl
     static constexpr double FADE_DURATION = 0.02;    // 淡入淡出持续时间（20毫秒）
     static constexpr double FADE_SILENCE_THRESHOLD = 0.001;  // 判定为静音的增益阈值
     static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，0-1范围：值越小越平滑但响应慢，值越大越灵敏但平滑效果弱）
+    static constexpr double VOICE_STEAL_GAIN_REDUCTION = 0.1;  // 音源抢占时的增益降低系数（降低到原来的10%以避免爆音）
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -269,9 +270,9 @@ namespace hgl
                     
                     // 立即降低增益并停止，避免爆音（比完整淡出更快但比直接停止更平滑）
                     float current_gain = asi->source->GetGain();
-                    if(current_gain > 0.1f)
+                    if(current_gain > VOICE_STEAL_GAIN_REDUCTION)
                     {
-                        asi->source->SetGain(current_gain * 0.1f);  // 快速降低到10%
+                        asi->source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
                     }
                     
                     asi->source->Stop();
