@@ -34,6 +34,22 @@ namespace hgl
             uint outputSampleRate;                  ///< 输出采样率 (0=使用源采样率)
             uint outputFormat;                      ///< 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
             
+            // 内存池 - 避免频繁分配/释放
+            float* poolBuffer;                      ///< 缓冲池
+            uint poolBufferSize;                    ///< 缓冲池大小(采样数)
+            float* tempBuffer;                      ///< 临时缓冲区
+            uint tempBufferSize;                    ///< 临时缓冲区大小(采样数)
+            
+            /**
+             * 确保池缓冲区有足够大小
+             */
+            void EnsurePoolBuffer(uint requiredSize);
+            
+            /**
+             * 确保临时缓冲区有足够大小
+             */
+            void EnsureTempBuffer(uint requiredSize);
+            
             /**
              * 获取音频格式信息
              */

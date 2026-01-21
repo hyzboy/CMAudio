@@ -15,11 +15,49 @@ namespace hgl
             sourceSampleRate = 0;
             outputFormat = AL_FORMAT_MONO16;    // 默认16位单声道
             outputSampleRate = 44100;            // 默认44.1kHz
+            
+            // 初始化内存池
+            poolBuffer = nullptr;
+            poolBufferSize = 0;
         }
         
         AudioScene::~AudioScene()
         {
             ClearSources();
+            
+            // 释放内存池
+            if(poolBuffer)
+            {
+                delete[] poolBuffer;
+                poolBuffer = nullptr;
+            }
+        }
+        
+        /**
+         * 确保池缓冲区有足够大小
+         * @param requiredSize 需要的大小(字节)
+         * @param estimatedSize 预估大小(字节),如果提供则预分配2倍大小
+         */
+        void AudioScene::EnsurePoolBuffer(uint requiredSize, uint estimatedSize)
+        {
+            // 如果提供了预估大小，使用2倍预估大小
+            uint targetSize = estimatedSize > 0 ? (estimatedSize * 2) : requiredSize;
+            
+            // 如果targetSize还是小于requiredSize，使用1.5倍requiredSize
+            if(targetSize < requiredSize)
+                targetSize = requiredSize + (requiredSize >> 1);
+            
+            if(targetSize <= poolBufferSize)
+                return;  // 当前缓冲区足够大
+            
+            LogInfo(OS_TEXT("Expanding pool buffer from ") + OSString::numberOf((int)poolBufferSize) +
+                   OS_TEXT(" to ") + OSString::numberOf((int)targetSize) + OS_TEXT(" bytes"));
+            
+            if(poolBuffer)
+                delete[] poolBuffer;
+            
+            poolBuffer = new char[targetSize];
+            poolBufferSize = targetSize;
         }
         
         /**
@@ -133,7 +171,7 @@ namespace hgl
         }
         
         /**
-         * 生成混音场景
+         * 生成混音场景 - 使用内存池避免频繁分配
          */
         bool AudioScene::GenerateScene(void** outputData, uint* outputSize, float duration)
         {
@@ -186,11 +224,16 @@ namespace hgl
             uint totalSamples = (uint)(duration * outputSampleRate);
             uint totalSize = totalSamples * bytesPerFrame;
             
-            // 分配并初始化输出缓冲区
-            char* outputBuffer = new char[totalSize];
+            // 使用内存池分配输出缓冲区（预分配2倍大小以减少重新分配）
+            EnsurePoolBuffer(totalSize, totalSize);
+            
+            char* outputBuffer = poolBuffer;
             memset(outputBuffer, 0, totalSize);
             *outputData = outputBuffer;
             *outputSize = totalSize;
+            
+            LogInfo(OS_TEXT("Using pool buffer: size=") + OSString::numberOf((int)poolBufferSize) +
+                   OS_TEXT(" bytes, required=") + OSString::numberOf((int)totalSize) + OS_TEXT(" bytes"));
             
             // 为每个音源生成实例并混音
             auto it = sources.GetIterator();
