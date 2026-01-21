@@ -31,7 +31,6 @@ macro(add_cm_plugin TARGET_NAME PREFIX)
     # Separate source files from library names
     set(PLUGIN_SOURCES)
     set(PLUGIN_LIBS)
-    set(IS_SOURCE TRUE)
     
     foreach(ARG ${ARGN})
         # Check if this looks like a source file

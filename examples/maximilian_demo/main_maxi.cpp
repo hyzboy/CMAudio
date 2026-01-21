@@ -34,6 +34,7 @@ const int SAMPLE_RATE = 44100;
 const int NUM_CHANNELS = 2;  // Stereo
 const int BUFFER_SIZE = 2048;
 const int NUM_BUFFERS = 4;
+const float NOTE_DURATION_SECONDS = 0.3f;  // Duration for each note
 
 /**
  * @brief Print audio information
@@ -84,8 +85,8 @@ void play_sequence(MaxiHandle* synth) {
             maxi_set_freq(synth, freq);
             maxi_trigger(synth);
             
-            // Generate and "play" audio for ~300ms per note
-            int num_buffers_per_note = (SAMPLE_RATE * 0.3) / BUFFER_SIZE;
+            // Generate and "play" audio for the specified note duration
+            int num_buffers_per_note = (SAMPLE_RATE * NOTE_DURATION_SECONDS) / BUFFER_SIZE;
             for (int buf = 0; buf < num_buffers_per_note; ++buf) {
                 // Generate audio
                 int frames = maxi_process_float(synth, buffer.data(), BUFFER_SIZE);

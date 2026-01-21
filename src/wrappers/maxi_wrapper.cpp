@@ -25,6 +25,10 @@
  * @brief Internal synthesizer state
  * 
  * Contains Maximilian objects and atomic parameters for thread-safe updates
+ * 
+ * Note: std::atomic<float> is used for simplicity. On platforms where
+ * float atomics are not lock-free, consider using std::atomic<uint32_t>
+ * with bit-casting for guaranteed lock-free operations.
  */
 struct MaxiHandle {
     // Maximilian objects
