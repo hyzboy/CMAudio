@@ -39,9 +39,10 @@ int main(int argc, char** argv)
     mixer.SetSourceAudio(data, dataSize, format, sampleRate);
     mixer.SetOutputSampleRate(44100);  // Upsample to 44.1kHz
     
-    // Optional: Enable soft clipper for smoother peak handling
+    // Optional: Configure mixer settings
     // MixerConfig config;
     // config.useSoftClipper = true;  // Use tanh-based soft clipping instead of hard clipping
+    // config.useDither = true;       // Use TPDF dither when converting float32->int16 (reduces quantization noise)
     // mixer.SetConfig(config);
     
     // Add multiple tracks with different parameters

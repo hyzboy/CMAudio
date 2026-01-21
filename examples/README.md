@@ -18,7 +18,7 @@ Three example programs are provided:
 - **High precision** - maintains quality with many overlapping sounds
 - **Flexible output**: Can output as int16 or float32
 
-### Soft Clipper (NEW)
+### Soft Clipper
 - **Soft Clipper algorithm**: Optional tanh-based soft clipping for float32 data
 - **Smooth distortion**: When audio exceeds [-1.0, 1.0], applies gradual compression instead of harsh cutoff
 - **Toggle on/off**: Use `MixerConfig::useSoftClipper` to enable/disable
@@ -27,6 +27,19 @@ Three example programs are provided:
   - **Hard clipping** (default): Abruptly cuts peaks at ±1.0 (can sound harsh)
   - **Normalize**: Scales entire mix to fit (changes overall volume)
   - **Soft clipping**: Gradually compresses peaks (more musical, preserves dynamic range)
+
+### Dither (NEW)
+- **TPDF Dither**: Optional dithering when converting float32 to int16
+- **Reduces quantization noise**: Adds shaped noise to mask rounding errors
+- **Toggle on/off**: Use `MixerConfig::useDither` to enable/disable
+- **Why use it**:
+  - Float32 has ~144dB dynamic range, int16 only has ~96dB
+  - Direct conversion causes audible quantization distortion in quiet passages
+  - Dither randomizes quantization errors, making them sound like gentle noise instead of harsh artifacts
+- **When to use**: 
+  - Enable for high-quality output where subtle details matter
+  - Disable for game audio where small noise is acceptable
+- **TPDF (Triangular PDF)**: Industry-standard dither type, sounds more natural than uniform noise
 
 ### Benefits
 - Better quality when mixing 10+ tracks

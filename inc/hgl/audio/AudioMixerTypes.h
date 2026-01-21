@@ -39,12 +39,14 @@ namespace hgl
             bool normalize;         ///< 是否归一化输出，防止溢出
             float masterVolume;     ///< 主音量(0.0-1.0)
             bool useSoftClipper;    ///< 是否使用软削波器（Soft Clipper）处理越界的float32数据
+            bool useDither;         ///< 是否在float32→int16转换时使用抖动（Dither）减少量化噪声
             
             MixerConfig()
             {
                 normalize = true;
                 masterVolume = 1.0f;
                 useSoftClipper = false;  // 默认关闭，使用硬削波
+                useDither = false;       // 默认关闭抖动
             }
         };
         

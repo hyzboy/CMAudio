@@ -93,6 +93,24 @@ namespace hgl
         /**
          * 将浮点采样转换为整数格式
          */
+        /**
+         * 生成TPDF抖动噪声 (Triangular Probability Density Function)
+         * TPDF使用两个均匀分布的随机数相加，产生三角形分布
+         * 这种分布在听觉上比单个均匀分布更自然
+         */
+        float AudioMixer::GenerateTPDFDither()
+        {
+            // 生成两个[-1.0, 1.0]范围的随机数
+            float r1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
+            float r2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
+            // 相加得到三角形分布
+            return (r1 + r2) * 0.5f;
+        }
+        
+        /**
+         * 将浮点采样转换为目标格式
+         * 支持float32和int16输出，int16转换时可选择使用TPDF抖动
+         */
         void AudioMixer::ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, uint targetFormat)
         {
             if(targetFormat == AL_FORMAT_MONO_FLOAT32)
@@ -109,15 +127,39 @@ namespace hgl
                 int16_t* samples = new int16_t[sampleCount];
                 *output = samples;
                 
-                for(uint i = 0; i < sampleCount; i++)
+                if(config.useDither)
                 {
-                    // 钳位到 -1.0 到 1.0
-                    float sample = input[i];
-                    if(sample > 1.0f) sample = 1.0f;
-                    if(sample < -1.0f) sample = -1.0f;
+                    // 使用TPDF抖动
+                    LogInfo(OS_TEXT("Applying TPDF dither for float32->int16 conversion"));
                     
-                    // 转换为int16
-                    samples[i] = (int16_t)(sample * 32767.0f);
+                    for(uint i = 0; i < sampleCount; i++)
+                    {
+                        // 钳位到 -1.0 到 1.0
+                        float sample = input[i];
+                        if(sample > 1.0f) sample = 1.0f;
+                        if(sample < -1.0f) sample = -1.0f;
+                        
+                        // 添加TPDF抖动噪声（抖动幅度约为1 LSB）
+                        float dither = GenerateTPDFDither() / 32768.0f;
+                        sample += dither;
+                        
+                        // 转换为int16
+                        samples[i] = (int16_t)(sample * 32767.0f);
+                    }
+                }
+                else
+                {
+                    // 不使用抖动，直接转换
+                    for(uint i = 0; i < sampleCount; i++)
+                    {
+                        // 钳位到 -1.0 到 1.0
+                        float sample = input[i];
+                        if(sample > 1.0f) sample = 1.0f;
+                        if(sample < -1.0f) sample = -1.0f;
+                        
+                        // 转换为int16
+                        samples[i] = (int16_t)(sample * 32767.0f);
+                    }
                 }
             }
             else if(targetFormat == AL_FORMAT_MONO8)

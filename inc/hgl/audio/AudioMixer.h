@@ -76,6 +76,13 @@ namespace hgl
              */
             static void ApplySoftClipping(float* buffer, uint count);
             
+            /**
+             * 生成TPDF抖动噪声 (Triangular Probability Density Function)
+             * TPDF抖动是音频处理中最常用的抖动类型，提供平滑自然的量化噪声掩蔽
+             * @return 范围在[-1.0, 1.0]的随机噪声值
+             */
+            static float GenerateTPDFDither();
+            
         public:
             
             AudioMixer();
