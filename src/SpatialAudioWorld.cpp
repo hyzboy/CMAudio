@@ -514,6 +514,29 @@ namespace hgl
             }
         }
 
+        // 方向性增益图：使用极坐标增益图计算方向性增益
+        // 如果启用了方向性增益图（非全向），则计算并应用方向性增益
+        if(listener && asi->directional_pattern.IsEnabled())
+        {
+            const Vector3f &listener_pos = listener->GetPosition();
+            
+            // 计算从音源指向监听者的向量（归一化）
+            Vector3f to_listener = listener_pos - asi->cur_pos;
+            float distance = math::Length(to_listener);
+            if(distance > 0.0001f)  // 避免除以零
+            {
+                to_listener = to_listener / distance;  // 归一化
+                
+                // 计算方向性增益
+                float directional_gain = asi->directional_pattern.CalculateGain(asi->direction, to_listener);
+                
+                // 应用方向性增益
+                // 注意：这会覆盖 OpenAL 的锥形角度效果
+                // 当使用极坐标增益图时，建议将 cone_angle 设置为 (360, 360) 以禁用 OpenAL 的锥形效果
+                asi->source->SetConeGain(directional_gain);
+            }
+        }
+
         // 频率相关衰减：根据距离动态调整低通滤波器
         // 模拟空气中高频衰减比低频快的物理现象
         // 每个音源拥有独立的滤波器
@@ -951,5 +974,31 @@ namespace hgl
         scene_mutex.Unlock();
         
         return true;
+    }
+
+    /**
+     * 设置音源的方向性增益图
+     */
+    void SpatialAudioWorld::SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type)
+    {
+        if (!asi)
+            return;
+            
+        scene_mutex.Lock();
+        asi->directional_pattern.SetPattern(pattern_type);
+        scene_mutex.Unlock();
+    }
+
+    /**
+     * 设置音源的自定义方向性增益图
+     */
+    void SpatialAudioWorld::SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count)
+    {
+        if (!asi || !samples || count <= 0)
+            return;
+            
+        scene_mutex.Lock();
+        asi->directional_pattern.SetCustomPattern(samples, count);
+        scene_mutex.Unlock();
     }
 }//namespace hgl

@@ -5,6 +5,7 @@
 #include<hgl/type/Map.h>
 #include<hgl/type/SortedSet.h>
 #include<hgl/audio/ConeAngle.h>
+#include<hgl/audio/DirectionalGainPattern.h>
 #include<hgl/audio/ReverbPreset.h>
 #include<hgl/thread/ThreadMutex.h>
 
@@ -60,6 +61,7 @@ namespace hgl
         float ref_distance;                                 ///< 参考距离
         float max_distance;                                 ///< 最大距离
         ConeAngle cone_angle;
+        DirectionalGainPattern directional_pattern;         ///< 方向性增益图（用于更复杂的方向性建模）
         Vector3f velocity;
         Vector3f direction;
 
@@ -272,6 +274,23 @@ namespace hgl
                 bool                InitFrequencyAttenuation();                                     ///< 初始化频率相关衰减
                 void                CloseFrequencyAttenuation();                                    ///< 关闭频率相关衰减
                 bool                EnableFrequencyAttenuation(bool enable);                        ///< 启用/禁用频率相关衰减
+
+                /**
+                 * 设置音源的方向性增益图
+                 * Set directional gain pattern for an audio source
+                 * @param asi 音源指针
+                 * @param pattern_type 预定义模式类型
+                 */
+                void                SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type);
+
+                /**
+                 * 设置音源的自定义方向性增益图
+                 * Set custom directional gain pattern for an audio source
+                 * @param asi 音源指针
+                 * @param samples 极坐标样本点数组
+                 * @param count 样本点数量
+                 */
+                void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count);
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
         virtual void                Delete(SpatialAudioSource *);                                   ///< 删除一个音源
