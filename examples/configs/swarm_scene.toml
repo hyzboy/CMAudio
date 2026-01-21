@@ -1,0 +1,22 @@
+# Bee Swarm Scene Configuration
+# Simulates a dense bee swarm with 10-15 instances
+
+[output]
+format = "MONO16"
+sample_rate = 44100
+
+[scene]
+duration = 10.0  # Generate 10 seconds of audio
+
+# Bee swarm - high density with variations
+# Note: 500 real bees → compressed to 10-15 instances
+[source.bee_swarm]
+wav_file = "wav_samples/bee_buzz.wav"
+min_count = 10
+max_count = 15
+min_interval = 0.0  # All start together, creating dense sound
+max_interval = 0.5  # Some slight delays for realism
+min_volume = 0.4
+max_volume = 0.8
+min_pitch = 0.9   # Vary pitch to simulate different wing frequencies
+max_pitch = 1.15

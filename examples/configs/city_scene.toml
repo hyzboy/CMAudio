@@ -1,0 +1,93 @@
+# City Street Scene Configuration
+# Simulates a busy city street with cars, horns, and birds
+
+[output]
+format = "MONO16"
+sample_rate = 44100
+
+[scene]
+duration = 30.0  # Generate 30 seconds of audio
+
+# Small cars - common, 2-4 instances
+[source.small_car]
+wav_file = "wav_samples/car_small.wav"
+min_count = 2
+max_count = 4
+min_interval = 1.0  # 1-3 seconds between cars
+max_interval = 3.0
+min_volume = 0.6
+max_volume = 1.0
+min_pitch = 0.95
+max_pitch = 1.05
+
+# SUVs - less common, 1-2 instances
+[source.suv]
+wav_file = "wav_samples/car_suv.wav"
+min_count = 1
+max_count = 2
+min_interval = 2.0  # 2-5 seconds between SUVs
+max_interval = 5.0
+min_volume = 0.7
+max_volume = 0.9
+min_pitch = 0.9
+max_pitch = 1.0
+
+# Trucks - occasional, 0-1 instances
+[source.truck]
+wav_file = "wav_samples/car_truck.wav"
+min_count = 0
+max_count = 1
+min_interval = 3.0  # 3-8 seconds
+max_interval = 8.0
+min_volume = 0.5
+max_volume = 0.8
+min_pitch = 0.85
+max_pitch = 0.95
+
+# Short horn - occasional, 0-3 instances
+[source.horn_short]
+wav_file = "wav_samples/horn_short.wav"
+min_count = 0
+max_count = 3
+min_interval = 5.0  # 5-10 seconds between horns
+max_interval = 10.0
+min_volume = 0.4
+max_volume = 0.7
+min_pitch = 0.95
+max_pitch = 1.05
+
+# Long horn - rare, 0-1 instances
+[source.horn_long]
+wav_file = "wav_samples/horn_long.wav"
+min_count = 0
+max_count = 1
+min_interval = 8.0  # 8-15 seconds
+max_interval = 15.0
+min_volume = 0.3
+max_volume = 0.6
+min_pitch = 0.9
+max_pitch = 1.0
+
+# Birds - background ambience, 2-5 instances
+[source.birds]
+wav_file = "wav_samples/bird_chirp.wav"
+min_count = 2
+max_count = 5
+min_interval = 0.5  # 0.5-2 seconds
+max_interval = 2.0
+min_volume = 0.3
+max_volume = 0.5
+min_pitch = 0.9
+max_pitch = 1.1
+
+# Brake sounds - rare, 0-2 instances
+[source.brake]
+wav_file = "wav_samples/brake_screech.wav"
+min_count = 0
+max_count = 2
+min_interval = 10.0  # 10-20 seconds
+max_interval = 20.0
+min_volume = 0.4
+max_volume = 0.7
+min_pitch = 0.95
+max_pitch = 1.05
