@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>  // For UINT64_MAX
 
 namespace hgl
 {
