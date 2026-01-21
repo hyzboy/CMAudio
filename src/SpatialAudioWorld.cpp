@@ -21,6 +21,7 @@ namespace hgl
     static constexpr double FADE_SILENCE_THRESHOLD = 0.001;  // 判定为静音的增益阈值
     static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，0-1范围：值越小越平滑但响应慢，值越大越灵敏但平滑效果弱）
     static constexpr double VOICE_STEAL_GAIN_REDUCTION = 0.1;  // 音源抢占时的增益降低系数（降低到原来的10%以避免爆音）
+    static constexpr float VOICE_STEAL_MIN_GAIN_THRESHOLD = 0.01f;  // 音源抢占时需要降低增益的最小阈值
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -269,7 +270,7 @@ namespace hgl
                     
                     // 立即降低被抢占音源的增益，避免爆音（比完整淡出更快但比直接停止更平滑）
                     float current_gain = stolen_source->GetGain();
-                    if(current_gain > 0.01f)  // 只在增益足够大时才需要降低
+                    if(current_gain > VOICE_STEAL_MIN_GAIN_THRESHOLD)  // 只在增益足够大时才需要降低
                     {
                         stolen_source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
                     }
