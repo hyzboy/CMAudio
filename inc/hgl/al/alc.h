@@ -31,6 +31,20 @@
 #define ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER     0x311
 #define ALC_CAPTURE_SAMPLES                      0x312
 
+// OpenAL Soft HRTF extension
+#define ALC_HRTF_SOFT                            0x1992
+#define ALC_HRTF_ID_SOFT                         0x1996
+#define ALC_DONT_CARE_SOFT                       0x0002
+#define ALC_HRTF_STATUS_SOFT                     0x1993
+#define ALC_HRTF_DISABLED_SOFT                   0x0000
+#define ALC_HRTF_ENABLED_SOFT                    0x0001
+#define ALC_HRTF_DENIED_SOFT                     0x0002
+#define ALC_HRTF_REQUIRED_SOFT                   0x0003
+#define ALC_HRTF_HEADPHONES_DETECTED_SOFT        0x0004
+#define ALC_HRTF_UNSUPPORTED_FORMAT_SOFT         0x0005
+#define ALC_NUM_HRTF_SPECIFIERS_SOFT             0x1994
+#define ALC_HRTF_SPECIFIER_SOFT                  0x1995
+
 namespace openal
 {
 	typedef struct ALCdevice_struct ALCdevice;
@@ -72,6 +86,10 @@ namespace openal
 	typedef void             (*alcCaptureStartPROC)( ALCdevice *device );
 	typedef void             (*alcCaptureStopPROC)( ALCdevice *device );
 	typedef void             (*alcCaptureSamplesPROC)( ALCdevice *device, ALCvoid *buffer, ALCsizei samples );
+	
+	// OpenAL Soft HRTF extension
+	typedef const ALCchar*   (*alcGetStringiSOFTPROC)( ALCdevice *device, ALCenum paramName, ALCsizei index );
+	typedef ALCboolean       (*alcResetDeviceSOFTPROC)( ALCdevice *device, const ALCint *attrList );
 }
 
 namespace openal
@@ -96,5 +114,9 @@ namespace openal
 	extern alcCaptureStartPROC alcCaptureStart;
 	extern alcCaptureStopPROC alcCaptureStop;
 	extern alcCaptureSamplesPROC alcCaptureSamples;
+	
+	// OpenAL Soft HRTF extension
+	extern alcGetStringiSOFTPROC alcGetStringiSOFT;
+	extern alcResetDeviceSOFTPROC alcResetDeviceSOFT;
 }
 #endif//HGL_ALC_INCLUDE

@@ -741,4 +741,181 @@ namespace openal
 
         return(true);
     }
+    
+    //--------------------------------------------------------------------------------------------------
+    // HRTF Support Functions
+    //--------------------------------------------------------------------------------------------------
+    
+    /**
+     * 检查是否支持HRTF
+     * @return 是否支持HRTF扩展
+     */
+    bool IsHRTFSupported()
+    {
+        if(!AudioDevice || !alcIsExtensionPresent)
+            return false;
+            
+        return alcIsExtensionPresent(AudioDevice, "ALC_SOFT_HRTF") == ALC_TRUE;
+    }
+    
+    /**
+     * 启用/禁用HRTF
+     * @param enable 是否启用HRTF
+     * @return 是否成功
+     */
+    bool EnableHRTF(bool enable)
+    {
+        if(!AudioDevice || !AudioContext)
+        {
+            GLogError(OS_TEXT("OpenAL device or context not initialized"));
+            return false;
+        }
+        
+        if(!IsHRTFSupported())
+        {
+            GLogWarning(OS_TEXT("HRTF is not supported by current OpenAL implementation"));
+            return false;
+        }
+        
+        // 加载HRTF扩展函数（如果尚未加载）
+        if(!alcResetDeviceSOFT && alcGetProcAddress)
+        {
+            alcResetDeviceSOFT = (alcResetDeviceSOFTPROC)alcGetProcAddress(AudioDevice, "alcResetDeviceSOFT");
+            if(!alcResetDeviceSOFT)
+            {
+                GLogError(OS_TEXT("Failed to load alcResetDeviceSOFT function"));
+                return false;
+            }
+        }
+        
+        if(!alcGetStringiSOFT && alcGetProcAddress)
+        {
+            alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
+        }
+        
+        // 设置HRTF属性
+        ALCint attrs[] = {
+            ALC_HRTF_SOFT, enable ? ALC_TRUE : ALC_FALSE,
+            0  // 终止符
+        };
+        
+        // 重置设备以应用HRTF设置
+        if(!alcResetDeviceSOFT(AudioDevice, attrs))
+        {
+            ALCenum error = alcGetError(AudioDevice);
+            GLogError(OS_TEXT("Failed to reset OpenAL device for HRTF. Error code: ")+OSString::numberOf(error));
+            return false;
+        }
+        
+        // 验证HRTF状态
+        int hrtf_status = GetHRTFStatus();
+        
+        if(enable)
+        {
+            if(hrtf_status == ALC_HRTF_ENABLED_SOFT)
+            {
+                GLogInfo(OS_TEXT("HRTF enabled successfully"));
+                return true;
+            }
+            else if(hrtf_status == ALC_HRTF_DENIED_SOFT)
+            {
+                GLogWarning(OS_TEXT("HRTF was denied (possibly incompatible output format)"));
+                return false;
+            }
+            else if(hrtf_status == ALC_HRTF_REQUIRED_SOFT)
+            {
+                GLogInfo(OS_TEXT("HRTF is required by device"));
+                return true;
+            }
+            else if(hrtf_status == ALC_HRTF_HEADPHONES_DETECTED_SOFT)
+            {
+                GLogInfo(OS_TEXT("HRTF enabled (headphones detected)"));
+                return true;
+            }
+            else if(hrtf_status == ALC_HRTF_UNSUPPORTED_FORMAT_SOFT)
+            {
+                GLogWarning(OS_TEXT("HRTF unsupported with current audio format"));
+                return false;
+            }
+            else
+            {
+                GLogWarning(OS_TEXT("HRTF enable status unknown: ")+OSString::numberOf(hrtf_status));
+                return false;
+            }
+        }
+        else
+        {
+            if(hrtf_status == ALC_HRTF_DISABLED_SOFT)
+            {
+                GLogInfo(OS_TEXT("HRTF disabled successfully"));
+                return true;
+            }
+            else
+            {
+                GLogWarning(OS_TEXT("HRTF disable may not have taken effect. Status: ")+OSString::numberOf(hrtf_status));
+                return false;
+            }
+        }
+    }
+    
+    /**
+     * 获取HRTF状态
+     * @return HRTF状态常量
+     */
+    int GetHRTFStatus()
+    {
+        if(!AudioDevice || !alcGetIntegerv)
+            return ALC_HRTF_DISABLED_SOFT;
+            
+        if(!IsHRTFSupported())
+            return ALC_HRTF_DISABLED_SOFT;
+            
+        ALCint hrtf_status = ALC_HRTF_DISABLED_SOFT;
+        alcGetIntegerv(AudioDevice, ALC_HRTF_STATUS_SOFT, 1, &hrtf_status);
+        
+        return hrtf_status;
+    }
+    
+    /**
+     * 获取可用的HRTF配置数量
+     * @return HRTF配置数量
+     */
+    int GetNumHRTFSpecifiers()
+    {
+        if(!AudioDevice || !alcGetIntegerv)
+            return 0;
+            
+        if(!IsHRTFSupported())
+            return 0;
+            
+        ALCint num_hrtf = 0;
+        alcGetIntegerv(AudioDevice, ALC_NUM_HRTF_SPECIFIERS_SOFT, 1, &num_hrtf);
+        
+        return num_hrtf;
+    }
+    
+    /**
+     * 获取指定索引的HRTF配置名称
+     * @param index HRTF配置索引
+     * @return HRTF配置名称
+     */
+    const char* GetHRTFSpecifierName(int index)
+    {
+        if(!AudioDevice)
+            return nullptr;
+            
+        if(!IsHRTFSupported())
+            return nullptr;
+            
+        // 加载alcGetStringiSOFT函数（如果尚未加载）
+        if(!alcGetStringiSOFT && alcGetProcAddress)
+        {
+            alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
+        }
+        
+        if(!alcGetStringiSOFT)
+            return nullptr;
+            
+        return alcGetStringiSOFT(AudioDevice, ALC_HRTF_SPECIFIER_SOFT, index);
+    }
 }//namespace openal
