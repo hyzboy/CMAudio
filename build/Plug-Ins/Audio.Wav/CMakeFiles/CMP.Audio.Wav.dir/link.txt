@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -Wl,--dependency-file=CMakeFiles/CMP.Audio.Wav.dir/link.d -shared  -o CMP.Audio.Wav.so CMakeFiles/CMP.Audio.Wav.dir/WavRead.cpp.o
