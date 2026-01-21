@@ -18,6 +18,7 @@ namespace hgl
     static constexpr float DEFAULT_MAX_DISTANCE = 10000.0f;
     static constexpr double MIN_TIME_DIFF = 0.0001;  // 避免除以非常小的数导致数值不稳定
     static constexpr double FADE_DURATION = 0.02;    // 淡入淡出持续时间（20毫秒）
+    static constexpr double FADE_SILENCE_THRESHOLD = 0.001;  // 判定为静音的增益阈值
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -256,15 +257,16 @@ namespace hgl
         }
 
         asi->source->SetCurTime(time_off);
-        asi->source->Play(asi->loop);
-
-        // 启动淡入效果
+        
+        // 启动淡入效果（在播放开始之前设置）
         asi->is_fading = true;
         asi->fade_start_time = cur_time;
         asi->fade_duration = FADE_DURATION;
         asi->fade_start_gain = 0.0;
         asi->fade_target_gain = asi->gain;
         asi->source->SetGain(0.0);  // 从0开始淡入
+        
+        asi->source->Play(asi->loop);
 
         OnToHear(asi);
 
@@ -288,7 +290,7 @@ namespace hgl
                 asi->is_fading = false;
                 
                 // 如果是淡出到静音，现在停止并释放音源
-                if(asi->fade_target_gain <= 0.001)  // 使用小阈值而非直接比较 0.0
+                if(asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)  // 使用命名常量
                 {
                     asi->source->Stop();
                     asi->source->Unlink();
@@ -308,8 +310,8 @@ namespace hgl
 
         if(asi->source->GetState()==AL_STOPPED)    // 停止播放状态
         {
-            // 如果正在淡入淡出，不要中断
-            if(asi->is_fading)
+            // 如果正在淡出，不要中断，让淡出完成
+            if(asi->is_fading && asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)
                 return(true);
                 
             if(!asi->loop)                  // 不是循环播放
