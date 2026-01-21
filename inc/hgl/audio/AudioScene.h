@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include<hgl/audio/AudioMixer.h>
+#include<hgl/audio/AudioMemoryPool.h>
 #include<hgl/type/Map.h>
 #include<hgl/type/ObjectList.h>
 #include<hgl/log/Log.h>
@@ -81,23 +82,8 @@ namespace hgl
             std::mt19937 rng;
             
             // 内存池 - 避免频繁分配/释放
-            char* poolBuffer;                       ///< 输出缓冲池
-            uint poolBufferSize;                    ///< 输出缓冲池大小(字节)
-            char* tempBuffer;                       ///< 临时缓冲区(用于单个实例混音)
-            uint tempBufferSize;                    ///< 临时缓冲区大小(字节)
-            
-            /**
-             * 确保池缓冲区有足够大小
-             * @param requiredSize 需要的大小(字节)
-             * @param estimatedSize 预估大小(字节),用于预分配更大的空间
-             */
-            void EnsurePoolBuffer(uint requiredSize, uint estimatedSize = 0);
-            
-            /**
-             * 确保临时缓冲区有足够大小
-             * @param requiredSize 需要的大小(字节)
-             */
-            void EnsureTempBuffer(uint requiredSize);
+            AudioMemoryPool<char> poolBuffer;       ///< 输出场景缓冲池
+            AudioMemoryPool<char> tempBuffer;       ///< 临时实例混音缓冲池
             
             /**
              * 生成随机浮点数

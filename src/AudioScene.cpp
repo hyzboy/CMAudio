@@ -9,86 +9,20 @@ namespace hgl
 {
     namespace audio
     {
-        AudioScene::AudioScene() : rng(rd())
+        AudioScene::AudioScene() : rng(rd()),
+            poolBuffer(OS_TEXT("AudioScene::poolBuffer")),
+            tempBuffer(OS_TEXT("AudioScene::tempBuffer"))
         {
             sourceFormat = 0;
             sourceSampleRate = 0;
             outputFormat = AL_FORMAT_MONO16;    // 默认16位单声道
             outputSampleRate = 44100;            // 默认44.1kHz
-            
-            // 初始化内存池
-            poolBuffer = nullptr;
-            poolBufferSize = 0;
-            tempBuffer = nullptr;
-            tempBufferSize = 0;
         }
         
         AudioScene::~AudioScene()
         {
             ClearSources();
-            
-            // 释放内存池
-            if(poolBuffer)
-            {
-                delete[] poolBuffer;
-                poolBuffer = nullptr;
-            }
-            
-            // 释放临时缓冲区
-            if(tempBuffer)
-            {
-                delete[] tempBuffer;
-                tempBuffer = nullptr;
-            }
-        }
-        
-        /**
-         * 确保池缓冲区有足够大小
-         * @param requiredSize 需要的大小(字节)
-         * @param estimatedSize 预估大小(字节),如果提供则预分配2倍大小
-         */
-        void AudioScene::EnsurePoolBuffer(uint requiredSize, uint estimatedSize)
-        {
-            // 如果提供了预估大小，使用2倍预估大小
-            uint targetSize = estimatedSize > 0 ? (estimatedSize * 2) : requiredSize;
-            
-            // 如果targetSize还是小于requiredSize，使用1.5倍requiredSize
-            if(targetSize < requiredSize)
-                targetSize = requiredSize + (requiredSize >> 1);
-            
-            if(targetSize <= poolBufferSize)
-                return;  // 当前缓冲区足够大
-            
-            LogInfo(OS_TEXT("Expanding pool buffer from ") + OSString::numberOf((int)poolBufferSize) +
-                   OS_TEXT(" to ") + OSString::numberOf((int)targetSize) + OS_TEXT(" bytes"));
-            
-            if(poolBuffer)
-                delete[] poolBuffer;
-            
-            poolBuffer = new char[targetSize];
-            poolBufferSize = targetSize;
-        }
-        
-        /**
-         * 确保临时缓冲区有足够大小
-         * @param requiredSize 需要的大小(字节)
-         */
-        void AudioScene::EnsureTempBuffer(uint requiredSize)
-        {
-            if(requiredSize <= tempBufferSize)
-                return;  // 当前缓冲区足够大
-            
-            // 使用1.5倍增长策略
-            uint targetSize = requiredSize + (requiredSize >> 1);
-            
-            LogInfo(OS_TEXT("Expanding temp buffer from ") + OSString::numberOf((int)tempBufferSize) +
-                   OS_TEXT(" to ") + OSString::numberOf((int)targetSize) + OS_TEXT(" bytes"));
-            
-            if(tempBuffer)
-                delete[] tempBuffer;
-            
-            tempBuffer = new char[targetSize];
-            tempBufferSize = targetSize;
+            // 内存池自动释放
         }
         
         /**
@@ -256,14 +190,14 @@ namespace hgl
             uint totalSize = totalSamples * bytesPerFrame;
             
             // 使用内存池分配输出缓冲区（预分配2倍大小以减少重新分配）
-            EnsurePoolBuffer(totalSize, totalSize);
+            poolBuffer.EnsureWithEstimate(totalSize, totalSize);
             
-            char* outputBuffer = poolBuffer;
+            char* outputBuffer = poolBuffer.Get();
             memset(outputBuffer, 0, totalSize);
             *outputData = outputBuffer;
             *outputSize = totalSize;
             
-            LogInfo(OS_TEXT("Using pool buffer: size=") + OSString::numberOf((int)poolBufferSize) +
+            LogInfo(OS_TEXT("Using pool buffer: size=") + OSString::numberOf((int)poolBuffer.GetSize()) +
                    OS_TEXT(" bytes, required=") + OSString::numberOf((int)totalSize) + OS_TEXT(" bytes"));
             
             // 为每个音源生成实例并混音
@@ -322,17 +256,17 @@ namespace hgl
                     if(instanceMixer.Mix(&instanceData, &instanceSize, duration))
                     {
                         // 确保临时缓冲区足够大以容纳实例数据
-                        EnsureTempBuffer(instanceSize);
+                        tempBuffer.Ensure(instanceSize);
                         
                         // 复制到临时缓冲区(这样可以让AudioMixer内部复用它的池)
-                        memcpy(tempBuffer, instanceData, instanceSize);
+                        memcpy(tempBuffer.Get(), instanceData, instanceSize);
                         
                         // 将实例数据混合到输出
                         if(formatInfo.isFloat && formatInfo.bitsPerSample == 32)
                         {
                             // Float混音 - 简单直接相加，无需担心溢出
                             float* outputSamples = (float*)outputBuffer;
-                            const float* instanceSamples = (const float*)tempBuffer;
+                            const float* instanceSamples = (const float*)tempBuffer.Get();
                             uint outputSampleCount = totalSize / sizeof(float);
                             uint instanceSampleCount = instanceSize / sizeof(float);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -345,7 +279,7 @@ namespace hgl
                         else if(formatInfo.bitsPerSample == 16)
                         {
                             int16_t* outputSamples = (int16_t*)outputBuffer;
-                            const int16_t* instanceSamples = (const int16_t*)tempBuffer;
+                            const int16_t* instanceSamples = (const int16_t*)tempBuffer.Get();
                             uint outputSampleCount = totalSize / sizeof(int16_t);
                             uint instanceSampleCount = instanceSize / sizeof(int16_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -364,7 +298,7 @@ namespace hgl
                         else if(formatInfo.bitsPerSample == 8)
                         {
                             int8_t* outputSamples = (int8_t*)outputBuffer;
-                            const int8_t* instanceSamples = (const int8_t*)tempBuffer;
+                            const int8_t* instanceSamples = (const int8_t*)tempBuffer.Get();
                             uint outputSampleCount = totalSize / sizeof(int8_t);
                             uint instanceSampleCount = instanceSize / sizeof(int8_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);

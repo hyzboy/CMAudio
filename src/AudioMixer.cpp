@@ -11,84 +11,19 @@ namespace hgl
     namespace audio
     {
         AudioMixer::AudioMixer()
+            : poolBuffer(OS_TEXT("AudioMixer::poolBuffer")),
+              tempBuffer(OS_TEXT("AudioMixer::tempBuffer"))
         {
             sourceData = nullptr;
             sourceDataSize = 0;
             outputSampleRate = 0;  // 0表示使用源采样率
             outputFormat = AL_FORMAT_MONO16;  // 默认输出int16
-            
-            // 初始化内存池
-            poolBuffer = nullptr;
-            poolBufferSize = 0;
-            tempBuffer = nullptr;
-            tempBufferSize = 0;
         }
         
         AudioMixer::~AudioMixer()
         {
             ClearTracks();
-            
-            // 释放内存池
-            if(poolBuffer)
-            {
-                delete[] poolBuffer;
-                poolBuffer = nullptr;
-            }
-            
-            if(tempBuffer)
-            {
-                delete[] tempBuffer;
-                tempBuffer = nullptr;
-            }
-        }
-        
-        /**
-         * 确保池缓冲区有足够大小
-         * 如果当前缓冲区不够，分配新的（保持旧数据）
-         * 分配策略：如果需要扩展，分配所需大小的1.5倍以减少后续重新分配
-         */
-        void AudioMixer::EnsurePoolBuffer(uint requiredSize)
-        {
-            if(requiredSize <= poolBufferSize)
-                return;  // 当前缓冲区足够大
-            
-            // 分配1.5倍所需大小以减少未来重新分配
-            uint newSize = requiredSize + (requiredSize >> 1);
-            
-            LogInfo(OS_TEXT("Expanding pool buffer from ") + OSString::numberOf((int)poolBufferSize) +
-                   OS_TEXT(" to ") + OSString::numberOf((int)newSize) + OS_TEXT(" samples"));
-            
-            float* newBuffer = new float[newSize];
-            
-            // 如果有旧数据，复制过来（虽然混音器通常不需要保留旧数据）
-            if(poolBuffer && poolBufferSize > 0)
-            {
-                memcpy(newBuffer, poolBuffer, poolBufferSize * sizeof(float));
-                delete[] poolBuffer;
-            }
-            
-            poolBuffer = newBuffer;
-            poolBufferSize = newSize;
-        }
-        
-        /**
-         * 确保临时缓冲区有足够大小
-         */
-        void AudioMixer::EnsureTempBuffer(uint requiredSize)
-        {
-            if(requiredSize <= tempBufferSize)
-                return;
-            
-            uint newSize = requiredSize + (requiredSize >> 1);
-            
-            LogInfo(OS_TEXT("Expanding temp buffer from ") + OSString::numberOf((int)tempBufferSize) +
-                   OS_TEXT(" to ") + OSString::numberOf((int)newSize) + OS_TEXT(" samples"));
-            
-            if(tempBuffer)
-                delete[] tempBuffer;
-            
-            tempBuffer = new float[newSize];
-            tempBufferSize = newSize;
+            // 内存池自动释放
         }
         
         /**
@@ -133,8 +68,8 @@ namespace hgl
             *outputCount = inputSize / bytesPerSample;
             
             // 使用临时缓冲区
-            EnsureTempBuffer(*outputCount);
-            *output = tempBuffer;
+            tempBuffer.Ensure(*outputCount);
+            *output = tempBuffer.Get();
             
             if(info.bitsPerSample == 16)
             {
@@ -477,17 +412,16 @@ namespace hgl
             uint outputSampleCount = (uint)(loopLength * finalSampleRate);
             
             // 预分配2倍大小的缓冲区以减少动态分配（基于用户要求）
-            uint estimatedSize = outputSampleCount * 2;
-            EnsurePoolBuffer(estimatedSize);
+            poolBuffer.Preallocate(outputSampleCount, 2.0f);
             
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) + 
                    OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength) + 
                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)finalSampleRate) +
                    OS_TEXT(", output format: ") + (outputFormat == AL_FORMAT_MONO_FLOAT32 ? OS_TEXT("float32") : OS_TEXT("int16")) +
-                   OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBufferSize) + OS_TEXT(" samples"));
+                   OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
             
             // 使用池缓冲区进行混音
-            float* mixBuffer = poolBuffer;
+            float* mixBuffer = poolBuffer.Get();
             memset(mixBuffer, 0, outputSampleCount * sizeof(float));
             
             // 将源数据转换为float（使用临时缓冲区）
