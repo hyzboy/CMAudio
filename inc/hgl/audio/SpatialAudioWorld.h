@@ -6,6 +6,7 @@
 #include<hgl/type/SortedSet.h>
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/DirectionalGainPattern.h>
+#include<hgl/audio/InterpolationType.h>
 #include<hgl/audio/ReverbPreset.h>
 #include<hgl/thread/ThreadMutex.h>
 
@@ -213,6 +214,9 @@ namespace hgl
         
         // 频率相关衰减（模拟空气中高频衰减更快）
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
+        
+        // 淡入淡出插值类型
+        InterpolationType fade_interpolation_type;                                                  ///< 淡入淡出插值算法类型
 
     protected:
 
@@ -291,6 +295,19 @@ namespace hgl
                  * @param count 样本点数量
                  */
                 void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count);
+
+                /**
+                 * 设置淡入淡出插值算法类型
+                 * Set fade interpolation algorithm type
+                 * @param type 插值类型（Linear: 线性，快速但可能突变; Cosine: 余弦，平滑推荐）
+                 */
+                void                SetFadeInterpolationType(InterpolationType type) { fade_interpolation_type = type; }
+
+                /**
+                 * 获取淡入淡出插值算法类型
+                 * Get fade interpolation algorithm type
+                 */
+                InterpolationType   GetFadeInterpolationType() const { return fade_interpolation_type; }
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
         virtual void                Delete(SpatialAudioSource *);                                   ///< 删除一个音源

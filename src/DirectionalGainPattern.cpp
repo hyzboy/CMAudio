@@ -1,4 +1,5 @@
 ﻿#include<hgl/audio/DirectionalGainPattern.h>
+#include<hgl/audio/InterpolationType.h>
 #include<hgl/math/Math.h>
 #include<algorithm>
 
@@ -7,10 +8,12 @@ namespace hgl
     DirectionalGainPattern::DirectionalGainPattern()
     {
         pattern_type = GainPatternType::Omnidirectional;
+        interpolation_type = InterpolationType::Cosine;  // 默认使用余弦插值，更适合音频
     }
 
     DirectionalGainPattern::DirectionalGainPattern(GainPatternType type)
     {
+        interpolation_type = InterpolationType::Cosine;  // 默认使用余弦插值
         SetPattern(type);
     }
 
@@ -119,37 +122,132 @@ namespace hgl
                 break;
         }
 
-        if (idx == 0)
+        // 根据插值类型选择不同的插值方法
+        if (interpolation_type == InterpolationType::Linear)
         {
-            // angle小于第一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
-            const PolarGainSample &last = samples[count - 1];
-            const PolarGainSample &first = samples[0];
-            
-            float angle_range = (360.0f - last.angle) + first.angle;
-            float t = (angle + (360.0f - last.angle)) / angle_range;
-            
-            return last.gain + t * (first.gain - last.gain);
+            // 线性插值（2点）
+            if (idx == 0)
+            {
+                // angle小于第一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                
+                float angle_range = (360.0f - last.angle) + first.angle;
+                float t = (angle + (360.0f - last.angle)) / angle_range;
+                
+                return Interpolation::Linear(last.gain, first.gain, t);
+            }
+            else if (idx == count)
+            {
+                // angle大于最后一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                
+                float angle_range = (360.0f - last.angle) + first.angle;
+                float t = (angle - last.angle) / angle_range;
+                
+                return Interpolation::Linear(last.gain, first.gain, t);
+            }
+            else
+            {
+                // 在两个样本点之间插值
+                const PolarGainSample &prev = samples[idx - 1];
+                const PolarGainSample &next = samples[idx];
+                
+                float t = (angle - prev.angle) / (next.angle - prev.angle);
+                
+                return Interpolation::Linear(prev.gain, next.gain, t);
+            }
         }
-        else if (idx == count)
+        else if (interpolation_type == InterpolationType::Cosine)
         {
-            // angle大于最后一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
+            // 余弦插值（2点）- 提供更平滑的过渡
+            if (idx == 0)
+            {
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                
+                float angle_range = (360.0f - last.angle) + first.angle;
+                float t = (angle + (360.0f - last.angle)) / angle_range;
+                
+                return Interpolation::Cosine(last.gain, first.gain, t);
+            }
+            else if (idx == count)
+            {
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                
+                float angle_range = (360.0f - last.angle) + first.angle;
+                float t = (angle - last.angle) / angle_range;
+                
+                return Interpolation::Cosine(last.gain, first.gain, t);
+            }
+            else
+            {
+                const PolarGainSample &prev = samples[idx - 1];
+                const PolarGainSample &next = samples[idx];
+                
+                float t = (angle - prev.angle) / (next.angle - prev.angle);
+                
+                return Interpolation::Cosine(prev.gain, next.gain, t);
+            }
+        }
+        else if (interpolation_type == InterpolationType::Cubic || interpolation_type == InterpolationType::Hermite)
+        {
+            // 三次/Hermite插值（4点）- 最平滑的过渡
+            // 需要获取4个点：v0, v1(prev), v2(next), v3
+            
+            int idx_prev = (idx == 0) ? 0 : (idx - 1);
+            int idx_curr = (idx == count) ? (count - 1) : idx;
+            int idx_next = (idx_curr + 1) % count;
+            int idx_prev_prev = (idx_prev == 0) ? (count - 1) : (idx_prev - 1);
+            
+            float v0 = samples[idx_prev_prev].gain;
+            float v1 = samples[idx_prev].gain;
+            float v2 = samples[idx_curr].gain;
+            float v3 = samples[idx_next].gain;
+            
+            // 计算插值参数t
+            float t;
+            if (idx == 0)
+            {
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                float angle_range = (360.0f - last.angle) + first.angle;
+                t = (angle + (360.0f - last.angle)) / angle_range;
+            }
+            else if (idx == count)
+            {
+                const PolarGainSample &last = samples[count - 1];
+                const PolarGainSample &first = samples[0];
+                float angle_range = (360.0f - last.angle) + first.angle;
+                t = (angle - last.angle) / angle_range;
+            }
+            else
+            {
+                const PolarGainSample &prev = samples[idx - 1];
+                const PolarGainSample &next = samples[idx];
+                t = (angle - prev.angle) / (next.angle - prev.angle);
+            }
+            
+            return Interpolation::Interpolate(interpolation_type, v0, v1, v2, v3, t);
+        }
+        
+        // 默认线性插值
+        if (idx == 0 || idx == count)
+        {
             const PolarGainSample &last = samples[count - 1];
             const PolarGainSample &first = samples[0];
-            
             float angle_range = (360.0f - last.angle) + first.angle;
-            float t = (angle - last.angle) / angle_range;
-            
-            return last.gain + t * (first.gain - last.gain);
+            float t = (idx == 0) ? (angle + (360.0f - last.angle)) / angle_range : (angle - last.angle) / angle_range;
+            return Interpolation::Linear(last.gain, first.gain, t);
         }
         else
         {
-            // 在两个样本点之间插值
             const PolarGainSample &prev = samples[idx - 1];
             const PolarGainSample &next = samples[idx];
-            
             float t = (angle - prev.angle) / (next.angle - prev.angle);
-            
-            return prev.gain + t * (next.gain - prev.gain);
+            return Interpolation::Linear(prev.gain, next.gain, t);
         }
     }
 

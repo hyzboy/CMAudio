@@ -2,6 +2,7 @@
 
 #include<hgl/math/Vector.h>
 #include<hgl/type/List.h>
+#include<hgl/audio/InterpolationType.h>
 
 namespace hgl
 {
@@ -51,7 +52,8 @@ namespace hgl
     private:
 
         GainPatternType pattern_type;
-        List<PolarGainSample> samples;      ///< 极坐标样本点（已按角度排序）
+        InterpolationType interpolation_type;   ///< 插值算法类型
+        List<PolarGainSample> samples;          ///< 极坐标样本点（已按角度排序）
         
         void InitializePreset(GainPatternType type);
         float InterpolateGain(float angle) const;
@@ -74,6 +76,19 @@ namespace hgl
          * @param count 样本点数量
          */
         void SetCustomPattern(const PolarGainSample *samples_array, int count);
+
+        /**
+         * 设置插值算法类型
+         * Set interpolation algorithm type
+         * @param type 插值类型
+         */
+        void SetInterpolationType(InterpolationType type) { interpolation_type = type; }
+
+        /**
+         * 获取插值算法类型
+         * Get interpolation algorithm type
+         */
+        InterpolationType GetInterpolationType() const { return interpolation_type; }
 
         /**
          * 计算指定方向的增益

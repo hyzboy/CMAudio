@@ -177,6 +177,9 @@ namespace hgl
         
         // 初始化频率相关衰减变量
         frequency_dependent_attenuation=false;
+        
+        // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
+        fade_interpolation_type=InterpolationType::Cosine;
     }
 
     /**
@@ -437,9 +440,14 @@ namespace hgl
             }
             else
             {
-                // 计算当前增益（线性插值）
+                // 计算当前增益（使用配置的插值算法）
                 double t = elapsed / asi->fade_duration;
-                double current_gain = asi->fade_start_gain + (asi->fade_target_gain - asi->fade_start_gain) * t;
+                double current_gain = Interpolation::Interpolate(
+                    fade_interpolation_type,
+                    (float)asi->fade_start_gain,
+                    (float)asi->fade_target_gain,
+                    (float)t
+                );
                 asi->source->SetGain(current_gain);
             }
         }
