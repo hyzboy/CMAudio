@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include<hgl/type/BaseString.h>
-#include<hgl/type/List.h>
 
 namespace hgl
 {

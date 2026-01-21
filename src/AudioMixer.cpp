@@ -144,7 +144,17 @@ namespace hgl
             }
             
             // 计算输出大小
-            uint sampleCount = inputSize / (info.bitsPerSample / 8) / info.channels;
+            uint bytesPerSample = info.bitsPerSample / 8;
+            
+            // 验证有效的位深度
+            if(bytesPerSample == 0 || info.channels == 0)
+            {
+                *outputSize = 0;
+                *output = nullptr;
+                return;
+            }
+            
+            uint sampleCount = inputSize / bytesPerSample / info.channels;
             
             // 验证输入不为空
             if(sampleCount == 0)
@@ -155,7 +165,7 @@ namespace hgl
             }
             
             uint outputSampleCount = (uint)(sampleCount / pitch);
-            *outputSize = outputSampleCount * (info.bitsPerSample / 8) * info.channels;
+            *outputSize = outputSampleCount * bytesPerSample * info.channels;
             *output = new char[*outputSize];
             
             // 根据位深进行重采样
