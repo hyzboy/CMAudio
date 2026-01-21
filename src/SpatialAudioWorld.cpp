@@ -19,7 +19,7 @@ namespace hgl
     static constexpr double MIN_TIME_DIFF = 0.0001;  // 避免除以非常小的数导致数值不稳定
     static constexpr double FADE_DURATION = 0.02;    // 淡入淡出持续时间（20毫秒）
     static constexpr double FADE_SILENCE_THRESHOLD = 0.001;  // 判定为静音的增益阈值
-    static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，范围0-1）
+    static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，0-1范围：值越小越平滑但响应慢，值越大越灵敏但平滑效果弱）
 
     /**
      * 计算指定音源相对于监听者的音量
@@ -358,9 +358,11 @@ namespace hgl
                     
                     // 应用低通滤波平滑速度，防止帧率波动导致的音调抖动
                     // 使用指数移动平均: smoothed = smoothed * (1 - alpha) + raw * alpha
-                    asi->smoothed_velocity.x = asi->smoothed_velocity.x * (1.0 - VELOCITY_SMOOTHING_FACTOR) + raw_velocity.x * VELOCITY_SMOOTHING_FACTOR;
-                    asi->smoothed_velocity.y = asi->smoothed_velocity.y * (1.0 - VELOCITY_SMOOTHING_FACTOR) + raw_velocity.y * VELOCITY_SMOOTHING_FACTOR;
-                    asi->smoothed_velocity.z = asi->smoothed_velocity.z * (1.0 - VELOCITY_SMOOTHING_FACTOR) + raw_velocity.z * VELOCITY_SMOOTHING_FACTOR;
+                    const double smooth_factor = VELOCITY_SMOOTHING_FACTOR;
+                    const double retain_factor = 1.0 - smooth_factor;
+                    asi->smoothed_velocity.x = asi->smoothed_velocity.x * retain_factor + raw_velocity.x * smooth_factor;
+                    asi->smoothed_velocity.y = asi->smoothed_velocity.y * retain_factor + raw_velocity.y * smooth_factor;
+                    asi->smoothed_velocity.z = asi->smoothed_velocity.z * retain_factor + raw_velocity.z * smooth_factor;
                     
                     // 设置平滑后的矢量速度（OpenAL会自动计算多普勒效果）
                     asi->source->SetVelocity(asi->smoothed_velocity);
