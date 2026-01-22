@@ -15,8 +15,9 @@ namespace hgl
         Wav,             ///<Wav音波文件
         Vorbis,          ///<Vorbis OGG文件
         Opus,            ///<Opus OGG文件
+        MIDI,            ///<MIDI音频文件
 
-        ENUM_CLASS_RANGE(Wav,Opus)
+        ENUM_CLASS_RANGE(Wav,MIDI)
     };//enum AudioFileType
 
     AudioFileType CheckAudioExtName(const os_char *ext_name);

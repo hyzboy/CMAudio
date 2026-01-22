@@ -14,6 +14,8 @@ namespace hgl
         {OS_TEXT("wav"),    AudioFileType::Wav      },
         {OS_TEXT("ogg"),    AudioFileType::Vorbis   },
         {OS_TEXT("opus"),   AudioFileType::Opus     },
+        {OS_TEXT("mid"),    AudioFileType::MIDI     },
+        {OS_TEXT("midi"),   AudioFileType::MIDI     },
         {OS_TEXT(""),       AudioFileType::None     }
     };
 
@@ -54,7 +56,8 @@ namespace hgl
     {
         OS_TEXT("Wav"),
         OS_TEXT("Vorbis"),
-        OS_TEXT("Opus")
+        OS_TEXT("Opus"),
+        OS_TEXT("MIDI")
     };
 
     const os_char *GetAudioDecodeName(const AudioFileType aft)
