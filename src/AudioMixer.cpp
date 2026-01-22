@@ -55,7 +55,7 @@ namespace hgl
                     RETURN_FALSE;
             }
             
-            RETURN_TRUE;
+            return(true);
         }
         
         /**
@@ -210,7 +210,7 @@ namespace hgl
             sourceInfo.sampleRate = sampleRate;
             sourceInfo.dataSize = size;
             
-            RETURN_TRUE;
+            return(true);
         }
         
         /**
@@ -261,11 +261,11 @@ namespace hgl
         void AudioMixer::ApplyPitchShift(const float* input, uint inputCount, 
                                          float** output, uint* outputCount, float pitch)
         {
-            if(pitch < MIN_PITCH || pitch > MAX_PITCH)
-                pitch = DEFAULT_PITCH;
+            if(pitch < MinPitch || pitch > MaxPitch)
+                pitch = DefaultPitch;
             
             // 如果音调不变，直接复制
-            if(fabs(pitch - DEFAULT_PITCH) < 0.001f)
+            if(fabs(pitch - DefaultPitch) < 0.001f)
             {
                 *outputCount = inputCount;
                 *output = new float[inputCount];
@@ -505,7 +505,7 @@ namespace hgl
             // 不再删除mixBuffer，因为它是池缓冲区
             
             LogInfo(OS_TEXT("Mixing completed successfully"));
-            RETURN_TRUE;
+            return(true);
         }
         
     }//namespace audio

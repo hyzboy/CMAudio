@@ -61,7 +61,7 @@ namespace hgl
                 // 计算新大小 (使用增长因子)
                 uint newSize = requiredSize + static_cast<uint>(requiredSize * (growthFactor - 1.0f));
                 
-                LOG_INFO(poolName + OS_TEXT(" expanding from ") + 
+                LogInfo(poolName + OS_TEXT(" expanding from ") + 
                         OSString::numberOf((int)bufferSize) +
                         OS_TEXT(" to ") + OSString::numberOf((int)newSize) + 
                         OS_TEXT(" elements"));
@@ -91,7 +91,7 @@ namespace hgl
                 
                 if(targetSize > bufferSize)
                 {
-                    LOG_INFO(poolName + OS_TEXT(" preallocating ") + 
+                    LogInfo(poolName + OS_TEXT(" preallocating ") + 
                             OSString::numberOf((int)targetSize) + 
                             OS_TEXT(" elements (") + 
                             OSString::numberOf(multiplier) + 
@@ -122,7 +122,7 @@ namespace hgl
                 if(targetSize <= bufferSize)
                     return;  // 当前缓冲区足够大
                 
-                LOG_INFO(poolName + OS_TEXT(" expanding from ") + 
+                LogInfo(poolName + OS_TEXT(" expanding from ") + 
                         OSString::numberOf((int)bufferSize) +
                         OS_TEXT(" to ") + OSString::numberOf((int)targetSize) + 
                         OS_TEXT(" elements"));

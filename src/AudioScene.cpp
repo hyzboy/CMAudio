@@ -152,7 +152,7 @@ namespace hgl
                 RETURN_FALSE;
             }
             
-            LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration) + 
+            LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration,3) + 
                    OS_TEXT(" seconds, output format=") + OSString::numberOf((int)outputFormat) +
                    OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputSampleRate));
             
@@ -319,8 +319,7 @@ namespace hgl
             }
             
             LogInfo(OS_TEXT("Scene generation completed successfully"));
-            RETURN_TRUE;
-        }
-        
+            return(true);
+        }        
     }//namespace audio
 }//namespace hgl

@@ -22,11 +22,11 @@ namespace hgl
         private:
             
             // Pitch shifting constants
-            static constexpr float MIN_PITCH = 0.5f;
-            static constexpr float MAX_PITCH = 2.0f;
-            static constexpr float DEFAULT_PITCH = 1.0f;
+            static constexpr float MinPitch = 0.5f;
+            static constexpr float MaxPitch = 2.0f;
+            static constexpr float DefaultPitch = 1.0f;
             
-            ObjectList<MixingTrack> tracks;         ///< 混音轨道列表
+            ArrayList<MixingTrack> tracks;          ///< 混音轨道列表
             MixerConfig config;                     ///< 混音器配置
             
             AudioDataInfo sourceInfo;               ///< 源音频数据信息

@@ -1,5 +1,5 @@
 ﻿#include"AudioDecode.h"
-#include<hgl/plugin/PlugInManage.h>
+#include<hgl/plugin/PlugInManager.h>
 #include<hgl/filesystem/FileSystem.h>
 
 using namespace openal;
@@ -7,7 +7,7 @@ namespace hgl
 {
     namespace
     {
-        PlugInManage audio_plug_in(OS_TEXT("Audio"));
+        PlugInManager audio_plug_in(OS_TEXT("Audio"));
     }
 
     bool GetAudioInterface(const OSString &name,AudioPlugInInterface *api,AudioFloatPlugInInterface *afpi)
