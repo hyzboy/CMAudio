@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>  // For UINT64_MAX
+#include <limits>
 
 namespace hgl
 {
@@ -41,19 +42,21 @@ namespace hgl
     static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 高频增益最小值（远距离时保留30%高频）
     static constexpr float FREQ_ATTEN_CHANGE_THRESHOLD = 0.05f;    // 滤波器更新阈值（5%变化才更新）
     
-    // 编译时检查权重总和为1.0（使用精确比较，因为这些是编译时常量）
+    // 编译时检查权重总和约等于1.0（允许极小的浮点误差）
     constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
                                   IMPORTANCE_VELOCITY_WEIGHT + IMPORTANCE_DISTANCE_WEIGHT;
-    static_assert(weight_sum == 1.0, "Importance weights must sum to exactly 1.0");
+    constexpr double weight_eps = std::numeric_limits<double>::epsilon() * 8; // 放宽容差
+    static_assert(weight_sum > 1.0 - weight_eps && weight_sum < 1.0 + weight_eps,
+                  "Importance weights must sum to ~1.0 (within epsilon)");
 
     /**
-     * 计算音源的综合重要性分数
+     * 计算音源的综合重要性分数（作为类静态成员定义，访问私有字段）
      * @param asi 音源
      * @param audible_gain 实际可听增益（经过距离衰减后）
      * @param listener_pos 监听者位置
      * @return 重要性分数(0-1范围，1为最重要)
      */
-    static double CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos)
+    double SpatialAudioWorld::CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos)
     {
         if (!asi) return 0.0;
         

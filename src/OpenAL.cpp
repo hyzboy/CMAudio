@@ -192,7 +192,7 @@ namespace openal
         return alcGetDeviceInfo(dev,dev.name);
     }
 
-    int alcGetDeviceList(ArrayList<OpenALDevice> &device_list)
+    int alcGetDeviceList(ValueArray<OpenALDevice> &device_list)
     {
         const char *devices=alcGetDeviceNameList();
 

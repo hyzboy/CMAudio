@@ -1,7 +1,9 @@
 ﻿#include<hgl/audio/DirectionalGainPattern.h>
 #include<hgl/audio/InterpolationType.h>
-#include<hgl/math/Math.h>
+#include<hgl/math/TrigConstants.h>
 #include<algorithm>
+#include <cmath>
+#include <numbers>
 
 namespace hgl
 {
@@ -39,8 +41,8 @@ namespace hgl
             // 前方(0°)增益1.0，侧向(90°)增益0.5，后方(180°)增益0.0
             for (int angle = 0; angle <= 360; angle += 15)
             {
-                float radians = angle * DEG_TO_RAD;
-                float gain = 0.5f + 0.5f * hgl_cos(radians);
+                float radians = hgl::math::deg2rad(static_cast<float>(angle));
+                float gain = 0.5f + 0.5f * std::cos(radians);
                 samples.Add(PolarGainSample(angle, gain));
             }
         }
@@ -50,9 +52,9 @@ namespace hgl
             // 更强的前向性
             for (int angle = 0; angle <= 360; angle += 15)
             {
-                float radians = angle * DEG_TO_RAD;
-                float gain = 0.37f + 0.63f * hgl_cos(radians);
-                samples.Add(PolarGainSample(angle, hgl_max(0.0f, gain)));
+                float radians = hgl::math::deg2rad(static_cast<float>(angle));
+                float gain = 0.37f + 0.63f * std::cos(radians);
+                samples.Add(PolarGainSample(angle, std::max(0.0f, gain)));
             }
         }
         else if (type == GainPatternType::Hypercardioid)
@@ -61,9 +63,9 @@ namespace hgl
             // 最强的前向性
             for (int angle = 0; angle <= 360; angle += 15)
             {
-                float radians = angle * DEG_TO_RAD;
-                float gain = 0.25f + 0.75f * hgl_cos(radians);
-                samples.Add(PolarGainSample(angle, hgl_max(0.0f, gain)));
+                float radians = hgl::math::deg2rad(static_cast<float>(angle));
+                float gain = 0.25f + 0.75f * std::cos(radians);
+                samples.Add(PolarGainSample(angle, std::max(0.0f, gain)));
             }
         }
         else if (type == GainPatternType::Bidirectional)
@@ -72,8 +74,8 @@ namespace hgl
             // 前后方向增益最大，侧向增益为0
             for (int angle = 0; angle <= 360; angle += 15)
             {
-                float radians = angle * DEG_TO_RAD;
-                float gain = hgl_abs(hgl_cos(radians));
+                float radians = hgl::math::deg2rad(static_cast<float>(angle));
+                float gain = std::abs(std::cos(radians));
                 samples.Add(PolarGainSample(angle, gain));
             }
         }
@@ -262,13 +264,13 @@ namespace hgl
         // 注意：to_listener是从音源指向监听者的向量，
         // 我们需要计算它与source_direction之间的角度
 
-        float dot = source_direction.dot(to_listener);
+         float dot = glm::dot(source_direction,to_listener);
         
         // 限制dot值在[-1, 1]范围内，避免浮点误差导致acos出错
-        dot = hgl_clamp(dot, -1.0f, 1.0f);
+        dot = std::clamp(dot, -1.0f, 1.0f);
         
-        float angle_radians = hgl_acos(dot);
-        float angle_degrees = angle_radians * RAD_TO_DEG;
+        float angle_radians = std::acos(dot);
+        float angle_degrees = hgl::math::rad2deg(angle_radians);
 
         // 使用插值获取该角度的增益
         return InterpolateGain(angle_degrees);
