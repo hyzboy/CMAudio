@@ -23,7 +23,7 @@
 #endif //__al_h_
 
 #include<hgl/platform/Platform.h>
-#include<hgl/type/ArrayList.h>
+#include<hgl/type/ValueArray.h>
 
 #include<hgl/al/al.h>
 #include<hgl/al/alc.h>
@@ -44,7 +44,7 @@ namespace openal                                                                
     };
 
     bool alcGetDefaultDevice(OpenALDevice &);                                                       ///<取得缺省设备
-    int alcGetDeviceList(hgl::ArrayList<OpenALDevice> &);                                           ///<取得设备列表
+    int alcGetDeviceList(hgl::ValueArray<OpenALDevice> &);                                           ///<取得设备列表
 
     void alcSetDefaultContext();                                                                    ///<设置缺省上下文
 
@@ -100,6 +100,39 @@ namespace openal                                                                
 
     bool SetDopplerFactor(const float);                                                             ///<设置多普勒缩放倍数
     bool SetDopplerVelocity(const float);                                                           ///<设置多普勒速度
+    
+    /**
+     * 检查是否支持HRTF（头部相关传输函数）
+     * @return 是否支持HRTF
+     */
+    bool IsHRTFSupported();                                                                         ///<检查是否支持HRTF
+    
+    /**
+     * 启用/禁用HRTF（头部相关传输函数）
+     * 用于改善佩戴耳机时的空间定位感
+     * @param enable 是否启用HRTF
+     * @return 是否成功
+     */
+    bool EnableHRTF(bool enable=true);                                                             ///<启用/禁用HRTF
+    
+    /**
+     * 获取HRTF状态
+     * @return HRTF状态（ALC_HRTF_DISABLED_SOFT, ALC_HRTF_ENABLED_SOFT等）
+     */
+    int GetHRTFStatus();                                                                           ///<获取HRTF状态
+    
+    /**
+     * 获取可用的HRTF配置数量
+     * @return HRTF配置数量
+     */
+    int GetNumHRTFSpecifiers();                                                                    ///<获取可用的HRTF配置数量
+    
+    /**
+     * 获取指定索引的HRTF配置名称
+     * @param index HRTF配置索引
+     * @return HRTF配置名称
+     */
+    const char* GetHRTFSpecifierName(int index);                                                   ///<获取HRTF配置名称
     //--------------------------------------------------------------------------------------------------
     #define alLastError()   alGetErrorInfo(__FILE__,__LINE__)
 }//namespace openal

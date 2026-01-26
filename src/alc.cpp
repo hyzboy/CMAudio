@@ -26,6 +26,10 @@ namespace openal
     alcCaptureStartPROC alcCaptureStart=nullptr;
     alcCaptureStopPROC alcCaptureStop=nullptr;
     alcCaptureSamplesPROC alcCaptureSamples=nullptr;
+    
+    // OpenAL Soft HRTF extension
+    alcGetStringiSOFTPROC alcGetStringiSOFT=nullptr;
+    alcResetDeviceSOFTPROC alcResetDeviceSOFT=nullptr;
 }
 
 namespace openal

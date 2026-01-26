@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include<hgl/type/ObjectList.h>
+#include<hgl/type/ManagedArray.h>
 
 namespace hgl
 {
@@ -24,7 +24,7 @@ namespace hgl
             void Play(const os_char *,float);
         };//struct AudioItem
 
-        ObjectList<AudioItem> Items;
+        ManagedArray<AudioItem> Items;
 
     public:
 

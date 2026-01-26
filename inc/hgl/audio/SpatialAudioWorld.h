@@ -3,8 +3,10 @@
 #include<hgl/math/Vector.h>
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
-#include<hgl/type/SortedSet.h>
+#include<hgl/type/OrderedValueSet.h>
 #include<hgl/audio/ConeAngle.h>
+#include<hgl/audio/DirectionalGainPattern.h>
+#include<hgl/audio/InterpolationType.h>
 #include<hgl/audio/ReverbPreset.h>
 #include<hgl/thread/ThreadMutex.h>
 
@@ -24,6 +26,7 @@ namespace hgl
         AudioBuffer *   buffer                  = nullptr;          ///< 音频缓冲区
         Vector3f        position                = Vector3f(0,0,0);  ///< 初始位置
         float           gain                    = 1.0f;             ///< 音量增益
+        float           priority                = 1.0f;             ///< 优先级（用于音源调度，默认为1.0）
         uint            distance_model          = 0;                ///< 距离衰减模型
         float           rolloff_factor          = 1.0f;             ///< 环境衰减系数
         float           ref_distance            = 1.0f;             ///< 参考距离
@@ -49,6 +52,7 @@ namespace hgl
 
         bool loop;                                          ///< 是否循环播放
         float gain;                                         ///< 音量增益
+        float priority;                                     ///< 优先级（用于音源调度）
 
         uint distance_model;                                ///< 音量衰减模型
         float rolloff_factor;                               ///< 环境衰减系数，默认为1
@@ -58,6 +62,7 @@ namespace hgl
         float ref_distance;                                 ///< 参考距离
         float max_distance;                                 ///< 最大距离
         ConeAngle cone_angle;
+        audio::DirectionalGainPattern directional_pattern;  ///< 方向性增益图（用于更复杂的方向性建模）
         Vector3f velocity;
         Vector3f direction;
 
@@ -73,8 +78,25 @@ namespace hgl
         double cur_time;
 
         double move_speed;
+        
+        // 多普勒平滑状态
+        Vector3f smoothed_velocity;                         ///< 平滑后的速度（用于多普勒效果）
+        
+        // 分层更新管理
+        uint64 last_update_frame;                           ///< 上次更新的帧号（用于分层更新）
+        
+        // 频率相关衰减状态
+        uint lowpass_filter;                                ///< 低通滤波器ID（每个音源独立的OpenAL滤波器句柄）
+        float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
+        
+        // 淡入淡出状态
+        bool is_fading;                                     ///< 是否正在执行淡入淡出
+        double fade_start_time;                             ///< 淡入淡出开始时间
+        double fade_duration;                               ///< 淡入淡出持续时间
+        double fade_start_gain;                             ///< 淡入淡出开始时的增益
+        double fade_target_gain;                            ///< 淡入淡出目标增益
 
         AudioSource *source;
 
@@ -88,6 +110,7 @@ namespace hgl
             : buffer(config.buffer)
             , loop(config.loop)
             , gain(config.gain)
+            , priority(config.priority)
             , distance_model(config.distance_model)
             , rolloff_factor(config.rolloff_factor)
             , doppler_factor(config.doppler_factor)
@@ -100,10 +123,19 @@ namespace hgl
             , cur_time(0)
             , move_speed(0)
             , last_gain(0)
+            , last_update_frame(0)
+            , lowpass_filter(0)
+            , last_filter_gainhf(-1.0f)
+            , is_fading(false)
+            , fade_start_time(0)
+            , fade_duration(0)
+            , fade_start_gain(0)
+            , fade_target_gain(0)
             , source(nullptr)
         {
             velocity = Vector3f(0, 0, 0);
             direction = Vector3f(0, 0, 0);
+            smoothed_velocity = Vector3f(0, 0, 0);
             last_pos = config.position;
             cur_pos = config.position;
         }
@@ -164,6 +196,7 @@ namespace hgl
     protected:
 
         double cur_time;                                                                            ///< 当前时间
+        uint64 update_frame_counter;                                                                ///< 更新帧计数器（用于分层更新）
 
         float ref_distance;                                                                         ///< 默认参考距离
         float max_distance;                                                                         ///< 默认最大距离
@@ -171,13 +204,22 @@ namespace hgl
         AudioListener *listener;                                                                    ///< 监听者
 
         ObjectPool<AudioSource> source_pool;                                                        ///< 音源对象池
-        SortedSet<SpatialAudioSource *> source_list;                                                ///< 音源列表
+        OrderedValueSet<SpatialAudioSource *> source_list;                                          ///< 音源列表
         
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
         
         uint aux_effect_slot;                                                                       ///< 辅助效果槽
         uint reverb_effect;                                                                         ///< 混响效果
         bool reverb_enabled;                                                                        ///< 混响是否启用
+        
+        // 频率相关衰减（模拟空气中高频衰减更快）
+        bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
+        
+        // 淡入淡出插值类型
+        audio::InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
+
+        // 计算音源重要性（作为类的静态成员以便访问私有字段）
+        static double CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos);
 
     protected:
 
@@ -235,6 +277,40 @@ namespace hgl
                 void                CloseReverb();                                                  ///< 关闭混响系统
                 bool                SetReverbPreset(AudioReverbPreset preset);                           ///< 设置混响预设(使用 OpenAL Soft 官方预设)
                 bool                EnableReverb(bool enable);                                      ///< 启用/禁用混响
+
+                bool                InitFrequencyAttenuation();                                     ///< 初始化频率相关衰减
+                void                CloseFrequencyAttenuation();                                    ///< 关闭频率相关衰减
+                bool                EnableFrequencyAttenuation(bool enable);                        ///< 启用/禁用频率相关衰减
+
+                /**
+                 * 设置音源的方向性增益图
+                 * Set directional gain pattern for an audio source
+                 * @param asi 音源指针
+                 * @param pattern_type 预定义模式类型
+                 */
+                void                SetDirectionalPattern(SpatialAudioSource *asi, audio::GainPatternType pattern_type);
+
+                /**
+                 * 设置音源的自定义方向性增益图
+                 * Set custom directional gain pattern for an audio source
+                 * @param asi 音源指针
+                 * @param samples 极坐标样本点数组
+                 * @param count 样本点数量
+                 */
+                void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const audio::PolarGainSample *samples, int count);
+
+                /**
+                 * 设置淡入淡出插值算法类型
+                 * Set fade interpolation algorithm type
+                 * @param type 插值类型（Linear: 线性，快速但可能突变; Cosine: 余弦，平滑推荐）
+                 */
+                void                SetFadeInterpolationType(audio::InterpolationType type) { fade_interpolation_type = type; }
+
+                /**
+                 * 获取淡入淡出插值算法类型
+                 * Get fade interpolation algorithm type
+                 */
+                audio::InterpolationType   GetFadeInterpolationType() const { return fade_interpolation_type; }
 
         virtual SpatialAudioSource *Create(const SpatialAudioSourceConfig &config);                 ///< 创建一个音源（通过配置结构体设置所有参数）
         virtual void                Delete(SpatialAudioSource *);                                   ///< 删除一个音源
