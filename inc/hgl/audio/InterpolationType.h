@@ -1,16 +1,15 @@
 ﻿#pragma once
 
-#include<hgl/math/Math.h>
+#include <cmath>
+#include <numbers>
 
-namespace hgl
+namespace hgl::audio
 {
-    namespace audio
-    {
-        /**
-         * 插值算法类型枚举
-         * Interpolation algorithm type enum
-         */
-        enum class InterpolationType
+    /**
+     * 插值算法类型枚举
+     * Interpolation algorithm type enum
+     */
+    enum class InterpolationType
     {
         Linear,         ///< 线性插值 - 最快，但可能产生突变
         Cosine,         ///< 余弦插值 - 平滑过渡，适合音频
@@ -38,7 +37,7 @@ namespace hgl
          */
         static inline float Linear(float v0, float v1, float t)
         {
-            return v0 + t * (v1 - v0);
+            return std::lerp(v0, v1, t);
         }
 
         /**
@@ -53,7 +52,7 @@ namespace hgl
          */
         static inline float Cosine(float v0, float v1, float t)
         {
-            float t2 = (1.0f - hgl_cos(t * HGL_PI)) * 0.5f;
+            float t2 = (1.0f - std::cos(t * std::numbers::pi_v<float>)) * 0.5f;
             return Linear(v0, v1, t2);
         }
 
@@ -130,9 +129,9 @@ namespace hgl
             // 使用余弦函数确保功率守恒
             // Use cosine function to ensure power conservation
             // fade_out: cos(t * π/2), fade_in: sin(t * π/2)
-            float angle = t * HGL_PI * 0.5f;  // 0 to π/2
-            float fade_out = hgl_cos(angle);
-            float fade_in = hgl_sin(angle);
+            float angle = t * std::numbers::pi_v<float> * 0.5f;  // 0 to π/2
+            float fade_out = std::cos(angle);
+            float fade_in = std::sin(angle);
             return v0 * fade_out + v1 * fade_in;
         }
 
@@ -159,10 +158,10 @@ namespace hgl
             
             // 对数空间插值，然后转回线性空间
             // Interpolate in log space, then convert back to linear
-            float log_v0 = hgl_log(v0);
-            float log_v1 = hgl_log(v1);
+            float log_v0 = std::log(v0);
+            float log_v1 = std::log(v1);
             float log_result = log_v0 + t * (log_v1 - log_v0);
-            return hgl_exp(log_result);
+            return std::exp(log_result);
         }
 
         /**
@@ -251,5 +250,4 @@ namespace hgl
             }
         }
     };
-    }//namespace audio
-}//namespace hgl
+}//namespace hgl::audio

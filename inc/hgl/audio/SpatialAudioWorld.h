@@ -3,7 +3,7 @@
 #include<hgl/math/Vector.h>
 #include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
-#include<hgl/type/SortedSet.h>
+#include<hgl/type/OrderedValueSet.h>
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/DirectionalGainPattern.h>
 #include<hgl/audio/InterpolationType.h>
@@ -204,7 +204,7 @@ namespace hgl
         AudioListener *listener;                                                                    ///< 监听者
 
         ObjectPool<AudioSource> source_pool;                                                        ///< 音源对象池
-        SortedSet<SpatialAudioSource *> source_list;                                                ///< 音源列表
+        OrderedValueSet<SpatialAudioSource *> source_list;                                          ///< 音源列表
         
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
         
@@ -217,6 +217,9 @@ namespace hgl
         
         // 淡入淡出插值类型
         audio::InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
+
+        // 计算音源重要性（作为类的静态成员以便访问私有字段）
+        static double CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos);
 
     protected:
 

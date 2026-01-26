@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include<hgl/math/Vector.h>
-#include<hgl/type/List.h>
+#include<hgl/type/ValueArray.h>
 #include<hgl/audio/InterpolationType.h>
 
 namespace hgl
@@ -55,7 +55,7 @@ namespace hgl
 
         GainPatternType pattern_type;
         InterpolationType interpolation_type;   ///< 插值算法类型
-        List<PolarGainSample> samples;          ///< 极坐标样本点（已按角度排序）
+        ValueArray<PolarGainSample> samples;          ///< 极坐标样本点（已按角度排序）
         
         void InitializePreset(GainPatternType type);
         float InterpolateGain(float angle) const;

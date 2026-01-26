@@ -23,7 +23,7 @@
 #endif //__al_h_
 
 #include<hgl/platform/Platform.h>
-#include<hgl/type/ArrayList.h>
+#include<hgl/type/ValueArray.h>
 
 #include<hgl/al/al.h>
 #include<hgl/al/alc.h>
@@ -44,7 +44,7 @@ namespace openal                                                                
     };
 
     bool alcGetDefaultDevice(OpenALDevice &);                                                       ///<取得缺省设备
-    int alcGetDeviceList(hgl::ArrayList<OpenALDevice> &);                                           ///<取得设备列表
+    int alcGetDeviceList(hgl::ValueArray<OpenALDevice> &);                                           ///<取得设备列表
 
     void alcSetDefaultContext();                                                                    ///<设置缺省上下文
 
