@@ -235,7 +235,7 @@ namespace hgl
          */
         void AudioMixer::AddTrack(const MixingTrack& track)
         {
-            tracks.Add(new MixingTrack(track));
+            tracks.Add(track);
         }
         
         /**
@@ -243,8 +243,7 @@ namespace hgl
          */
         void AudioMixer::AddTrack(float timeOffset, float volume, float pitch)
         {
-            MixingTrack track(timeOffset, volume, pitch);
-            AddTrack(track);
+            AddTrack(MixingTrack(timeOffset, volume, pitch));
         }
         
         /**
@@ -396,10 +395,11 @@ namespace hgl
             if(loopLength <= 0.0f)
             {
                 loopLength = sourceDuration;
-                for(int i = 0; i < tracks.GetCount(); i++)
+
+                for(auto track:tracks)
                 {
-                    MixingTrack* track = tracks[i];
-                    float trackEnd = track->timeOffset + sourceDuration / track->pitch;
+                    float trackEnd = track.timeOffset + sourceDuration / track.pitch;
+
                     if(trackEnd > loopLength)
                         loopLength = trackEnd;
                 }
@@ -415,10 +415,10 @@ namespace hgl
             poolBuffer.Preallocate(outputSampleCount, 2.0f);
             
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) + 
-                   OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength) + 
-                   OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)finalSampleRate) +
-                   OS_TEXT(", output format: ") + (outputFormat == AL_FORMAT_MONO_FLOAT32 ? OS_TEXT("float32") : OS_TEXT("int16")) +
-                   OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
+                    OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength,3) + 
+                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)finalSampleRate) +
+                    OS_TEXT(", output format: ") + (outputFormat == AL_FORMAT_MONO_FLOAT32 ? OS_TEXT("float32") : OS_TEXT("int16")) +
+                    OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
             
             // 使用池缓冲区进行混音
             float* mixBuffer = poolBuffer.Get();
@@ -431,15 +431,13 @@ namespace hgl
             
             // 为每个轨道应用变换并混音
             // 注意：pitch shift和resample现在会动态分配，但频率低于之前
-            for(int trackIndex = 0; trackIndex < tracks.GetCount(); trackIndex++)
+            for(auto track:tracks)
             {
-                MixingTrack* track = tracks[trackIndex];
-                
                 // 应用音调变化
                 float* pitchShiftedData = nullptr;
                 uint pitchShiftedCount = 0;
                 ApplyPitchShift(sourceFloat, sourceFloatCount, 
-                              &pitchShiftedData, &pitchShiftedCount, track->pitch);
+                              &pitchShiftedData, &pitchShiftedCount, track.pitch);
                 
                 // 如果需要，应用采样率转换
                 float* resampledData = nullptr;
@@ -454,13 +452,13 @@ namespace hgl
                 }
                 
                 // 计算起始位置
-                uint startSample = (uint)(track->timeOffset * finalSampleRate);
+                uint startSample = (uint)(track.timeOffset * finalSampleRate);
                 
                 // 混合到输出 (float混音，无需担心溢出)
                 for(uint i = 0; i < pitchShiftedCount && (startSample + i) < outputSampleCount; i++)
                 {
                     // 应用音量并混合 - float混音非常简单
-                    mixBuffer[startSample + i] += pitchShiftedData[i] * track->volume * config.masterVolume;
+                    mixBuffer[startSample + i] += pitchShiftedData[i] * track.volume * config.masterVolume;
                 }
                 
                 delete[] pitchShiftedData;
@@ -489,8 +487,9 @@ namespace hgl
                 if(peak > 1.0f)
                 {
                     float normFactor = 1.0f / peak;
-                    LogInfo(OS_TEXT("Normalizing audio, peak: ") + OSString::floatOf(peak) + 
-                           OS_TEXT(", factor: ") + OSString::floatOf(normFactor));
+                    LogInfo(OS_TEXT("Normalizing audio, peak: ") + OSString::floatOf(peak,3) + 
+                           OS_TEXT(", factor: ") + OSString::floatOf(normFactor,3));
+
                     for(uint i = 0; i < outputSampleCount; i++)
                     {
                         mixBuffer[i] *= normFactor;

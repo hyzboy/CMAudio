@@ -80,11 +80,7 @@ namespace hgl
                 }
             }
             
-            SourceEntry* entry = new SourceEntry();
-            entry->config = config;
-            entry->name = name;
-            
-            sources.Add(name, entry);
+            sources.Add(name, config);
             
             LogInfo(OS_TEXT("Added audio source: ") + name);
         }
@@ -94,12 +90,7 @@ namespace hgl
          */
         void AudioScene::RemoveSource(const OSString& name)
         {
-            SourceEntry* entry = nullptr;
-            if(sources.Get(name, entry))
-            {
-                sources.Delete(name);
-                delete entry;
-            }
+            sources.DeleteByKey(name);
         }
         
         /**
@@ -107,15 +98,6 @@ namespace hgl
          */
         void AudioScene::ClearSources()
         {
-            auto it = sources.GetIterator();
-            SourceEntry* entry;
-            
-            while(it.Next())
-            {
-                entry = it.GetValue();
-                delete entry;
-            }
-            
             sources.Clear();
             
             // 重置格式标准
@@ -201,16 +183,14 @@ namespace hgl
                    OS_TEXT(" bytes, required=") + OSString::numberOf((int)totalSize) + OS_TEXT(" bytes"));
             
             // 为每个音源生成实例并混音
-            auto it = sources.GetIterator();
-            while(it.Next())
+            for(auto it:sources)
             {
-                SourceEntry* entry = it.GetValue();
-                const AudioSourceConfig& srcConfig = entry->config;
+                const AudioSourceConfig& srcConfig = it->value;
                 
                 // 确定生成数量
                 uint count = RandomUInt(srcConfig.minCount, srcConfig.maxCount);
                 
-                LogInfo(OS_TEXT("Processing source: ") + entry->name + 
+                LogInfo(OS_TEXT("Processing source: ") + it->key + 
                        OS_TEXT(", generating ") + OSString::numberOf((int)count) + 
                        OS_TEXT(" instances"));
                 
