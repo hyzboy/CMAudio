@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include<hgl/type/EnumUtil.h>
 
@@ -133,7 +133,7 @@ namespace hgl
     {
         u8char name_cn[32];          ///< 中文名称
         u8char name_en[32];          ///< 英文名称
-        
+
         struct
         {
             float Density;               ///< 密度
@@ -168,7 +168,7 @@ namespace hgl
      * @return 预设属性指针，如果预设无效则返回nullptr
      */
     const AudioReverbPresetProperties *GetAudioReverbPresetProperties(AudioReverbPreset preset);
-    
+
     /**
      * 获取混响预设数量
      */

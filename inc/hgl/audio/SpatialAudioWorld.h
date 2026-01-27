@@ -11,7 +11,7 @@
 #include<hgl/thread/ThreadMutex.h>
 
 namespace hgl
-{   
+{
     using namespace math;
 
     class AudioBuffer;
@@ -78,19 +78,19 @@ namespace hgl
         double cur_time;
 
         double move_speed;
-        
+
         // 多普勒平滑状态
         Vector3f smoothed_velocity;                         ///< 平滑后的速度（用于多普勒效果）
-        
+
         // 分层更新管理
         uint64 last_update_frame;                           ///< 上次更新的帧号（用于分层更新）
-        
+
         // 频率相关衰减状态
         uint lowpass_filter;                                ///< 低通滤波器ID（每个音源独立的OpenAL滤波器句柄）
         float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
-        
+
         // 淡入淡出状态
         bool is_fading;                                     ///< 是否正在执行淡入淡出
         double fade_start_time;                             ///< 淡入淡出开始时间
@@ -178,12 +178,12 @@ namespace hgl
 
     /**
      * 空间音频场景管理
-     * 
+     *
      * 内存管理说明：
      * - SpatialAudioSource 对象由 Create() 使用 new 分配，由 Delete() 或 Clear() 释放
      * - AudioSource 对象通过 source_pool 对象池管理，自动复用
      * - 调用者负责管理 AudioBuffer 和 AudioListener 对象的生命周期
-     * 
+     *
      * 线程安全说明：
      * - 所有公共 API 方法（Create、Delete、Clear、Update、SetListener、SetDistance、
      *   InitReverb、CloseReverb、SetReverbPreset、EnableReverb）都是线程安全的
@@ -205,16 +205,16 @@ namespace hgl
 
         ObjectPool<AudioSource> source_pool;                                                        ///< 音源对象池
         OrderedValueSet<SpatialAudioSource *> source_list;                                          ///< 音源列表
-        
+
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
-        
+
         uint aux_effect_slot;                                                                       ///< 辅助效果槽
         uint reverb_effect;                                                                         ///< 混响效果
         bool reverb_enabled;                                                                        ///< 混响是否启用
-        
+
         // 频率相关衰减（模拟空气中高频衰减更快）
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
-        
+
         // 淡入淡出插值类型
         audio::InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
 
@@ -227,7 +227,7 @@ namespace hgl
         bool ToHear(SpatialAudioSource *);                                                          ///< 转为发声处理
 
         bool UpdateSource(SpatialAudioSource *);                                                    ///< 刷新音源处理
-        
+
         void ApplyReverbPreset(const AudioReverbPresetProperties &);                                     ///< 应用混响预设
 
     public:     // 事件

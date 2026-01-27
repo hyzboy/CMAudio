@@ -1,4 +1,4 @@
-// AudioScene City Scene Test
+﻿// AudioScene City Scene Test
 // Loads city_scene.toml configuration and generates a mixed urban environment
 #include <iostream>
 #include <map>
@@ -52,11 +52,11 @@ int main(int argc, char** argv)
         {
             std::cerr << "FAILED" << std::endl;
             std::cerr << "Error: Failed to load " << source.wavFile << std::endl;
-            
+
             // Cleanup already loaded files
             for (auto& pair : wavData)
                 free(pair.second);
-            
+
             return 1;
         }
 
@@ -110,11 +110,11 @@ int main(int argc, char** argv)
     if (!scene.GenerateScene(&outputData, &outputSize, config.duration))
     {
         std::cerr << "Error: Failed to generate scene" << std::endl;
-        
+
         // Cleanup
         for (auto& pair : wavData)
             free(pair.second);
-        
+
         return 1;
     }
 
@@ -126,11 +126,11 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;
-        
+
         // Cleanup
         for (auto& pair : wavData)
             free(pair.second);
-        
+
         return 1;
     }
 

@@ -31,7 +31,7 @@ namespace hgl
         AudioFloatPlugInInterface decode_float{};
 
         if(!GetAudioInterface(plugin_name,&decode,&decode_float))
-            RETURN_ERROR(0);        
+            RETURN_ERROR(0);
 
         const bool use_float_data=(IsSupportFloatAudioData()&&decode_float.Load);
 
@@ -167,7 +167,7 @@ namespace hgl
         if(!alGenBuffers)RETURN_FALSE;
         if(!in)RETURN_FALSE;
         if(size<=0)RETURN_FALSE;
-        
+
         if(!RangeCheck(aft))
         {
             LogError(OS_TEXT("Audio file type unknow! AudioFileType:")+OSString::numberOf((int)aft));
@@ -197,7 +197,7 @@ namespace hgl
         if(!alGenBuffers)RETURN_FALSE;
 
         aft=CheckAudioFileType(filename);
-        
+
         if(!RangeCheck(aft))
         {
             LogError(OS_TEXT("Audio file type unknow! AudioFile: ")+OSString(filename));

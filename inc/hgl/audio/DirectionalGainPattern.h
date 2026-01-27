@@ -45,7 +45,7 @@ namespace hgl
     /**
      * 方向性增益图类
      * Directional gain pattern class
-     * 
+     *
      * 用于模拟复杂的方向性声场，支持极坐标增益图
      * Simulates complex directional sound fields using polar gain patterns
      */
@@ -56,7 +56,7 @@ namespace hgl
         GainPatternType pattern_type;
         InterpolationType interpolation_type;   ///< 插值算法类型
         ValueArray<PolarGainSample> samples;          ///< 极坐标样本点（已按角度排序）
-        
+
         void InitializePreset(GainPatternType type);
         float InterpolateGain(float angle) const;
 

@@ -1,4 +1,4 @@
-#ifndef HGL_AUDIO_DECODE_INCLUDE
+﻿#ifndef HGL_AUDIO_DECODE_INCLUDE
 #define HGL_AUDIO_DECODE_INCLUDE
 
 #include<hgl/audio/OpenAL.h>

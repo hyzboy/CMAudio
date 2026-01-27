@@ -43,15 +43,15 @@ namespace openal
     bool OnFindedOpenALDynamicLinkLibrary(const OSString &filename,void *user_data,bool exist)
     {
         if(!exist)return(true);
-        
+
         AudioEM=LoadExternalModule(filename);
 
         if(!AudioEM)
-        {            
+        {
             GLogWarning(OS_TEXT("Finded a OpenAL dynamic link library, but it can't load. filename: ")+OSString(filename));
             return(true);
         }
-        
+
         GLogInfo(OS_TEXT("Loading of openAL dynamic link library successfully, filename: ")+OSString(filename));
 
         return(false);
@@ -741,11 +741,11 @@ namespace openal
 
         return(true);
     }
-    
+
     //--------------------------------------------------------------------------------------------------
     // HRTF Support Functions
     //--------------------------------------------------------------------------------------------------
-    
+
     /**
      * 检查是否支持HRTF
      * @return 是否支持HRTF扩展
@@ -754,10 +754,10 @@ namespace openal
     {
         if(!AudioDevice || !alcIsExtensionPresent)
             return false;
-            
+
         return alcIsExtensionPresent(AudioDevice, "ALC_SOFT_HRTF") == ALC_TRUE;
     }
-    
+
     /**
      * 加载HRTF扩展函数（内部辅助函数）
      * @return 是否成功加载所有必需的HRTF函数
@@ -766,7 +766,7 @@ namespace openal
     {
         if(!AudioDevice || !alcGetProcAddress)
             return false;
-            
+
         if(!alcResetDeviceSOFT)
         {
             alcResetDeviceSOFT = (alcResetDeviceSOFTPROC)alcGetProcAddress(AudioDevice, "alcResetDeviceSOFT");
@@ -776,7 +776,7 @@ namespace openal
                 return false;
             }
         }
-        
+
         if(!alcGetStringiSOFT)
         {
             alcGetStringiSOFT = (alcGetStringiSOFTPROC)alcGetProcAddress(AudioDevice, "alcGetStringiSOFT");
@@ -786,10 +786,10 @@ namespace openal
                 // 不返回false，因为这个函数只用于获取配置文件名称，不是必需的
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * 启用/禁用HRTF
      * @param enable 是否启用HRTF
@@ -802,25 +802,25 @@ namespace openal
             GLogError(OS_TEXT("OpenAL device or context not initialized"));
             return false;
         }
-        
+
         if(!IsHRTFSupported())
         {
             GLogWarning(OS_TEXT("HRTF is not supported by current OpenAL implementation"));
             return false;
         }
-        
+
         // 加载HRTF扩展函数
         if(!LoadHRTFFunctions())
         {
             return false;
         }
-        
+
         // 设置HRTF属性
         ALCint attrs[] = {
             ALC_HRTF_SOFT, enable ? ALC_TRUE : ALC_FALSE,
             0  // 终止符
         };
-        
+
         // 重置设备以应用HRTF设置
         if(!alcResetDeviceSOFT(AudioDevice, attrs))
         {
@@ -828,10 +828,10 @@ namespace openal
             GLogError(OS_TEXT("Failed to reset OpenAL device for HRTF. Error code: ")+OSString::numberOf(error));
             return false;
         }
-        
+
         // 验证HRTF状态
         int hrtf_status = GetHRTFStatus();
-        
+
         if(enable)
         {
             if(hrtf_status == ALC_HRTF_ENABLED_SOFT)
@@ -879,7 +879,7 @@ namespace openal
             }
         }
     }
-    
+
     /**
      * 获取HRTF状态
      * @return HRTF状态常量
@@ -888,16 +888,16 @@ namespace openal
     {
         if(!AudioDevice || !alcGetIntegerv)
             return ALC_HRTF_DISABLED_SOFT;
-            
+
         if(!IsHRTFSupported())
             return ALC_HRTF_DISABLED_SOFT;
-            
+
         ALCint hrtf_status = ALC_HRTF_DISABLED_SOFT;
         alcGetIntegerv(AudioDevice, ALC_HRTF_STATUS_SOFT, 1, &hrtf_status);
-        
+
         return hrtf_status;
     }
-    
+
     /**
      * 获取可用的HRTF配置数量
      * @return HRTF配置数量
@@ -906,16 +906,16 @@ namespace openal
     {
         if(!AudioDevice || !alcGetIntegerv)
             return 0;
-            
+
         if(!IsHRTFSupported())
             return 0;
-            
+
         ALCint num_hrtf = 0;
         alcGetIntegerv(AudioDevice, ALC_NUM_HRTF_SPECIFIERS_SOFT, 1, &num_hrtf);
-        
+
         return num_hrtf;
     }
-    
+
     /**
      * 获取指定索引的HRTF配置名称
      * @param index HRTF配置索引
@@ -925,17 +925,17 @@ namespace openal
     {
         if(!AudioDevice)
             return nullptr;
-            
+
         if(!IsHRTFSupported())
             return nullptr;
-            
+
         // 加载HRTF扩展函数
         if(!LoadHRTFFunctions())
             return nullptr;
-        
+
         if(!alcGetStringiSOFT)
             return nullptr;
-            
+
         return alcGetStringiSOFT(AudioDevice, ALC_HRTF_SPECIFIER_SOFT, index);
     }
 }//namespace openal

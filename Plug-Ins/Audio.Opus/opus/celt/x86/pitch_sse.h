@@ -1,4 +1,4 @@
-/* Copyright (c) 2013 Jean-Marc Valin and John Ridges
+﻿/* Copyright (c) 2013 Jean-Marc Valin and John Ridges
    Copyright (c) 2014, Cisco Systems, INC MingXiang WeiZhou MinPeng YanWang*/
 /**
    @file pitch_sse.h

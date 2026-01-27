@@ -73,7 +73,7 @@ namespace hgl
 
         bool Playback();
 
-        bool DeletedAfterExit()const override{return false;}    
+        bool DeletedAfterExit()const override{return false;}
         bool Execute() override;
 
         void InitPrivate();

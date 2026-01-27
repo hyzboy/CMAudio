@@ -1,4 +1,4 @@
-/*Copyright (c) 2013, Xiph.Org Foundation and contributors.
+﻿/*Copyright (c) 2013, Xiph.Org Foundation and contributors.
 
   All rights reserved.
 

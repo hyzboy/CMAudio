@@ -24,7 +24,7 @@ namespace hgl
     static constexpr double VELOCITY_SMOOTHING_FACTOR = 0.3;  // 速度平滑系数（低通滤波器强度，0-1范围：值越小越平滑但响应慢，值越大越灵敏但平滑效果弱）
     static constexpr double VOICE_STEAL_GAIN_REDUCTION = 0.1;  // 音源抢占时的增益降低系数（降低到原来的10%以避免爆音）
     static constexpr float VOICE_STEAL_MIN_GAIN_THRESHOLD = 0.01f;  // 音源抢占时需要降低增益的最小阈值
-    
+
     // 分层更新管理常量
     static constexpr double IMPORTANCE_AUDIBLE_GAIN_WEIGHT = 0.4;  // 实际可听增益权重（最重要）
     static constexpr double IMPORTANCE_PRIORITY_WEIGHT = 0.3;      // 优先级权重
@@ -37,13 +37,13 @@ namespace hgl
     static constexpr uint TIER3_UPDATE_INTERVAL = 5;               // 低重要性：每5帧更新
     static constexpr double TIER1_THRESHOLD = 0.6;                 // 高重要性阈值
     static constexpr double TIER2_THRESHOLD = 0.3;                 // 中等重要性阈值
-    
+
     // 频率相关衰减常量
     static constexpr float FREQ_ATTEN_MIN_GAIN = 0.3f;             // 高频增益最小值（远距离时保留30%高频）
     static constexpr float FREQ_ATTEN_CHANGE_THRESHOLD = 0.05f;    // 滤波器更新阈值（5%变化才更新）
-    
+
     // 编译时检查权重总和约等于1.0（允许极小的浮点误差）
-    constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT + 
+    constexpr double weight_sum = IMPORTANCE_AUDIBLE_GAIN_WEIGHT + IMPORTANCE_PRIORITY_WEIGHT +
                                   IMPORTANCE_VELOCITY_WEIGHT + IMPORTANCE_DISTANCE_WEIGHT;
     constexpr double weight_eps = std::numeric_limits<double>::epsilon() * 8; // 放宽容差
     static_assert(weight_sum > 1.0 - weight_eps && weight_sum < 1.0 + weight_eps,
@@ -59,13 +59,13 @@ namespace hgl
     double SpatialAudioWorld::CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos)
     {
         if (!asi) return 0.0;
-        
+
         // 1. 实际可听增益因子（最重要，这是用户真正听到的音量）
         double audible_gain_factor = std::min(audible_gain, 1.0);
-        
+
         // 2. 优先级因子（归一化到0-1范围）
         double priority_factor = std::min(static_cast<double>(asi->priority) / MAX_EXPECTED_PRIORITY, 1.0);
-        
+
         // 3. 速度因子（移动的音源更重要，如接近的敌人、飞过的子弹等）
         // 注意：仅在启用多普勒时考虑速度，因为只有这时才计算和更新 move_speed
         // 对于不使用多普勒的场景，可以通过提高优先级来补偿
@@ -76,7 +76,7 @@ namespace hgl
             // 将速度归一化
             velocity_factor = std::min(speed / HIGH_SPEED_THRESHOLD, 1.0);
         }
-        
+
         // 4. 距离因子（作为辅助，距离越近可能意味着更需要精确更新）
         float distance = math::Length(listener_pos, asi->cur_pos);
         double distance_factor = 1.0;
@@ -84,13 +84,13 @@ namespace hgl
         {
             distance_factor = 1.0 - std::min(distance / asi->max_distance, 1.0f);
         }
-        
+
         // 综合重要性 = 各因子加权和
         double importance = audible_gain_factor * IMPORTANCE_AUDIBLE_GAIN_WEIGHT +
                            priority_factor * IMPORTANCE_PRIORITY_WEIGHT +
                            velocity_factor * IMPORTANCE_VELOCITY_WEIGHT +
                            distance_factor * IMPORTANCE_DISTANCE_WEIGHT;
-        
+
         return importance;
     }
 
@@ -102,7 +102,7 @@ namespace hgl
         if(!l||!s)return(0);
 
         if(s->gain<=0)return(0);        // 本身音量为0
-        
+
         // 参数验证：无效的距离参数返回0（静音）而非1，避免掩盖配置错误
         if(s->ref_distance<=0.0f)return(0);
         if(s->max_distance<=s->ref_distance)return(0);
@@ -167,20 +167,20 @@ namespace hgl
         source_pool.Reserve(max_source);
 
         listener=al;
-        
+
         update_frame_counter=0;
 
         ref_distance=DEFAULT_REF_DISTANCE;
         max_distance=DEFAULT_MAX_DISTANCE;
-        
+
         // 初始化混响相关变量
         aux_effect_slot=0;
         reverb_effect=0;
         reverb_enabled=false;
-        
+
         // 初始化频率相关衰减变量
         frequency_dependent_attenuation=false;
-        
+
         // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
         fade_interpolation_type=audio::InterpolationType::Cosine;
     }
@@ -205,17 +205,17 @@ namespace hgl
 
         // 使用场景的默认距离参数更新配置
         SpatialAudioSourceConfig finalConfig = config;
-        
+
         // 如果配置中的距离参数为结构体默认值，则使用场景的默认值
         if(finalConfig.ref_distance == DEFAULT_REF_DISTANCE && ref_distance != DEFAULT_REF_DISTANCE)
             finalConfig.ref_distance = ref_distance;
         if(finalConfig.max_distance == DEFAULT_MAX_DISTANCE && max_distance != DEFAULT_MAX_DISTANCE)
             finalConfig.max_distance = max_distance;
-        
+
         // 如果 distance_model 为 0，使用默认的衰减模型
         if(finalConfig.distance_model == 0)
             finalConfig.distance_model = AL_INVERSE_DISTANCE_CLAMPED;
-        
+
         // 使用最终的配置结构体创建音源
         SpatialAudioSource *asi = new SpatialAudioSource(finalConfig);
 
@@ -232,24 +232,24 @@ namespace hgl
         if(!asi)return;
 
         scene_mutex.Lock();
-        
+
         ToMute(asi);
 
         source_list.Delete(asi);
-        
+
         delete asi;  // 释放音源对象
-        
+
         scene_mutex.Unlock();
     }
 
     void SpatialAudioWorld::Clear()
     {
         scene_mutex.Lock();
-        
+
         // 先释放所有音源对象
         int count = source_list.GetCount();
         SpatialAudioSource **items = source_list.GetData();
-        
+
         for(int i = 0; i < count; i++)
         {
             if(items[i])
@@ -258,10 +258,10 @@ namespace hgl
                 delete items[i];  // 释放每个音源对象
             }
         }
-        
+
         source_list.Clear();
         source_pool.Clear();
-        
+
         scene_mutex.Unlock();
     }
 
@@ -278,7 +278,7 @@ namespace hgl
         asi->fade_duration = FADE_DURATION;
         asi->fade_start_gain = asi->source->GetGain();
         asi->fade_target_gain = 0.0;
-        
+
         // 释放per-source的低通滤波器
         if(asi->lowpass_filter != 0)
         {
@@ -329,19 +329,19 @@ namespace hgl
                 // 基于 gain * priority 找到当前优先级最低的音源
                 SpatialAudioSource *lowest_priority_source = nullptr;
                 double lowest_score = asi->gain * asi->priority;  // 当前音源的调度分数
-                
+
                 int count = source_list.GetCount();
                 SpatialAudioSource **items = source_list.GetData();
-                
+
                 for(int i = 0; i < count; i++)
                 {
                     SpatialAudioSource *candidate = items[i];
-                    
+
                     // 只考虑已分配物理音源且正在播放的音源
                     if(candidate && candidate->source && candidate != asi)
                     {
                         double candidate_score = candidate->gain * candidate->priority;
-                        
+
                         // 如果找到优先级更低的音源，记录它
                         if(candidate_score < lowest_score)
                         {
@@ -350,22 +350,22 @@ namespace hgl
                         }
                     }
                 }
-                
+
                 // 如果找到了优先级更低的音源，抢占它的物理音源
                 if(lowest_priority_source)
                 {
                     AudioSource *stolen_source = lowest_priority_source->source;
-                    
+
                     // 立即降低被抢占音源的增益，避免爆音（比完整淡出更快但比直接停止更平滑）
                     float current_gain = stolen_source->GetGain();
                     if(current_gain > VOICE_STEAL_MIN_GAIN_THRESHOLD)  // 只在增益足够大时才需要降低
                     {
                         stolen_source->SetGain(current_gain * VOICE_STEAL_GAIN_REDUCTION);
                     }
-                    
+
                     stolen_source->Stop();
                     stolen_source->Unlink();
-                    
+
                     // 将被抢占的物理音源分配给当前音源
                     asi->source = stolen_source;
                     lowest_priority_source->source = nullptr;
@@ -399,7 +399,7 @@ namespace hgl
         }
 
         asi->source->SetCurTime(time_off);
-        
+
         // 启动淡入效果（在播放开始之前设置）
         asi->is_fading = true;
         asi->fade_start_time = cur_time;
@@ -407,7 +407,7 @@ namespace hgl
         asi->fade_start_gain = 0.0;
         asi->fade_target_gain = asi->gain;
         asi->source->SetGain(0.0);  // 从0开始淡入
-        
+
         asi->source->Play(asi->loop);
 
         OnToHear(asi);
@@ -424,13 +424,13 @@ namespace hgl
         if(asi->is_fading)
         {
             double elapsed = cur_time - asi->fade_start_time;
-            
+
             if(elapsed >= asi->fade_duration)
             {
                 // 淡入淡出完成
                 asi->source->SetGain(asi->fade_target_gain);
                 asi->is_fading = false;
-                
+
                 // 如果是淡出到静音，现在停止并释放音源
                 if(asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)  // 使用命名常量
                 {
@@ -460,7 +460,7 @@ namespace hgl
             // 如果正在淡出，不要中断，让淡出完成
             if(asi->is_fading && asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)
                 return(true);
-                
+
             if(!asi->loop)                  // 不是循环播放
             {
                 if(OnStopped(asi))
@@ -501,7 +501,7 @@ namespace hgl
                     raw_velocity.x = (asi->cur_pos.x - asi->last_pos.x) / time_diff;
                     raw_velocity.y = (asi->cur_pos.y - asi->last_pos.y) / time_diff;
                     raw_velocity.z = (asi->cur_pos.z - asi->last_pos.z) / time_diff;
-                    
+
                     // 应用低通滤波平滑速度，防止帧率波动导致的音调抖动
                     // 使用指数移动平均: smoothed = smoothed * (1 - alpha) + raw * alpha
                     const double smooth_factor = VELOCITY_SMOOTHING_FACTOR;
@@ -509,10 +509,10 @@ namespace hgl
                     asi->smoothed_velocity.x = asi->smoothed_velocity.x * retain_factor + raw_velocity.x * smooth_factor;
                     asi->smoothed_velocity.y = asi->smoothed_velocity.y * retain_factor + raw_velocity.y * smooth_factor;
                     asi->smoothed_velocity.z = asi->smoothed_velocity.z * retain_factor + raw_velocity.z * smooth_factor;
-                    
+
                     // 设置平滑后的矢量速度（OpenAL会自动计算多普勒效果）
                     asi->source->SetVelocity(asi->smoothed_velocity);
-                    
+
                     // 计算标量速度用于记录
                     asi->move_speed = math::Length(asi->last_pos, asi->cur_pos) / time_diff;
                 }
@@ -530,17 +530,17 @@ namespace hgl
         if(listener && asi->directional_pattern.IsEnabled())
         {
             const Vector3f &listener_pos = listener->GetPosition();
-            
+
             // 计算从音源指向监听者的向量（归一化）
             Vector3f to_listener = listener_pos - asi->cur_pos;
             float distance = math::Length(to_listener);
             if(distance > 0.0001f)  // 避免除以零
             {
                 to_listener = to_listener / distance;  // 归一化
-                
+
                 // 计算方向性增益
                 float directional_gain = asi->directional_pattern.CalculateGain(asi->direction, to_listener);
-                
+
                 // 应用方向性增益
                 // 注意：这会覆盖 OpenAL 的锥形角度效果
                 // 当使用极坐标增益图时，建议将 cone_angle 设置为 (360, 360) 以禁用 OpenAL 的锥形效果
@@ -555,17 +555,17 @@ namespace hgl
         {
             const Vector3f &listener_pos = listener->GetPosition();
             float distance = math::Length(listener_pos, asi->cur_pos);
-            
+
             // 计算距离因子（0=近距离，1=最大距离）
             float distance_factor = 0.0f;
             if(asi->max_distance > asi->ref_distance)
             {
                 distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
             }
-            
+
             // 远距离时降低高频增益，模拟空气吸收
             float gain_hf = 1.0f - distance_factor * (1.0f - FREQ_ATTEN_MIN_GAIN);
-            
+
             // 只在高频增益变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
             if(std::abs(gain_hf - asi->last_filter_gainhf) > FREQ_ATTEN_CHANGE_THRESHOLD)
             {
@@ -579,7 +579,7 @@ namespace hgl
                         asi->lowpass_filter = 0;  // 创建失败，确保ID为0
                         return(true);  // 继续执行，只是没有滤波器效果
                     }
-                    
+
                     if(alFilteri)
                     {
                         alFilteri(asi->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
@@ -593,24 +593,24 @@ namespace hgl
                         }
                     }
                 }
-                
+
                 // 设置低通滤波器参数
                 if(asi->lowpass_filter != 0 && alFilterf)
                 {
                     alGetError();  // 清除之前的错误
-                    
+
                     // 尝试设置两个参数，任一失败都放弃更新
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
                     bool gain_ok = (alGetError() == AL_NO_ERROR);
-                        
+
                     alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
                     bool gainhf_ok = (alGetError() == AL_NO_ERROR);
-                    
+
                     // 只有两个参数都设置成功才应用滤波器
                     if(gain_ok && gainhf_ok && alSourcei)
                     {
                         alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
-                        
+
                         if(alGetError() == AL_NO_ERROR)
                         {
                             asi->last_filter_gainhf = gain_hf;  // 只在成功应用后更新缓存值
@@ -634,7 +634,7 @@ namespace hgl
     int SpatialAudioWorld::Update(const double &ct)
     {
         scene_mutex.Lock();
-        
+
         if(!listener)
         {
             scene_mutex.Unlock();
@@ -653,10 +653,10 @@ namespace hgl
             cur_time=ct;
         else
             cur_time=GetTimeSec();
-        
+
         // 递增帧计数器（用于分层更新）
         update_frame_counter++;
-        
+
         const Vector3f &listener_pos = listener->GetPosition();
 
         float new_gain;
@@ -699,25 +699,25 @@ namespace hgl
                     // 使用实际可听增益（new_gain）而非原始增益，这更准确反映用户听到的音量
                     double importance = CalculateImportance(*ptr, new_gain, listener_pos);
                     uint update_interval;
-                    
+
                     if(importance >= TIER1_THRESHOLD)
                         update_interval = TIER1_UPDATE_INTERVAL;  // 高重要性：每帧更新
                     else if(importance >= TIER2_THRESHOLD)
                         update_interval = TIER2_UPDATE_INTERVAL;  // 中等重要性：每2帧更新
                     else
                         update_interval = TIER3_UPDATE_INTERVAL;  // 低重要性：每5帧更新
-                    
+
                     // 检查是否需要在当前帧更新此音源（使用模运算避免溢出）
-                    uint64 frames_since_update = (update_frame_counter >= (*ptr)->last_update_frame) 
+                    uint64 frames_since_update = (update_frame_counter >= (*ptr)->last_update_frame)
                         ? (update_frame_counter - (*ptr)->last_update_frame)
                         : (UINT64_MAX - (*ptr)->last_update_frame + update_frame_counter + 1);  // 处理溢出
-                    
+
                     if (frames_since_update >= update_interval)
                     {
                         UpdateSource(*ptr);     // 刷新音源处理
                         (*ptr)->last_update_frame = update_frame_counter;
                     }
-                    
+
                     OnContinuedHear(*ptr);  // 持续可听
                 }
             }
@@ -779,7 +779,7 @@ namespace hgl
         SetReverbPreset(AudioReverbPreset::Generic);
 
         reverb_enabled = true;
-        
+
         scene_mutex.Unlock();
         return true;
     }
@@ -790,7 +790,7 @@ namespace hgl
     void SpatialAudioWorld::CloseReverb()
     {
         scene_mutex.Lock();
-        
+
         reverb_enabled = false;
 
         if(reverb_effect != 0)
@@ -806,7 +806,7 @@ namespace hgl
                 alDeleteAuxiliaryEffectSlots(1, &aux_effect_slot);
             aux_effect_slot = 0;
         }
-        
+
         scene_mutex.Unlock();
     }
 
@@ -842,7 +842,7 @@ namespace hgl
     bool SpatialAudioWorld::SetReverbPreset(AudioReverbPreset preset)
     {
         scene_mutex.Lock();
-        
+
         if(!alEffectf || reverb_effect == 0)
         {
             scene_mutex.Unlock();
@@ -865,7 +865,7 @@ namespace hgl
             alAuxiliaryEffectSloti(aux_effect_slot, AL_EFFECTSLOT_EFFECT, reverb_effect);
 
         bool result = (alGetError() == AL_NO_ERROR);
-        
+
         scene_mutex.Unlock();
         return result;
     }
@@ -878,7 +878,7 @@ namespace hgl
     bool SpatialAudioWorld::EnableReverb(bool enable)
     {
         scene_mutex.Lock();
-        
+
         if(aux_effect_slot == 0)
         {
             scene_mutex.Unlock();
@@ -898,7 +898,7 @@ namespace hgl
         }
 
         bool result = (alGetError() == AL_NO_ERROR);
-        
+
         scene_mutex.Unlock();
         return result;
     }
@@ -918,7 +918,7 @@ namespace hgl
         }
 
         frequency_dependent_attenuation = true;
-        
+
         scene_mutex.Unlock();
         return true;
     }
@@ -930,13 +930,13 @@ namespace hgl
     void SpatialAudioWorld::CloseFrequencyAttenuation()
     {
         scene_mutex.Lock();
-        
+
         frequency_dependent_attenuation = false;
 
         // 清理所有音源的滤波器
         int count = source_list.GetCount();
         SpatialAudioSource **items = source_list.GetData();
-        
+
         for(int i = 0; i < count; i++)
         {
             SpatialAudioSource *asi = items[i];
@@ -947,7 +947,7 @@ namespace hgl
                 asi->lowpass_filter = 0;
             }
         }
-        
+
         scene_mutex.Unlock();
     }
 
@@ -960,15 +960,15 @@ namespace hgl
         {
             return false;  // EFX 不可用
         }
-        
+
         scene_mutex.Lock();
-        
+
         // 如果禁用，清理所有现有滤波器
         if(!enable && frequency_dependent_attenuation)
         {
             int count = source_list.GetCount();
             SpatialAudioSource **items = source_list.GetData();
-            
+
             for(int i = 0; i < count; i++)
             {
                 SpatialAudioSource *asi = items[i];
@@ -980,10 +980,10 @@ namespace hgl
                 }
             }
         }
-        
+
         frequency_dependent_attenuation = enable;
         scene_mutex.Unlock();
-        
+
         return true;
     }
 
@@ -994,7 +994,7 @@ namespace hgl
     {
         if (!asi)
             return;
-            
+
         scene_mutex.Lock();
         asi->directional_pattern.SetPattern(pattern_type);
         scene_mutex.Unlock();
@@ -1007,7 +1007,7 @@ namespace hgl
     {
         if (!asi || !samples || count <= 0)
             return;
-            
+
         scene_mutex.Lock();
         asi->directional_pattern.SetCustomPattern(samples, count);
         scene_mutex.Unlock();

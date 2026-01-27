@@ -1,4 +1,4 @@
-// AudioScene Swarm Test
+﻿// AudioScene Swarm Test
 // Loads swarm_scene.toml configuration and generates a bee swarm sound
 #include <iostream>
 #include <hgl/audio/AudioScene.h>

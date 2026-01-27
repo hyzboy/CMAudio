@@ -1,4 +1,4 @@
-/***********************************************************************
+﻿/***********************************************************************
 Copyright (c) 2006-2011, Skype Limited. All rights reserved.
 Copyright (C) 2012 Xiph.Org Foundation
 Redistribution and use in source and binary forms, with or without

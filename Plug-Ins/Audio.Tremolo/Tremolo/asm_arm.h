@@ -1,4 +1,4 @@
-/************************************************************************
+﻿/************************************************************************
  * Copyright (C) 2002-2009, Xiph.org Foundation
  * Copyright (C) 2010, Robin Watts for Pinknoise Productions Ltd
  * All rights reserved.

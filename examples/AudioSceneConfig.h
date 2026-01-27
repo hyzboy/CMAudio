@@ -1,4 +1,4 @@
-// AudioScene TOML Configuration Parser
+﻿// AudioScene TOML Configuration Parser
 // Simple TOML parser for AudioScene multi-source mixing configuration
 #pragma once
 
@@ -99,7 +99,7 @@ namespace hgl
                 while (std::getline(file, line))
                 {
                     line = Trim(line);
-                    
+
                     // Skip empty lines and comments
                     if (line.empty() || line[0] == '#')
                         continue;
@@ -116,7 +116,7 @@ namespace hgl
 
                         currentSection = line.substr(1, line.length() - 2);
                         inSourceSection = (currentSection.find("source.") == 0);
-                        
+
                         if (inSourceSection)
                         {
                             // Extract source name from section like [source.car]

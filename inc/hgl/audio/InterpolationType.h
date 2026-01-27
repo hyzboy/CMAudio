@@ -155,7 +155,7 @@ namespace hgl::audio
             // Avoid issues when v0 or v1 is 0
             if (v0 < 1e-6f) v0 = 1e-6f;
             if (v1 < 1e-6f) v1 = 1e-6f;
-            
+
             // 对数空间插值，然后转回线性空间
             // Interpolate in log space, then convert back to linear
             float log_v0 = std::log(v0);

@@ -1,4 +1,4 @@
-// Simple WAV Reader Utility
+﻿// Simple WAV Reader Utility
 // Reads WAV files into memory
 #pragma once
 

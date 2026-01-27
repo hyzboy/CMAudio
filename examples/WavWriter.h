@@ -1,4 +1,4 @@
-// Simple WAV Writer Utility
+﻿// Simple WAV Writer Utility
 // Writes mono PCM audio data to WAV files
 #pragma once
 
@@ -27,7 +27,7 @@ namespace hgl
                 char riffID[4];          // "RIFF"
                 uint32_t fileSize;       // File size - 8
                 char waveID[4];          // "WAVE"
-                
+
                 // fmt chunk
                 char fmtID[4];           // "fmt "
                 uint32_t fmtSize;        // Size of fmt chunk (16 for PCM)
@@ -37,7 +37,7 @@ namespace hgl
                 uint32_t byteRate;       // SampleRate * NumChannels * BitsPerSample/8
                 uint16_t blockAlign;     // NumChannels * BitsPerSample/8
                 uint16_t bitsPerSample;  // 8 or 16
-                
+
                 // data chunk
                 char dataID[4];          // "data"
                 uint32_t dataSize;       // Size of data
@@ -45,7 +45,7 @@ namespace hgl
 
         public:
             WavWriter() : file(nullptr), dataSize(0), dataSizePos(0) {}
-            
+
             ~WavWriter()
             {
                 Close();
@@ -68,7 +68,7 @@ namespace hgl
                 // Determine bits per sample and audio format from format
                 uint16_t bitsPerSample = 0;
                 uint16_t audioFormat = 1;  // 1 = PCM, 3 = IEEE float
-                
+
                 if (format == AL_FORMAT_MONO8)
                 {
                     bitsPerSample = 8;
@@ -108,7 +108,7 @@ namespace hgl
                 header.dataSize = 0;  // Will update on close
 
                 fwrite(&header, sizeof(WavHeader), 1, file);
-                
+
                 // Remember position of data size field
                 dataSizePos = sizeof(WavHeader) - sizeof(uint32_t);
                 dataSize = 0;
@@ -125,10 +125,10 @@ namespace hgl
             bool Write(const void* data, uint32_t size)
             {
                 if (!file) return false;
-                
+
                 size_t written = fwrite(data, 1, size, file);
                 if (written != size) return false;
-                
+
                 dataSize += size;
                 return true;
             }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2010 Xiph.Org Foundation
+﻿/* Copyright (c) 2010 Xiph.Org Foundation
  * Copyright (c) 2013 Parrot */
 /*
    Redistribution and use in source and binary forms, with or without

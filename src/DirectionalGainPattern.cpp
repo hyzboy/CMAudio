@@ -117,7 +117,7 @@ namespace hgl
 
         // 查找角度所在区间
         int count = samples.GetCount();
-        
+
         // 查找第一个角度大于等于目标角度的样本点
         int idx = 0;
         for (; idx < count; idx++)
@@ -135,10 +135,10 @@ namespace hgl
                 // angle小于第一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
                 const PolarGainSample &last = samples[count - 1];
                 const PolarGainSample &first = samples[0];
-                
+
                 float angle_range = (360.0f - last.angle) + first.angle;
                 float t = (angle + (360.0f - last.angle)) / angle_range;
-                
+
                 return Interpolation::Linear(last.gain, first.gain, t);
             }
             else if (idx == count)
@@ -146,10 +146,10 @@ namespace hgl
                 // angle大于最后一个样本点，使用最后一个和第一个样本点插值（跨越360°边界）
                 const PolarGainSample &last = samples[count - 1];
                 const PolarGainSample &first = samples[0];
-                
+
                 float angle_range = (360.0f - last.angle) + first.angle;
                 float t = (angle - last.angle) / angle_range;
-                
+
                 return Interpolation::Linear(last.gain, first.gain, t);
             }
             else
@@ -157,9 +157,9 @@ namespace hgl
                 // 在两个样本点之间插值
                 const PolarGainSample &prev = samples[idx - 1];
                 const PolarGainSample &next = samples[idx];
-                
+
                 float t = (angle - prev.angle) / (next.angle - prev.angle);
-                
+
                 return Interpolation::Linear(prev.gain, next.gain, t);
             }
         }
@@ -170,29 +170,29 @@ namespace hgl
             {
                 const PolarGainSample &last = samples[count - 1];
                 const PolarGainSample &first = samples[0];
-                
+
                 float angle_range = (360.0f - last.angle) + first.angle;
                 float t = (angle + (360.0f - last.angle)) / angle_range;
-                
+
                 return Interpolation::Cosine(last.gain, first.gain, t);
             }
             else if (idx == count)
             {
                 const PolarGainSample &last = samples[count - 1];
                 const PolarGainSample &first = samples[0];
-                
+
                 float angle_range = (360.0f - last.angle) + first.angle;
                 float t = (angle - last.angle) / angle_range;
-                
+
                 return Interpolation::Cosine(last.gain, first.gain, t);
             }
             else
             {
                 const PolarGainSample &prev = samples[idx - 1];
                 const PolarGainSample &next = samples[idx];
-                
+
                 float t = (angle - prev.angle) / (next.angle - prev.angle);
-                
+
                 return Interpolation::Cosine(prev.gain, next.gain, t);
             }
         }
@@ -200,17 +200,17 @@ namespace hgl
         {
             // 三次/Hermite插值（4点）- 最平滑的过渡
             // 需要获取4个点：v0, v1(prev), v2(next), v3
-            
+
             int idx_prev = (idx == 0) ? 0 : (idx - 1);
             int idx_curr = (idx == count) ? (count - 1) : idx;
             int idx_next = (idx_curr + 1) % count;
             int idx_prev_prev = (idx_prev == 0) ? (count - 1) : (idx_prev - 1);
-            
+
             float v0 = samples[idx_prev_prev].gain;
             float v1 = samples[idx_prev].gain;
             float v2 = samples[idx_curr].gain;
             float v3 = samples[idx_next].gain;
-            
+
             // 计算插值参数t
             float t;
             if (idx == 0)
@@ -233,10 +233,10 @@ namespace hgl
                 const PolarGainSample &next = samples[idx];
                 t = (angle - prev.angle) / (next.angle - prev.angle);
             }
-            
+
             return Interpolation::Interpolate(interpolation_type, v0, v1, v2, v3, t);
         }
-        
+
         // 默认线性插值
         if (idx == 0 || idx == count)
         {
@@ -265,10 +265,10 @@ namespace hgl
         // 我们需要计算它与source_direction之间的角度
 
          float dot = glm::dot(source_direction,to_listener);
-        
+
         // 限制dot值在[-1, 1]范围内，避免浮点误差导致acos出错
         dot = std::clamp(dot, -1.0f, 1.0f);
-        
+
         float angle_radians = std::acos(dot);
         float angle_degrees = hgl::math::rad2deg(angle_radians);
 

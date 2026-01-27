@@ -1,4 +1,4 @@
-#ifndef _OS_H
+﻿#ifndef _OS_H
 #define _OS_H
 /************************************************************************
  * Copyright (C) 2002-2009, Xiph.org Foundation

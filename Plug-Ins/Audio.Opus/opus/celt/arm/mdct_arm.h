@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Xiph.Org Foundation
+﻿/* Copyright (c) 2015 Xiph.Org Foundation
    Written by Viswanath Puttagunta */
 /**
    @file arm_mdct.h

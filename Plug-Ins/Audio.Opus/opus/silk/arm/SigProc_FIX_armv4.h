@@ -1,4 +1,4 @@
-/***********************************************************************
+﻿/***********************************************************************
 Copyright (C) 2013 Xiph.Org Foundation and contributors
 Copyright (c) 2013       Parrot
 Redistribution and use in source and binary forms, with or without
