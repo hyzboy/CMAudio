@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include<hgl/math/Vector.h>
-#include<hgl/type/Pool.h>
+//#include<hgl/type/Pool.h>
 #include<hgl/type/Map.h>
 #include<hgl/type/OrderedValueSet.h>
 #include<hgl/audio/ConeAngle.h>
@@ -203,7 +203,7 @@ namespace hgl
 
         AudioListener *listener;                                                                    ///< 监听者
 
-        ObjectPool<AudioSource> source_pool;                                                        ///< 音源对象池
+        ManagedPool<AudioSource> source_pool;                                                        ///< 音源对象池
         OrderedValueSet<SpatialAudioSource *> source_list;                                          ///< 音源列表
 
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
