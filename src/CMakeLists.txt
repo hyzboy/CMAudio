@@ -45,7 +45,7 @@ source_group("OpenAL" FILES ${CM_OPENAL_HEADER}
 source_group("Audio" FILES  ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
 
-add_cm_library(CMAudio "CM" ${CM_OPENAL_HEADER}
+add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_OPENAL_SOURCE}
                             ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
