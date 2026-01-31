@@ -41,6 +41,14 @@ namespace openal                                                                
         char name[AL_DEVICE_NAME_MAX_LEN];      ///<设备名称
         char specifier[AL_DEVICE_NAME_MAX_LEN]; ///<设备技术名称
         int major,minor;                        ///<设备版本号
+
+        bool operator==(const OpenALDevice& other) const
+        {
+            return memcmp(name, other.name, AL_DEVICE_NAME_MAX_LEN) == 0 &&
+                   memcmp(specifier, other.specifier, AL_DEVICE_NAME_MAX_LEN) == 0 &&
+                   major == other.major &&
+                   minor == other.minor;
+        }
     };
 
     bool alcGetDefaultDevice(OpenALDevice &);                                                       ///<取得缺省设备

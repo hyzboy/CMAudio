@@ -183,14 +183,12 @@ namespace hgl
                    OS_TEXT(" bytes, required=") + OSString::numberOf((int)totalSize) + OS_TEXT(" bytes"));
 
             // 为每个音源生成实例并混音
-            for(auto it:sources)
+            for(auto& [sourceName, srcConfig] : sources)
             {
-                const AudioSourceConfig& srcConfig = it->value;
-
                 // 确定生成数量
                 uint count = RandomUInt(srcConfig.minCount, srcConfig.maxCount);
 
-                LogInfo(OS_TEXT("Processing source: ") + it->key +
+                LogInfo(OS_TEXT("Processing source: ") + sourceName +
                        OS_TEXT(", generating ") + OSString::numberOf((int)count) +
                        OS_TEXT(" instances"));
 

@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include<hgl/math/Vector.h>
-//#include<hgl/type/Pool.h>
-#include<hgl/type/UnorderedMap.h>
-#include<hgl/type/OrderedValueSet.h>
+#include<hgl/type/FixedValuePool.h>
+#include<hgl/type/PointerObjectPool.h>
+#include<hgl/type/UnorderedSet.h>
+#include<hgl/type/OrderedSet.h>
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/DirectionalGainPattern.h>
 #include<hgl/audio/InterpolationType.h>
@@ -180,9 +181,13 @@ namespace hgl
      * 空间音频场景管理
      *
      * 内存管理说明：
-     * - SpatialAudioSource 对象由 Create() 使用 new 分配，由 Delete() 或 Clear() 释放
-     * - AudioSource 对象通过 source_pool 对象池管理，自动复用
+     * - SpatialAudioSource 对象由 spatial_source_pool 管理，通过 Create/Delete 自动分配/回收
+     * - AudioSource 对象由 source_pool 管理，固定大小预分配
      * - 调用者负责管理 AudioBuffer 和 AudioListener 对象的生命周期
+     *
+     * 对象池设计：
+     * - source_pool (FixedValuePool<AudioSource>)：固定大小，trivial 类型，一次分配
+     * - spatial_source_pool (PointerObjectPool<SpatialAudioSource>)：动态增长，non-trivial 类型，自动管理生命周期
      *
      * 线程安全说明：
      * - 所有公共 API 方法（Create、Delete、Clear、Update、SetListener、SetDistance、
@@ -203,8 +208,9 @@ namespace hgl
 
         AudioListener *listener;                                                                    ///< 监听者
 
-        ManagedPool<AudioSource> source_pool;                                                        ///< 音源对象池
-        OrderedValueSet<SpatialAudioSource *> source_list;                                          ///< 音源列表
+        FixedValuePool<AudioSource> source_pool;                                                    ///< 音源值池（固定大小）
+        PointerObjectPool<SpatialAudioSource> spatial_source_pool;                                  ///< 空间音源对象池（动态，non-trivial 类型）
+        UnorderedSet<SpatialAudioSource *> source_list;                                             ///< 音源列表
 
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
 

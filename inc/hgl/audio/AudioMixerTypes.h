@@ -29,6 +29,13 @@ namespace hgl
                 volume = vol;
                 pitch = p;
             }
+
+            bool operator==(const MixingTrack& other) const
+            {
+                return timeOffset == other.timeOffset && 
+                       volume == other.volume && 
+                       pitch == other.pitch;
+            }
         };
 
         /**

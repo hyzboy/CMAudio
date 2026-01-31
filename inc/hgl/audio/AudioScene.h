@@ -3,7 +3,6 @@
 #include<hgl/audio/AudioMixer.h>
 #include<hgl/audio/AudioMemoryPool.h>
 #include<hgl/type/UnorderedMap.h>
-#include<hgl/type/UnorderedMap.h>
 #include<hgl/log/Log.h>
 #include<random>
 
@@ -73,7 +72,7 @@ namespace hgl::audio
 
     private:
 
-        UnorderedValueMap<OSString,AudioSourceConfig> sources;    ///< 音频源字典
+        UnorderedMap<OSString,AudioSourceConfig> sources;    ///< 音频源字典
         MixerConfig globalConfig;               ///< 全局混音配置
 
         uint sourceFormat;                      ///< 所有音源的统一格式(首个添加的音源决定)

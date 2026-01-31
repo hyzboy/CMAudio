@@ -40,6 +40,11 @@ namespace hgl
         {
             return angle < rhs.angle;
         }
+
+        bool operator == (const PolarGainSample &rhs) const
+        {
+            return angle == rhs.angle && gain == rhs.gain;
+        }
     };
 
     /**

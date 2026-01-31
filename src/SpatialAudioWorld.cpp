@@ -164,7 +164,15 @@ namespace hgl
      */
     SpatialAudioWorld::SpatialAudioWorld(int max_source,AudioListener *al)
     {
-        source_pool.Reserve(max_source);
+        source_pool.Init(max_source);      // 预分配音源对象池（固定大小）
+        spatial_source_pool.Init();         // 初始化空间音源对象池
+        
+        // 预创建空间音源对象并加入池
+        for(int i = 0; i < max_source; i++)
+        {
+            SpatialAudioSource *asi = new SpatialAudioSource(SpatialAudioSourceConfig());
+            spatial_source_pool.AddObject(asi);
+        }
 
         listener=al;
 
@@ -216,8 +224,33 @@ namespace hgl
         if(finalConfig.distance_model == 0)
             finalConfig.distance_model = AL_INVERSE_DISTANCE_CLAMPED;
 
-        // 使用最终的配置结构体创建音源
-        SpatialAudioSource *asi = new SpatialAudioSource(finalConfig);
+        // 从对象池获取对象，或创建新对象
+        SpatialAudioSource *asi = spatial_source_pool.Acquire();
+        if(!asi)
+        {
+            // 池空则创建新对象
+            asi = new SpatialAudioSource(finalConfig);
+            if(!asi)
+            {
+                scene_mutex.Unlock();
+                return nullptr;
+            }
+        }
+        else
+        {
+            // 重新初始化对象的音频配置（因为对象来自池，可能被前面的用户修改过）
+            asi->buffer = finalConfig.buffer;
+            asi->loop = finalConfig.loop;
+            asi->gain = finalConfig.gain;
+            asi->priority = finalConfig.priority;
+            asi->distance_model = finalConfig.distance_model;
+            asi->rolloff_factor = finalConfig.rolloff_factor;
+            asi->doppler_factor = finalConfig.doppler_factor;
+            asi->air_absorption_factor = finalConfig.air_absorption_factor;
+            asi->ref_distance = finalConfig.ref_distance;
+            asi->max_distance = finalConfig.max_distance;
+            asi->source = nullptr;  // 初始化物理音源为空
+        }
 
         // 在解锁前添加到列表，确保原子性
         source_list.Add(asi);
@@ -237,7 +270,8 @@ namespace hgl
 
         source_list.Delete(asi);
 
-        delete asi;  // 释放音源对象
+        // 归还到对象池（PointerObjectPool 会保留对象以供重用）
+        spatial_source_pool.Release(asi);
 
         scene_mutex.Unlock();
     }
@@ -246,21 +280,18 @@ namespace hgl
     {
         scene_mutex.Lock();
 
-        // 先释放所有音源对象
-        int count = source_list.GetCount();
-        SpatialAudioSource **items = source_list.GetData();
-
-        for(int i = 0; i < count; i++)
+        // 先牙渺所有音源对象并归还到池
+        for(auto source : source_list)
         {
-            if(items[i])
+            if(source)
             {
-                ToMute(items[i]);
-                delete items[i];  // 释放每个音源对象
+                ToMute(source);
+                // 归还到对象池（PointerObjectPool 会保留对象下次重用）
+                spatial_source_pool.Release(source);
             }
         }
 
         source_list.Clear();
-        source_pool.Clear();
 
         scene_mutex.Unlock();
     }
@@ -323,20 +354,17 @@ namespace hgl
 
         if(!asi->source)
         {
-            if(!source_pool.GetOrCreate(asi->source))
+            // 从对象池获取音源
+            asi->source = source_pool.Acquire();
+            if(!asi->source)
             {
                 // 物理音源耗尽，尝试进行音源抢占（voice stealing）
-                // 基于 gain * priority 找到当前优先级最低的音源
-                SpatialAudioSource *lowest_priority_source = nullptr;
-                double lowest_score = asi->gain * asi->priority;  // 当前音源的调度分数
+                    // 基于 gain * priority 找到当前优先级最低的音源
+                    SpatialAudioSource *lowest_priority_source = nullptr;
+                    double lowest_score = asi->gain * asi->priority;  // 当前音源的调度分数
 
-                int count = source_list.GetCount();
-                SpatialAudioSource **items = source_list.GetData();
-
-                for(int i = 0; i < count; i++)
+                    for(auto candidate : source_list)
                 {
-                    SpatialAudioSource *candidate = items[i];
-
                     // 只考虑已分配物理音源且正在播放的音源
                     if(candidate && candidate->source && candidate != asi)
                     {
@@ -436,7 +464,7 @@ namespace hgl
                 {
                     asi->source->Stop();
                     asi->source->Unlink();
-                    source_pool.Release(asi->source);
+                    source_pool.Release(asi->source);  // 将音源归还到对象池
                     asi->source = nullptr;
                     return(true);
                 }
@@ -662,42 +690,41 @@ namespace hgl
         float new_gain;
         int hear_count=0;
 
-        SpatialAudioSource **ptr=source_list.GetData();
-
-        for(int i=0;i<count;i++)
+        for(auto source : source_list)
         {
-            if(!(*ptr)->is_play)
-            {
-                if((*ptr)->source)          // 还有绑定的音源
-                    ToMute(*ptr);
+            SpatialAudioSource *ptr = source;  // 为了保持代码兼容性
 
-                ++ptr;
+            if(!ptr->is_play)
+            {
+                if(ptr->source)          // 还有绑定的音源
+                    ToMute(ptr);
+
                 continue;   // 不需要播放的音源
             }
 
-            new_gain=OnCheckGain(*ptr);
+            new_gain=OnCheckGain(ptr);
 
             if(new_gain<=0)                 // 听不到声音
             {
-                if((*ptr)->last_gain>0)     // 之前可以听到
-                    ToMute(*ptr);
+                if(ptr->last_gain>0)     // 之前可以听到
+                    ToMute(ptr);
                 else
-                    OnContinuedMute(*ptr);  // 之前就听不到
+                    OnContinuedMute(ptr);  // 之前就听不到
             }
             else
             {
-                if((*ptr)->last_gain<=0)
+                if(ptr->last_gain<=0)
                 {
-                    if(!ToHear(*ptr))       // 之前没声，尝试转为播放
+                    if(!ToHear(ptr))       // 之前没声，尝试转为播放
                         new_gain=0;         // 没有足够可用音源或已播放结束，仍然听不到
                     else
-                        (*ptr)->last_update_frame = update_frame_counter;  // 记录更新帧
+                        ptr->last_update_frame = update_frame_counter;  // 记录更新帧
                 }
                 else
                 {
                     // 分层更新：根据综合重要性决定更新频率
                     // 使用实际可听增益（new_gain）而非原始增益，这更准确反映用户听到的音量
-                    double importance = CalculateImportance(*ptr, new_gain, listener_pos);
+                    double importance = CalculateImportance(ptr, new_gain, listener_pos);
                     uint update_interval;
 
                     if(importance >= TIER1_THRESHOLD)
@@ -708,26 +735,24 @@ namespace hgl
                         update_interval = TIER3_UPDATE_INTERVAL;  // 低重要性：每5帧更新
 
                     // 检查是否需要在当前帧更新此音源（使用模运算避免溢出）
-                    uint64 frames_since_update = (update_frame_counter >= (*ptr)->last_update_frame)
-                        ? (update_frame_counter - (*ptr)->last_update_frame)
-                        : (UINT64_MAX - (*ptr)->last_update_frame + update_frame_counter + 1);  // 处理溢出
+                    uint64 frames_since_update = (update_frame_counter >= ptr->last_update_frame)
+                        ? (update_frame_counter - ptr->last_update_frame)
+                        : (UINT64_MAX - ptr->last_update_frame + update_frame_counter + 1);  // 处理溢出
 
                     if (frames_since_update >= update_interval)
                     {
-                        UpdateSource(*ptr);     // 刷新音源处理
-                        (*ptr)->last_update_frame = update_frame_counter;
+                        UpdateSource(ptr);     // 刷新音源处理
+                        ptr->last_update_frame = update_frame_counter;
                     }
 
-                    OnContinuedHear(*ptr);  // 持续可听
+                    OnContinuedHear(ptr);  // 持续可听
                 }
             }
 
-            (*ptr)->last_gain=new_gain;
+            ptr->last_gain=new_gain;
 
             if(new_gain>0)
                 ++hear_count;
-
-            ++ptr;
         }
 
         scene_mutex.Unlock();
@@ -934,17 +959,13 @@ namespace hgl
         frequency_dependent_attenuation = false;
 
         // 清理所有音源的滤波器
-        int count = source_list.GetCount();
-        SpatialAudioSource **items = source_list.GetData();
-
-        for(int i = 0; i < count; i++)
+        for(auto source : source_list)
         {
-            SpatialAudioSource *asi = items[i];
-            if(asi && asi->lowpass_filter != 0)
+            if(source && source->lowpass_filter != 0)
             {
                 if(alDeleteFilters)
-                    alDeleteFilters(1, &asi->lowpass_filter);
-                asi->lowpass_filter = 0;
+                    alDeleteFilters(1, &source->lowpass_filter);
+                source->lowpass_filter = 0;
             }
         }
 
@@ -966,17 +987,13 @@ namespace hgl
         // 如果禁用，清理所有现有滤波器
         if(!enable && frequency_dependent_attenuation)
         {
-            int count = source_list.GetCount();
-            SpatialAudioSource **items = source_list.GetData();
-
-            for(int i = 0; i < count; i++)
+            for(auto source : source_list)
             {
-                SpatialAudioSource *asi = items[i];
-                if(asi && asi->lowpass_filter != 0)
+                if(source && source->lowpass_filter != 0)
                 {
                     if(alDeleteFilters)
-                        alDeleteFilters(1, &asi->lowpass_filter);
-                    asi->lowpass_filter = 0;
+                        alDeleteFilters(1, &source->lowpass_filter);
+                    source->lowpass_filter = 0;
                 }
             }
         }
