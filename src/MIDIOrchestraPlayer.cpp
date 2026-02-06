@@ -144,7 +144,7 @@ namespace hgl
             sources[i]=new AudioSource;
             if(!sources[i])
             {
-                LogError(OS_TEXT("Failed to create AudioSource for channel ") + OSString(i));
+                LogError(OS_TEXT("Failed to create AudioSource for channel ") + OSString::numberOf(i));
                 continue;
             }
 
@@ -244,16 +244,24 @@ namespace hgl
         }
 
         // Get MIDI config interface
-        midi_config=GetAudioMidiInterface(decode);
-        if(!midi_config)
+        if(GetAudioMidiInterface(plugin_name, &midi_config_storage))
         {
+            midi_config = &midi_config_storage;
+        }
+        else
+        {
+            midi_config = nullptr;
             LogWarning(OS_TEXT("MIDI config interface not available"));
         }
 
         // Get MIDI channel interface - required for per-channel control
-        midi_channels=GetAudioMidiChannelInterface(decode);
-        if(!midi_channels)
+        if(GetAudioMidiChannelInterface(plugin_name, &midi_channels_storage))
         {
+            midi_channels = &midi_channels_storage;
+        }
+        else
+        {
+            midi_channels = nullptr;
             LogError(OS_TEXT("MIDI channel interface not available - FluidSynth plugin may be outdated"));
             LogError(OS_TEXT("MIDIOrchestraPlayer requires AudioMidiChannelInterface for per-channel rendering"));
             return(false);
@@ -344,9 +352,9 @@ namespace hgl
             return false;
 
         // Decode single channel
-        int bytes_read=midi_channels->DecodeChannel(audio_ptr, channel, 
-                                                     channel_buffers[channel], 
-                                                     audio_buffer_size);
+        uint bytes_read = midi_channels->ReadChannel(audio_ptr, channel,
+                                 channel_buffers[channel],
+                                 (uint)audio_buffer_size);
 
         if(bytes_read<=0)
             return false;
@@ -476,8 +484,8 @@ namespace hgl
             // Apply auto gain if enabled
             if(auto_gain.open)
             {
-                uint64 cur_time=GetMicroTime();
-                double gap=double(cur_time-auto_gain.time)/HGL_MICRO_SEC_PER_SEC;
+                uint64 cur_time=GetUptimeUs();
+                double gap=double(cur_time-auto_gain.time)/1000000.0;
 
                 if(gap>=auto_gain.gap)
                 {
@@ -556,7 +564,7 @@ namespace hgl
 
         state=MIDIOrchestraState::Play;
 
-        if(!IsRunning())
+        if(!IsLive())
             Start();
     }
 
@@ -605,7 +613,7 @@ namespace hgl
         Stop();
 
         state=MIDIOrchestraState::Exit;
-        WaitStop();
+        WaitExit();
 
         if(decode&&audio_ptr)
         {
@@ -625,8 +633,8 @@ namespace hgl
 
     void MIDIOrchestraPlayer::SetBank(int bank_id)
     {
-        if(midi_config)
-            midi_config->SetBank(bank_id);
+        if(midi_config && midi_config->SetBankID)
+            midi_config->SetBankID(bank_id);
     }
 
     void MIDIOrchestraPlayer::SetSampleRate(int rate)
@@ -736,16 +744,16 @@ namespace hgl
 
     void MIDIOrchestraPlayer::MuteChannel(int channel, bool mute)
     {
-        if(midi_channels)
-            midi_channels->SetChannelMute(channel, mute);
+        if(midi_channels && midi_channels->MuteChannel)
+            midi_channels->MuteChannel(channel, mute);
 
         SetChannelEnabled(channel, !mute);
     }
 
     void MIDIOrchestraPlayer::SoloChannel(int channel, bool solo)
     {
-        if(midi_channels)
-            midi_channels->SetChannelSolo(channel, solo);
+        if(midi_channels && midi_channels->SoloChannel)
+            midi_channels->SoloChannel(channel, solo);
 
         if(solo)
         {
@@ -791,7 +799,7 @@ namespace hgl
     void MIDIOrchestraPlayer::AutoGain(float start_gain,float gap,float end_gain)
     {
         auto_gain.open=true;
-        auto_gain.time=GetMicroTime();
+        auto_gain.time=GetUptimeUs();
         auto_gain.gap=gap;
         auto_gain.start.gain=start_gain;
         auto_gain.end.gain=end_gain;

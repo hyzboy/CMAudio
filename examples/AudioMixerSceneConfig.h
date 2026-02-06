@@ -1,5 +1,5 @@
-﻿// AudioScene TOML Configuration Parser
-// Simple TOML parser for AudioScene multi-source mixing configuration
+// AudioMixerScene TOML Configuration Parser
+// Simple TOML parser for AudioMixerScene multi-source mixing configuration
 #pragma once
 
 #include <string>
@@ -7,7 +7,7 @@
 #include <map>
 #include <fstream>
 #include <sstream>
-#include <hgl/audio/AudioScene.h>
+#include <hgl/audio/AudioMixerScene.h>
 #include <hgl/type/StringList.h>
 
 namespace hgl
@@ -15,7 +15,7 @@ namespace hgl
     namespace audio
     {
         /**
-         * AudioScene configuration loaded from TOML file
+         * AudioMixerScene configuration loaded from TOML file
          */
         struct SceneConfigData
         {
@@ -44,9 +44,9 @@ namespace hgl
         };
 
         /**
-         * Simple TOML configuration parser for AudioScene
+         * Simple TOML configuration parser for AudioMixerScene
          */
-        class AudioSceneConfig
+        class AudioMixerSceneConfig
         {
         private:
             static std::string Trim(const std::string& str)
@@ -77,7 +77,7 @@ namespace hgl
 
         public:
             /**
-             * Load AudioScene configuration from TOML file
+             * Load AudioMixerScene configuration from TOML file
              * @param filename Path to TOML configuration file
              * @param config Output configuration data
              * @return true if successful

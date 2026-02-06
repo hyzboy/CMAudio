@@ -14,13 +14,13 @@ add_executable(mixer_basic_test
 )
 target_link_libraries(mixer_basic_test CMAudio)
 
-# AudioScene city test
+# AudioMixerScene city test
 add_executable(scene_city_test
     scene_city_test.cpp
 )
 target_link_libraries(scene_city_test CMAudio)
 
-# AudioScene swarm test
+# AudioMixerScene swarm test
 add_executable(scene_swarm_test
     scene_swarm_test.cpp
 )

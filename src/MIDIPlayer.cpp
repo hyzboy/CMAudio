@@ -85,16 +85,24 @@ namespace hgl
         }
 
         // 获取MIDI配置接口
-        midi_config=GetAudioMidiInterface(decode);
-        if(!midi_config)
+        if(GetAudioMidiInterface(plugin_name, &midi_config_storage))
         {
+            midi_config = &midi_config_storage;
+        }
+        else
+        {
+            midi_config = nullptr;
             LogWarning(OS_TEXT("MIDI配置接口不可用"));
         }
 
         // 获取MIDI通道接口
-        midi_channels=GetAudioMidiChannelInterface(decode);
-        if(!midi_channels)
+        if(GetAudioMidiChannelInterface(plugin_name, &midi_channels_storage))
         {
+            midi_channels = &midi_channels_storage;
+        }
+        else
+        {
+            midi_channels = nullptr;
             LogWarning(OS_TEXT("MIDI通道控制接口不可用"));
         }
 
@@ -343,11 +351,13 @@ namespace hgl
 
     void MIDIPlayer::ClearBuffer()
     {
-        ALuint n;
+        ALint queued = 0;
 
-        while(alGetSourcei(source,AL_BUFFERS_QUEUED,&n),n>0)
+        while(alGetSourcei(source,AL_BUFFERS_QUEUED,&queued),queued > 0)
         {
+            ALuint n;
             alSourceUnqueueBuffers(source,1,&n);
+            --queued;
         }
     }
 
@@ -487,7 +497,7 @@ namespace hgl
         lock.Lock();
 
         auto_gain.open=true;
-        auto_gain.start.gain=audiosource.gain;
+        auto_gain.start.gain=audiosource.GetGain();
         auto_gain.start.time=cur_time;
         auto_gain.end.gain=target_gain;
         auto_gain.end.time=cur_time+duration;
@@ -507,24 +517,28 @@ namespace hgl
         if(!midi_config->SetSoundFont)return false;
 
         midi_config->SetSoundFont(path);
+        current_soundfont = path ? path : "";
         return true;
     }
 
     bool MIDIPlayer::SetBank(int bank_id)
     {
         if(!midi_config)return false;
-        if(!midi_config->SetBank)return false;
+        if(!midi_config->SetBankID)return false;
 
-        midi_config->SetBank(bank_id);
+        midi_config->SetBankID(bank_id);
+        current_bank_id = bank_id;
         return true;
     }
 
     bool MIDIPlayer::SetBankFile(const char *path)
     {
         if(!midi_config)return false;
-        if(!midi_config->SetBankFile)return false;
+        if(!midi_config->SetSoundFont)return false;
 
-        midi_config->SetBankFile(path);
+        midi_config->SetSoundFont(path);
+        current_soundfont = path ? path : "";
+        current_bank_file = path ? path : "";
         return true;
     }
 
@@ -534,39 +548,37 @@ namespace hgl
         if(!midi_config->SetSampleRate)return false;
 
         midi_config->SetSampleRate(rate);
+        current_sample_rate = rate;
         return true;
     }
 
     const char* MIDIPlayer::GetSoundFont()const
     {
         if(!midi_config)return nullptr;
-        if(!midi_config->GetSoundFont)return nullptr;
-
-        return midi_config->GetSoundFont();
+        if(!current_soundfont.empty())
+            return current_soundfont.c_str();
+        if(midi_config->GetDefaultBank)
+            return midi_config->GetDefaultBank();
+        return nullptr;
     }
 
     int MIDIPlayer::GetBank()const
     {
-        if(!midi_config)return -1;
-        if(!midi_config->GetBank)return -1;
-
-        return midi_config->GetBank();
+        return current_bank_id;
     }
 
     const char* MIDIPlayer::GetBankFile()const
     {
-        if(!midi_config)return nullptr;
-        if(!midi_config->GetBankFile)return nullptr;
-
-        return midi_config->GetBankFile();
+        if(!current_bank_file.empty())
+            return current_bank_file.c_str();
+        if(midi_config && midi_config->GetDefaultBank)
+            return midi_config->GetDefaultBank();
+        return nullptr;
     }
 
     int MIDIPlayer::GetSampleRate()const
     {
-        if(!midi_config)return 0;
-        if(!midi_config->GetSampleRate)return 0;
-
-        return midi_config->GetSampleRate();
+        return current_sample_rate;
     }
 
     // ====================================================================
@@ -594,7 +606,8 @@ namespace hgl
         if(!midi_channels)return false;
         if(!midi_channels->SetChannelProgram)return false;
 
-        return midi_channels->SetChannelProgram(channel,program);
+        midi_channels->SetChannelProgram(channel,program);
+        return true;
     }
 
     bool MIDIPlayer::SetChannelVolume(int channel, int volume)
@@ -602,7 +615,8 @@ namespace hgl
         if(!midi_channels)return false;
         if(!midi_channels->SetChannelVolume)return false;
 
-        return midi_channels->SetChannelVolume(channel,volume);
+        midi_channels->SetChannelVolume(channel,(float)volume);
+        return true;
     }
 
     bool MIDIPlayer::SetChannelPan(int channel, int pan)
@@ -610,63 +624,98 @@ namespace hgl
         if(!midi_channels)return false;
         if(!midi_channels->SetChannelPan)return false;
 
-        return midi_channels->SetChannelPan(channel,pan);
+        midi_channels->SetChannelPan(channel,(float)pan);
+        return true;
     }
 
     bool MIDIPlayer::SetChannelMute(int channel, bool mute)
     {
         if(!midi_channels)return false;
-        if(!midi_channels->SetChannelMute)return false;
+        if(!midi_channels->MuteChannel)return false;
 
-        return midi_channels->SetChannelMute(channel,mute);
+        midi_channels->MuteChannel(channel,mute);
+        return true;
     }
 
     bool MIDIPlayer::SetChannelSolo(int channel, bool solo)
     {
         if(!midi_channels)return false;
-        if(!midi_channels->SetChannelSolo)return false;
+        if(!midi_channels->SoloChannel)return false;
 
-        return midi_channels->SetChannelSolo(channel,solo);
+        midi_channels->SoloChannel(channel,solo);
+        return true;
     }
 
     bool MIDIPlayer::ResetChannel(int channel)
     {
-        if(!midi_channels)return false;
-        if(!midi_channels->ResetChannel)return false;
-
-        return midi_channels->ResetChannel(channel);
+        (void)channel;
+        return false;
     }
 
     bool MIDIPlayer::ResetAllChannels()
     {
-        if(!midi_channels)return false;
-        if(!midi_channels->ResetAllChannels)return false;
-
-        return midi_channels->ResetAllChannels();
+        return false;
     }
 
     bool MIDIPlayer::GetChannelActivity(int channel)const
     {
-        if(!midi_channels)return false;
-        if(!midi_channels->GetChannelActivity)return false;
-
-        return midi_channels->GetChannelActivity(channel);
+        MidiChannelInfo info={0};
+        if(!midi_channels)
+            return false;
+        if(!midi_channels->GetChannelInfo)
+            return false;
+        if(!midi_channels->GetChannelInfo(channel, &info))
+            return false;
+        return info.note_count > 0;
     }
 
     int MIDIPlayer::DecodeChannel(int channel, int16_t **buffer, int samples)
     {
-        if(!midi_channels)return 0;
-        if(!midi_channels->DecodeChannel)return 0;
+        if(!midi_channels || !midi_channels->OpenMultiChannel || !midi_channels->ReadChannel || !midi_channels->CloseMultiChannel)
+            return 0;
+        if(!audio_data || audio_data_size <= 0 || !buffer || samples <= 0)
+            return 0;
 
-        return midi_channels->DecodeChannel(channel,buffer,samples);
+        if(!*buffer)
+            *buffer = new int16_t[samples];
+
+        double total_time=0;
+        void* stream = midi_channels->OpenMultiChannel(audio_data, audio_data_size, &format, &rate, &total_time);
+        if(!stream)
+            return 0;
+
+        uint bytes_read = midi_channels->ReadChannel(stream, channel, reinterpret_cast<char*>(*buffer), (uint)(samples * sizeof(int16_t)));
+        midi_channels->CloseMultiChannel(stream);
+        return (int)(bytes_read / sizeof(int16_t));
     }
 
     int MIDIPlayer::DecodeAllChannels(int16_t **buffers, int samples)
     {
-        if(!midi_channels)return 0;
-        if(!midi_channels->DecodeAllChannels)return 0;
+        if(!midi_channels || !midi_channels->OpenMultiChannel || !midi_channels->ReadChannels || !midi_channels->CloseMultiChannel)
+            return 0;
+        if(!audio_data || audio_data_size <= 0 || !buffers || samples <= 0)
+            return 0;
 
-        return midi_channels->DecodeAllChannels(buffers,samples);
+        double total_time=0;
+        void* stream = midi_channels->OpenMultiChannel(audio_data, audio_data_size, &format, &rate, &total_time);
+        if(!stream)
+            return 0;
+
+        int channel_count = 16;
+        int channels[16];
+        char* pcm_buffers[16];
+
+        for(int i=0;i<channel_count;i++)
+        {
+            channels[i]=i;
+            if(!buffers[i])
+                buffers[i]=new int16_t[samples];
+            pcm_buffers[i]=reinterpret_cast<char*>(buffers[i]);
+        }
+
+        uint bytes_read = midi_channels->ReadChannels(stream, channels, channel_count, pcm_buffers, (uint)(samples * sizeof(int16_t)));
+        midi_channels->CloseMultiChannel(stream);
+        return (int)(bytes_read / sizeof(int16_t));
     }
 
 }//namespace hgl

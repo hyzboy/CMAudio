@@ -6,6 +6,7 @@
 #include<hgl/audio/AudioSource.h>
 #include<hgl/math/Vector.h>
 #include<hgl/time/Time.h>
+#include"AudioDecode.h"
 
 using namespace openal;
 
@@ -19,7 +20,7 @@ namespace hgl
     }//namespace io
 
     struct AudioPlugInInterface;
-    struct AudioMidiInterface;
+    struct AudioMidiConfigInterface;
     struct AudioMidiChannelInterface;
     struct MidiChannelInfo;
 
@@ -108,8 +109,11 @@ namespace hgl
         uint audio_buffer_count;                                                               ///<播放数据计数
 
         AudioPlugInInterface *decode;
-        AudioMidiInterface *midi_config;                                                        ///<MIDI配置接口
+        AudioMidiConfigInterface *midi_config;                                                  ///<MIDI配置接口
         AudioMidiChannelInterface *midi_channels;                                              ///<MIDI通道接口
+
+        AudioMidiConfigInterface midi_config_storage;                                           ///<MIDI配置接口存储
+        AudioMidiChannelInterface midi_channels_storage;                                        ///<MIDI通道接口存储
 
         AudioManager *audio_manager;                                                            ///<音频管理器
 

@@ -1,6 +1,6 @@
 # WAV Sample Files Required
 
-This directory should contain the following WAV files for the AudioMixer and AudioScene tests.
+This directory should contain the following WAV files for the AudioMixer and AudioMixerScene tests.
 
 ## Format Requirements
 

@@ -1,14 +1,14 @@
 # AudioMixer Examples
 
-This directory contains example programs demonstrating the AudioMixer and AudioScene systems.
+This directory contains example programs demonstrating the AudioMixer and AudioMixerScene systems.
 
 ## Overview
 
 Three example programs are provided:
 
 1. **mixer_basic_test** - Basic AudioMixer demo (single source, multiple tracks)
-2. **scene_city_test** - AudioScene demo with city environment (TOML config)
-3. **scene_swarm_test** - AudioScene demo with bee swarm (TOML config)
+2. **scene_city_test** - AudioMixerScene demo with city environment (TOML config)
+3. **scene_swarm_test** - AudioMixerScene demo with bee swarm (TOML config)
 
 ## Key Features
 
@@ -103,7 +103,7 @@ make
 
 ### 2. scene_city_test
 
-**Description**: Demonstrates AudioScene with a complex city street environment using TOML configuration.
+**Description**: Demonstrates AudioMixerScene with a complex city street environment using TOML configuration.
 
 **Usage**:
 ```bash
@@ -137,7 +137,7 @@ make
 
 ### 3. scene_swarm_test
 
-**Description**: Demonstrates AudioScene with high-density swarm using TOML configuration.
+**Description**: Demonstrates AudioMixerScene with high-density swarm using TOML configuration.
 
 **Usage**:
 ```bash
@@ -164,7 +164,7 @@ make
 
 ## TOML Configuration Format
 
-AudioScene examples use TOML files for configuration. Example structure:
+AudioMixerScene examples use TOML files for configuration. Example structure:
 
 ```toml
 [output]
@@ -211,7 +211,7 @@ examples/
 │
 ├── WavReader.h                 # WAV file reader utility
 ├── WavWriter.h                 # WAV file writer utility
-├── AudioSceneConfig.h          # TOML configuration parser
+├── AudioMixerSceneConfig.h     # AudioMixerScene TOML configuration parser
 │
 ├── mixer_basic_test.cpp        # Basic mixer example
 ├── scene_city_test.cpp         # City scene example
@@ -284,7 +284,7 @@ After trying the examples:
 1. Experiment with different TOML configurations
 2. Try your own WAV files
 3. Create custom scenes for your use case
-4. Integrate AudioMixer/AudioScene into your application
+4. Integrate AudioMixer/AudioMixerScene into your application
 5. See main documentation for API details
 
 ## License

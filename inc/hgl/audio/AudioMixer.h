@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include<hgl/audio/AudioMixerTypes.h>
-#include<hgl/audio/AudioBuffer.h>
 #include<hgl/audio/AudioMemoryPool.h>
 #include<hgl/type/ValueArray.h>
 #include<hgl/log/Log.h>
@@ -11,7 +10,8 @@ namespace hgl::audio
     /**
      * 音频混音器
      * 用于将多个音轨叠加混音成一个新的音频数据
-     * 仅支持单声道音频，支持时间偏移、音量调整、音调变化、采样率转换等变换
+     * 仅支持单声道音频，支持时间偏移、音量调整、音调变化等变换
+     * 多个音源必须统一格式与采样率，不在此处进行重采样
      */
     class AudioMixer
     {
@@ -24,13 +24,29 @@ namespace hgl::audio
         static constexpr float MaxPitch = 2.0f;
         static constexpr float DefaultPitch = 1.0f;
 
-        ValueArray<MixingTrack> tracks;          ///< 混音轨道列表
+        struct SourceAudio
+        {
+            AudioDataInfo info;
+            const void* data;
+            uint dataSize;
+
+            bool operator==(const SourceAudio& other) const
+            {
+                return data == other.data &&
+                       dataSize == other.dataSize &&
+                       info.format == other.info.format &&
+                       info.sampleRate == other.info.sampleRate &&
+                       info.bitsPerSample == other.info.bitsPerSample &&
+                       info.isFloat == other.info.isFloat;
+            }
+        };
+
+        ValueArray<SourceAudio> sources;        ///< 音源列表
+        ValueArray<MixingTrack> tracks;         ///< 混音轨道列表
         MixerConfig config;                     ///< 混音器配置
 
-        AudioDataInfo sourceInfo;               ///< 源音频数据信息
-        const void* sourceData;                 ///< 源音频数据指针
-        uint sourceDataSize;                    ///< 源音频数据大小
-        uint outputSampleRate;                  ///< 输出采样率 (0=使用源采样率)
+        AudioDataInfo commonInfo;               ///< 统一音频格式信息
+        bool hasCommonInfo;                     ///< 是否已设置统一格式
         uint outputFormat;                      ///< 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
 
         // 内存池 - 避免频繁分配/释放
@@ -57,12 +73,6 @@ namespace hgl::audio
             */
         void ApplyPitchShift(const float* input, uint inputCount,
                             float** output, uint* outputCount, float pitch);
-
-        /**
-            * 应用采样率转换 - float版本
-            */
-        void Resample(const float* input, uint inputCount, uint inputSampleRate,
-                        float** output, uint* outputCount, uint outputSampleRate);
 
         /**
             * 软削波函数 - 使用tanh提供平滑的削波效果
@@ -92,18 +102,24 @@ namespace hgl::audio
         virtual ~AudioMixer();
 
         /**
-            * 设置源音频数据
+            * 添加音源数据
             * @param data 音频数据指针
             * @param size 数据大小
             * @param format 音频格式 (AL_FORMAT_*)
             * @param sampleRate 采样率
+            * @return 音源索引，失败返回 -1
             */
-        bool SetSourceAudio(const void* data, uint size, uint format, uint sampleRate);
+        int AddSourceAudio(const void* data, uint size, uint format, uint sampleRate);
 
         /**
-            * 从AudioBuffer设置源音频数据
+            * 清除所有音源
             */
-        bool SetSourceAudio(AudioBuffer* buffer);
+        void ClearSources();
+
+        /**
+            * 获取音源数量
+            */
+        int GetSourceCount() const { return sources.GetCount(); }
 
         /**
             * 添加混音轨道
@@ -113,11 +129,12 @@ namespace hgl::audio
 
         /**
             * 添加混音轨道(便捷方法)
+            * @param sourceIndex 音源索引
             * @param timeOffset 时间偏移(秒)
             * @param volume 音量(0.0-1.0)
             * @param pitch 音调(0.5-2.0)
             */
-        void AddTrack(float timeOffset, float volume, float pitch);
+        void AddTrack(uint sourceIndex, float timeOffset, float volume, float pitch);
 
         /**
             * 清除所有轨道
@@ -140,21 +157,10 @@ namespace hgl::audio
         const MixerConfig& GetConfig() const { return config; }
 
         /**
-            * 设置输出采样率
-            * @param sampleRate 输出采样率 (如44100, 48000), 0表示使用源采样率
-            */
-        void SetOutputSampleRate(uint sampleRate) { outputSampleRate = sampleRate; }
-
-        /**
             * 设置输出格式
             * @param format 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
             */
         void SetOutputFormat(uint format) { outputFormat = format; }
-
-        /**
-            * 获取输出采样率
-            */
-        uint GetOutputSampleRate() const { return outputSampleRate > 0 ? outputSampleRate : sourceInfo.sampleRate; }
 
         /**
             * 获取输出格式
@@ -173,6 +179,6 @@ namespace hgl::audio
         /**
             * 获取输出音频信息
             */
-        const AudioDataInfo& GetOutputInfo() const { return sourceInfo; }
+        const AudioDataInfo& GetOutputInfo() const { return commonInfo; }
     };
 }//namespace hgl::audio

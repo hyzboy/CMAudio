@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include<hgl/type/String.h>
+#include<hgl/CoreType.h>
 
 namespace hgl
 {
@@ -12,19 +12,22 @@ namespace hgl
          */
         struct MixingTrack
         {
+            uint sourceIndex;      ///< 音源索引 - 指向混音器内部的音源列表
             float timeOffset;       ///< 时间偏移(秒) - 音轨开始播放的时间偏移
             float volume;           ///< 音量(0.0-1.0) - 音轨的音量比例
             float pitch;            ///< 音调(0.5-2.0) - 音调变化，1.0为原始音调
 
             MixingTrack()
             {
+                sourceIndex = 0;
                 timeOffset = 0.0f;
                 volume = 1.0f;
                 pitch = 1.0f;
             }
 
-            MixingTrack(float time_offset, float vol, float p)
+            MixingTrack(uint source_index, float time_offset, float vol, float p)
             {
+                sourceIndex = source_index;
                 timeOffset = time_offset;
                 volume = vol;
                 pitch = p;
@@ -32,7 +35,8 @@ namespace hgl
 
             bool operator==(const MixingTrack& other) const
             {
-                return timeOffset == other.timeOffset && 
+                return sourceIndex == other.sourceIndex &&
+                       timeOffset == other.timeOffset && 
                        volume == other.volume && 
                        pitch == other.pitch;
             }

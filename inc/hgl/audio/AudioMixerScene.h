@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include<hgl/audio/AudioMixer.h>
 #include<hgl/audio/AudioMemoryPool.h>
@@ -66,7 +66,7 @@ namespace hgl::audio
         * 高级混音控制器，用于管理多种音源的混合
         * 可以控制每种音源的数量、出现频率、变化幅度等
         */
-    class AudioScene
+    class AudioMixerScene
     {
         OBJECT_LOGGER
 
@@ -99,8 +99,8 @@ namespace hgl::audio
 
     public:
 
-        AudioScene();
-        virtual ~AudioScene();
+        AudioMixerScene();
+        virtual ~AudioMixerScene();
 
         /**
             * 添加音频源

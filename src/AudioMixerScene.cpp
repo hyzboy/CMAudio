@@ -1,4 +1,4 @@
-﻿#include<hgl/audio/AudioScene.h>
+#include<hgl/audio/AudioMixerScene.h>
 #include<hgl/audio/OpenAL.h>
 #include<string.h>
 #include<algorithm>
@@ -9,9 +9,9 @@ namespace hgl
 {
     namespace audio
     {
-        AudioScene::AudioScene() : rng(rd()),
-            poolBuffer(OS_TEXT("AudioScene::poolBuffer")),
-            tempBuffer(OS_TEXT("AudioScene::tempBuffer"))
+        AudioMixerScene::AudioMixerScene() : rng(rd()),
+            poolBuffer(OS_TEXT("AudioMixerScene::poolBuffer")),
+            tempBuffer(OS_TEXT("AudioMixerScene::tempBuffer"))
         {
             sourceFormat = 0;
             sourceSampleRate = 0;
@@ -19,7 +19,7 @@ namespace hgl
             outputSampleRate = 44100;            // 默认44.1kHz
         }
 
-        AudioScene::~AudioScene()
+        AudioMixerScene::~AudioMixerScene()
         {
             ClearSources();
             // 内存池自动释放
@@ -28,7 +28,7 @@ namespace hgl
         /**
          * 生成随机浮点数
          */
-        float AudioScene::RandomFloat(float min, float max)
+        float AudioMixerScene::RandomFloat(float min, float max)
         {
             std::uniform_real_distribution<float> dist(min, max);
             return dist(rng);
@@ -37,7 +37,7 @@ namespace hgl
         /**
          * 生成随机整数
          */
-        uint AudioScene::RandomUInt(uint min, uint max)
+        uint AudioMixerScene::RandomUInt(uint min, uint max)
         {
             std::uniform_int_distribution<uint> dist(min, max);
             return dist(rng);
@@ -46,7 +46,7 @@ namespace hgl
         /**
          * 添加音频源
          */
-        void AudioScene::AddSource(const OSString& name, const AudioSourceConfig& config)
+        void AudioMixerScene::AddSource(const OSString& name, const AudioSourceConfig& config)
         {
             if(!config.data || config.dataSize == 0)
             {
@@ -88,7 +88,7 @@ namespace hgl
         /**
          * 移除音频源
          */
-        void AudioScene::RemoveSource(const OSString& name)
+        void AudioMixerScene::RemoveSource(const OSString& name)
         {
             sources.DeleteByKey(name);
         }
@@ -96,7 +96,7 @@ namespace hgl
         /**
          * 清除所有音频源
          */
-        void AudioScene::ClearSources()
+        void AudioMixerScene::ClearSources()
         {
             sources.Clear();
 
@@ -108,7 +108,7 @@ namespace hgl
         /**
          * 设置输出格式
          */
-        void AudioScene::SetOutputFormat(uint format, uint sampleRate)
+        void AudioMixerScene::SetOutputFormat(uint format, uint sampleRate)
         {
             outputFormat = format;
             outputSampleRate = sampleRate;
@@ -120,7 +120,7 @@ namespace hgl
         /**
          * 生成混音场景 - 使用内存池避免频繁分配
          */
-        bool AudioScene::GenerateScene(void** outputData, uint* outputSize, float duration)
+        bool AudioMixerScene::GenerateScene(void** outputData, uint* outputSize, float duration)
         {
             if(sources.GetCount() == 0)
             {
@@ -137,6 +137,12 @@ namespace hgl
             LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration,3) +
                    OS_TEXT(" seconds, output format=") + OSString::numberOf((int)outputFormat) +
                    OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputSampleRate));
+
+            if(outputSampleRate != sourceSampleRate)
+            {
+                LogError(OS_TEXT("Output sample rate must match source sample rate for AudioMixer"));
+                RETURN_FALSE;
+            }
 
             // 解析音频格式信息 - 仅支持单声道
             AudioDataInfo formatInfo;
@@ -198,9 +204,13 @@ namespace hgl
                 for(uint i = 0; i < count; i++)
                 {
                     AudioMixer instanceMixer;
-                    instanceMixer.SetSourceAudio(srcConfig.data, srcConfig.dataSize,
-                                                srcConfig.format, srcConfig.sampleRate);
-                    instanceMixer.SetOutputSampleRate(outputSampleRate);  // 设置输出采样率
+                    int sourceIndex = instanceMixer.AddSourceAudio(srcConfig.data, srcConfig.dataSize,
+                                                                  srcConfig.format, srcConfig.sampleRate);
+                    if(sourceIndex < 0)
+                    {
+                        LogError(OS_TEXT("Failed to add source audio for mixer instance"));
+                        RETURN_FALSE;
+                    }
                     instanceMixer.SetOutputFormat(outputFormat);  // 设置输出格式
 
                     // 生成随机时间偏移
@@ -225,7 +235,7 @@ namespace hgl
                     float pitch = RandomFloat(srcConfig.minPitch, srcConfig.maxPitch);
 
                     // 添加单个轨道
-                    instanceMixer.AddTrack(currentTimeOffset, volume, pitch);
+                    instanceMixer.AddTrack((uint)sourceIndex, currentTimeOffset, volume, pitch);
 
                     // 混音到临时缓冲区(使用temp buffer避免频繁分配)
                     void* instanceData = nullptr;

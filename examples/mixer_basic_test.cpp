@@ -34,10 +34,15 @@ int main(int argc, char** argv)
     std::cout << sampleRate << " Hz, ";
     std::cout << (format == AL_FORMAT_MONO8 ? "MONO8" : "MONO16") << std::endl;
 
-    // Create mixer and set source
+    // Create mixer and add source
     AudioMixer mixer;
-    mixer.SetSourceAudio(data, dataSize, format, sampleRate);
-    mixer.SetOutputSampleRate(44100);  // Upsample to 44.1kHz
+    int sourceIndex = mixer.AddSourceAudio(data, dataSize, format, sampleRate);
+    if(sourceIndex < 0)
+    {
+        std::cerr << "Error: Failed to add source audio" << std::endl;
+        free(data);
+        return 1;
+    }
 
     // Optional: Configure mixer settings
     // MixerConfig config;
@@ -49,19 +54,19 @@ int main(int argc, char** argv)
     std::cout << std::endl << "Adding tracks:" << std::endl;
 
     // Track 1: Original
-    mixer.AddTrack(0.0f, 1.0f, 1.0f);
+    mixer.AddTrack(sourceIndex, 0.0f, 1.0f, 1.0f);
     std::cout << "  Track 1: offset=0.0s,  volume=1.0,  pitch=1.0   (original)" << std::endl;
 
     // Track 2: Slightly delayed, quieter, lower pitch
-    mixer.AddTrack(0.5f, 0.7f, 0.95f);
+    mixer.AddTrack(sourceIndex, 0.5f, 0.7f, 0.95f);
     std::cout << "  Track 2: offset=0.5s,  volume=0.7,  pitch=0.95  (delayed, quieter)" << std::endl;
 
     // Track 3: More delay, medium volume, higher pitch
-    mixer.AddTrack(1.2f, 0.6f, 1.05f);
+    mixer.AddTrack(sourceIndex, 1.2f, 0.6f, 1.05f);
     std::cout << "  Track 3: offset=1.2s,  volume=0.6,  pitch=1.05  (more delay)" << std::endl;
 
     // Track 4: Far away, very quiet, lower pitch
-    mixer.AddTrack(2.0f, 0.4f, 0.9f);
+    mixer.AddTrack(sourceIndex, 2.0f, 0.4f, 0.9f);
     std::cout << "  Track 4: offset=2.0s,  volume=0.4,  pitch=0.9   (distant)" << std::endl;
 
     // Mix audio (5 seconds)
@@ -80,7 +85,7 @@ int main(int argc, char** argv)
 
     // Write output WAV file
     WavWriter writer;
-    if (!writer.Open(outputFile, AL_FORMAT_MONO16, 44100))
+    if (!writer.Open(outputFile, AL_FORMAT_MONO16, sampleRate))
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;

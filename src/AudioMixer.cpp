@@ -14,9 +14,7 @@ namespace hgl
             : poolBuffer(OS_TEXT("AudioMixer::poolBuffer")),
               tempBuffer(OS_TEXT("AudioMixer::tempBuffer"))
         {
-            sourceData = nullptr;
-            sourceDataSize = 0;
-            outputSampleRate = 0;  // 0表示使用源采样率
+            hasCommonInfo = false;
             outputFormat = AL_FORMAT_MONO16;  // 默认输出int16
         }
 
@@ -190,44 +188,58 @@ namespace hgl
         }
 
         /**
-         * 设置源音频数据
+         * 添加音源数据
          */
-        bool AudioMixer::SetSourceAudio(const void* data, uint size, uint format, uint sampleRate)
+        int AudioMixer::AddSourceAudio(const void* data, uint size, uint format, uint sampleRate)
         {
             if(!data || size == 0 || sampleRate == 0)
             {
                 LogError(OS_TEXT("Invalid audio data parameters"));
-                RETURN_FALSE;
+                return -1;
             }
 
-            if(!ParseAudioFormat(format, sourceInfo))
+            AudioDataInfo info;
+            if(!ParseAudioFormat(format, info))
             {
-                RETURN_FALSE;
+                return -1;
             }
 
-            sourceData = data;
-            sourceDataSize = size;
-            sourceInfo.sampleRate = sampleRate;
-            sourceInfo.dataSize = size;
+            info.sampleRate = sampleRate;
+            info.dataSize = size;
 
-            return(true);
+            if(!hasCommonInfo)
+            {
+                commonInfo = info;
+                hasCommonInfo = true;
+            }
+            else
+            {
+                if(commonInfo.format != info.format ||
+                   commonInfo.sampleRate != info.sampleRate ||
+                   commonInfo.bitsPerSample != info.bitsPerSample ||
+                   commonInfo.isFloat != info.isFloat)
+                {
+                    LogError(OS_TEXT("Source audio format/sample rate mismatch; unify before mixing"));
+                    return -1;
+                }
+            }
+
+            SourceAudio source;
+            source.info = info;
+            source.data = data;
+            source.dataSize = size;
+
+            sources.Add(source);
+            return sources.GetCount() - 1;
         }
 
         /**
-         * 从AudioBuffer设置源音频数据
+         * 清除所有音源
          */
-        bool AudioMixer::SetSourceAudio(AudioBuffer* buffer)
+        void AudioMixer::ClearSources()
         {
-            if(!buffer)
-            {
-                LogError(OS_TEXT("AudioBuffer is null"));
-                RETURN_FALSE;
-            }
-
-            // 注意: AudioBuffer没有直接提供数据访问接口
-            // 这里只是一个示例，实际使用时需要AudioBuffer提供数据访问方法
-            LogError(OS_TEXT("SetSourceAudio from AudioBuffer not fully implemented - need data access"));
-            RETURN_FALSE;
+            sources.Clear();
+            hasCommonInfo = false;
         }
 
         /**
@@ -241,9 +253,9 @@ namespace hgl
         /**
          * 添加混音轨道(便捷方法)
          */
-        void AudioMixer::AddTrack(float timeOffset, float volume, float pitch)
+        void AudioMixer::AddTrack(uint sourceIndex, float timeOffset, float volume, float pitch)
         {
-            AddTrack(MixingTrack(timeOffset, volume, pitch));
+            AddTrack(MixingTrack(sourceIndex, timeOffset, volume, pitch));
         }
 
         /**
@@ -301,50 +313,6 @@ namespace hgl
         }
 
         /**
-         * 应用采样率转换(线性插值重采样) - float版本
-         */
-        void AudioMixer::Resample(const float* input, uint inputCount, uint inputSampleRate,
-                                 float** output, uint* outputCount, uint outputSampleRate)
-        {
-            if(inputSampleRate == outputSampleRate || outputSampleRate == 0)
-            {
-                // 采样率相同，直接复制
-                *outputCount = inputCount;
-                *output = new float[inputCount];
-                memcpy(*output, input, inputCount * sizeof(float));
-                return;
-            }
-
-            // 计算重采样比例
-            float resampleRatio = (float)outputSampleRate / (float)inputSampleRate;
-
-            *outputCount = (uint)(inputCount * resampleRatio);
-            *output = new float[*outputCount];
-
-            // 线性插值重采样
-            for(uint i = 0; i < *outputCount; i++)
-            {
-                float sourcePos = i / resampleRatio;
-                uint sourceIndex = (uint)sourcePos;
-                float fraction = sourcePos - sourceIndex;
-
-                if(sourceIndex >= inputCount)
-                    sourceIndex = inputCount - 1;
-
-                // 线性插值
-                float sample1 = input[sourceIndex];
-                float sample2;
-
-                if(sourceIndex + 1 < inputCount)
-                    sample2 = input[sourceIndex + 1];
-                else
-                    sample2 = sample1;
-
-                (*output)[i] = sample1 * (1.0f - fraction) + sample2 * fraction;
-            }
-        }
-
-        /**
          * 软削波函数 - 使用tanh提供平滑的削波效果
          * tanh函数提供S形曲线，当输入接近±1时平滑压缩
          * 相比硬削波，软削波产生的失真更自然、更悦耳
@@ -374,7 +342,7 @@ namespace hgl
          */
         bool AudioMixer::Mix(void** outputData, uint* outputSize, float loopLength)
         {
-            if(!sourceData || sourceDataSize == 0)
+            if(sources.GetCount() == 0)
             {
                 LogError(OS_TEXT("No source audio data"));
                 RETURN_FALSE;
@@ -386,18 +354,28 @@ namespace hgl
                 RETURN_FALSE;
             }
 
-            // 计算循环长度
-            uint bytesPerSample = sourceInfo.bitsPerSample / 8;
-            uint sourceSampleCount = sourceDataSize / bytesPerSample;
-            float sourceDuration = (float)sourceSampleCount / sourceInfo.sampleRate;
+            if(!hasCommonInfo)
+            {
+                LogError(OS_TEXT("No common audio format info"));
+                RETURN_FALSE;
+            }
 
             // 如果没有指定循环长度，计算所有轨道的最大时间
             if(loopLength <= 0.0f)
             {
-                loopLength = sourceDuration;
-
+                loopLength = 0.0f;
                 for(auto track:tracks)
                 {
+                    if(track.sourceIndex >= (uint)sources.GetCount())
+                    {
+                        LogError(OS_TEXT("Track source index out of range"));
+                        RETURN_FALSE;
+                    }
+
+                    const SourceAudio& source = sources[track.sourceIndex];
+                    uint bytesPerSample = source.info.bitsPerSample / 8;
+                    uint sourceSampleCount = source.dataSize / bytesPerSample;
+                    float sourceDuration = (float)sourceSampleCount / source.info.sampleRate;
                     float trackEnd = track.timeOffset + sourceDuration / track.pitch;
 
                     if(trackEnd > loopLength)
@@ -405,18 +383,15 @@ namespace hgl
                 }
             }
 
-            // 确定最终输出采样率
-            uint finalSampleRate = outputSampleRate > 0 ? outputSampleRate : sourceInfo.sampleRate;
-
             // 计算输出采样数
-            uint outputSampleCount = (uint)(loopLength * finalSampleRate);
+            uint outputSampleCount = (uint)(loopLength * commonInfo.sampleRate);
 
             // 预分配2倍大小的缓冲区以减少动态分配（基于用户要求）
             poolBuffer.Preallocate(outputSampleCount, 2.0f);
 
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) +
                     OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength,3) +
-                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)finalSampleRate) +
+                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)commonInfo.sampleRate) +
                     OS_TEXT(", output format: ") + (outputFormat == AL_FORMAT_MONO_FLOAT32 ? OS_TEXT("float32") : OS_TEXT("int16")) +
                     OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
 
@@ -424,35 +399,30 @@ namespace hgl
             float* mixBuffer = poolBuffer.Get();
             memset(mixBuffer, 0, outputSampleCount * sizeof(float));
 
-            // 将源数据转换为float（使用临时缓冲区）
-            float* sourceFloat = nullptr;
-            uint sourceFloatCount = 0;
-            ConvertToFloat(sourceData, sourceDataSize, &sourceFloat, &sourceFloatCount, sourceInfo);
-
             // 为每个轨道应用变换并混音
-            // 注意：pitch shift和resample现在会动态分配，但频率低于之前
             for(auto track:tracks)
             {
+                if(track.sourceIndex >= (uint)sources.GetCount())
+                {
+                    LogError(OS_TEXT("Track source index out of range"));
+                    RETURN_FALSE;
+                }
+
+                const SourceAudio& source = sources[track.sourceIndex];
+
+                // 将源数据转换为float（使用临时缓冲区）
+                float* sourceFloat = nullptr;
+                uint sourceFloatCount = 0;
+                ConvertToFloat(source.data, source.dataSize, &sourceFloat, &sourceFloatCount, source.info);
+
                 // 应用音调变化
                 float* pitchShiftedData = nullptr;
                 uint pitchShiftedCount = 0;
                 ApplyPitchShift(sourceFloat, sourceFloatCount,
                               &pitchShiftedData, &pitchShiftedCount, track.pitch);
 
-                // 如果需要，应用采样率转换
-                float* resampledData = nullptr;
-                uint resampledCount = 0;
-                if(finalSampleRate != sourceInfo.sampleRate)
-                {
-                    Resample(pitchShiftedData, pitchShiftedCount, sourceInfo.sampleRate,
-                            &resampledData, &resampledCount, finalSampleRate);
-                    delete[] pitchShiftedData;
-                    pitchShiftedData = resampledData;
-                    pitchShiftedCount = resampledCount;
-                }
-
                 // 计算起始位置
-                uint startSample = (uint)(track.timeOffset * finalSampleRate);
+                uint startSample = (uint)(track.timeOffset * commonInfo.sampleRate);
 
                 // 混合到输出 (float混音，无需担心溢出)
                 for(uint i = 0; i < pitchShiftedCount && (startSample + i) < outputSampleCount; i++)

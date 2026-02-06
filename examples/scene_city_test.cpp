@@ -1,9 +1,9 @@
-﻿// AudioScene City Scene Test
+﻿// AudioMixerScene City Scene Test
 // Loads city_scene.toml configuration and generates a mixed urban environment
 #include <iostream>
 #include <map>
-#include <hgl/audio/AudioScene.h>
-#include "AudioSceneConfig.h"
+#include <hgl/audio/AudioMixerScene.h>
+#include "AudioMixerSceneConfig.h"
 #include "WavReader.h"
 #include "WavWriter.h"
 
@@ -14,14 +14,14 @@ int main(int argc, char** argv)
     const char* configFile = (argc > 1) ? argv[1] : "configs/city_scene.toml";
     const char* outputFile = (argc > 2) ? argv[2] : "output_city_scene.wav";
 
-    std::cout << "AudioScene City Scene Test" << std::endl;
+    std::cout << "AudioMixerScene City Scene Test" << std::endl;
     std::cout << "==========================" << std::endl;
     std::cout << "Config: " << configFile << std::endl;
     std::cout << "Output: " << outputFile << std::endl << std::endl;
 
     // Load TOML configuration
     SceneConfigData config;
-    if (!AudioSceneConfig::Load(configFile, config))
+    if (!AudioMixerSceneConfig::Load(configFile, config))
     {
         std::cerr << "Error: Failed to load configuration file" << std::endl;
         return 1;
@@ -68,8 +68,8 @@ int main(int argc, char** argv)
         std::cout << "OK (" << dataSize << " bytes, " << sampleRate << " Hz)" << std::endl;
     }
 
-    // Create AudioScene
-    AudioScene scene;
+    // Create AudioMixerScene
+    AudioMixerScene scene;
     scene.SetOutputFormat(config.output.format, config.output.sampleRate);
 
     std::cout << std::endl << "Configuring sources:" << std::endl;
