@@ -8,6 +8,9 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioPlayer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIInstrument.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIPlayer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/MIDIOrchestraPlayer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SpatialAudioWorld.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioSource.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ConeAngle.h
@@ -34,6 +37,9 @@ set(CM_AUDIO_SOURCE
     DirectionalGainPattern.cpp
     ReverbPreset.cpp
     AudioPlayer.cpp
+    MIDIInstrument.cpp
+    MIDIPlayer.cpp
+    MIDIOrchestraPlayer.cpp
     AudioSource.cpp
     Listener.cpp
     AudioMixer.cpp
