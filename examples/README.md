@@ -9,6 +9,7 @@ Three example programs are provided:
 1. **mixer_basic_test** - Basic AudioMixer demo (single source, multiple tracks)
 2. **scene_city_test** - AudioMixerScene demo with city environment (TOML config)
 3. **scene_swarm_test** - AudioMixerScene demo with bee swarm (TOML config)
+4. **wav_resample** - WAV resample tool (mono/stereo)
 
 ## Key Features
 
@@ -159,6 +160,20 @@ make
 - Outputs to WAV file
 
 **Output**: `output_swarm_scene.wav`
+
+### 4. wav_resample
+
+**Description**: Resamples a WAV file to a target sample rate. If input is stereo, it will resample each channel independently then interleave.
+
+**Usage**:
+```bash
+./wav_resample <input.wav> <output.wav> <target_sample_rate> [linear|sinc]
+```
+
+**Example**:
+```bash
+./wav_resample wav_samples/car_small.wav car_48k.wav 48000 sinc
+```
 
 **Key concept**: Instead of mixing hundreds of individual bees, the system creates a realistic swarm effect with only 10-15 carefully varied instances.
 

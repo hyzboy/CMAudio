@@ -20,6 +20,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioResampler.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerScene.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
@@ -43,6 +44,7 @@ set(CM_AUDIO_SOURCE
     AudioSource.cpp
     Listener.cpp
     AudioMixer.cpp
+    AudioResampler.cpp
     AudioMixerScene.cpp)
 
 source_group("OpenAL" FILES ${CM_OPENAL_HEADER}
@@ -55,6 +57,8 @@ add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_OPENAL_SOURCE}
                             ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
+
+target_link_libraries(CMAudio PRIVATE samplerate)
 
 #ADD_LIBRARY(CM.OpenALEE.StandAlone SHARED ${OpenALEESource} OpenALEECPort.cpp OpenALEEStandAlone.cpp ${CM_BASE_ALL_SOURCE})
 

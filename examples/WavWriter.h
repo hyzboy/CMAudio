@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <hgl/al/al.h>
 
 namespace hgl
@@ -11,8 +12,8 @@ namespace hgl
     namespace audio
     {
         /**
-         * Simple WAV file writer for mono audio
-         * Supports AL_FORMAT_MONO8, AL_FORMAT_MONO16, and AL_FORMAT_MONO_FLOAT32
+         * Simple WAV file writer for mono/stereo audio
+         * Supports AL_FORMAT_MONO8/MONO16/MONO_FLOAT32 and AL_FORMAT_STEREO8/STEREO16/STEREO_FLOAT32
          */
         class WavWriter
         {
@@ -68,22 +69,46 @@ namespace hgl
                 // Determine bits per sample and audio format from format
                 uint16_t bitsPerSample = 0;
                 uint16_t audioFormat = 1;  // 1 = PCM, 3 = IEEE float
+                uint16_t numChannels = 0;
 
                 if (format == AL_FORMAT_MONO8)
                 {
                     bitsPerSample = 8;
                     audioFormat = 1;
+                    numChannels = 1;
                 }
                 else if (format == AL_FORMAT_MONO16)
                 {
                     bitsPerSample = 16;
                     audioFormat = 1;
+                    numChannels = 1;
                 }
                 else if (format == AL_FORMAT_MONO_FLOAT32)
                 {
                     bitsPerSample = 32;
                     audioFormat = 3;  // IEEE float
+                    numChannels = 1;
                 }
+                else if (format == AL_FORMAT_STEREO8)
+                {
+                    bitsPerSample = 8;
+                    audioFormat = 1;
+                    numChannels = 2;
+                }
+                else if (format == AL_FORMAT_STEREO16)
+                {
+                    bitsPerSample = 16;
+                    audioFormat = 1;
+                    numChannels = 2;
+                }
+#ifdef AL_FORMAT_STEREO_FLOAT32
+                else if (format == AL_FORMAT_STEREO_FLOAT32)
+                {
+                    bitsPerSample = 32;
+                    audioFormat = 3;
+                    numChannels = 2;
+                }
+#endif
                 else
                 {
                     fclose(file);
@@ -99,11 +124,11 @@ namespace hgl
                 memcpy(header.fmtID, "fmt ", 4);
                 header.fmtSize = 16;
                 header.audioFormat = audioFormat;  // PCM (1) or IEEE float (3)
-                header.numChannels = 1;  // Mono
+                header.numChannels = numChannels;
                 header.sampleRate = sampleRate;
                 header.bitsPerSample = bitsPerSample;
-                header.byteRate = sampleRate * 1 * bitsPerSample / 8;
-                header.blockAlign = 1 * bitsPerSample / 8;
+                header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
+                header.blockAlign = numChannels * bitsPerSample / 8;
                 memcpy(header.dataID, "data", 4);
                 header.dataSize = 0;  // Will update on close
 

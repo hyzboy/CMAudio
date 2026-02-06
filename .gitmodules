@@ -4,3 +4,6 @@
 [submodule "Plug-Ins/Audio.Timidity/libtimidity"]
 	path = Plug-Ins/Audio.Timidity/libtimidity
 	url = git://git.code.sf.net/p/libtimidity/libtimidity
+[submodule "src/libsamplerate"]
+	path = src/libsamplerate
+	url = https://github.com/libsndfile/libsamplerate.git

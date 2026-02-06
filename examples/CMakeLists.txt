@@ -26,6 +26,12 @@ add_executable(scene_swarm_test
 )
 target_link_libraries(scene_swarm_test CMAudio)
 
+# WAV resample tool
+add_executable(wav_resample
+    wav_resample.cpp
+)
+target_link_libraries(wav_resample CMAudio)
+
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs 
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
