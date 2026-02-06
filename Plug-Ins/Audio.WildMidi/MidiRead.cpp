@@ -254,7 +254,7 @@ void EnableChorus(bool enable)
     // This is a no-op for WildMIDI
 }
 
-const char* GetVersion()
+const char* GetMidiVersion()
 {
     return "WildMIDI 0.4.x MIDI Synthesizer";
 }
@@ -311,7 +311,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetMidiVersion,
     GetDefaultBank
 };
 

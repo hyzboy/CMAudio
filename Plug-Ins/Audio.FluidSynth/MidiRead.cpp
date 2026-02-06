@@ -6,7 +6,10 @@
 #include<string.h>
 #include<hgl/al/al.h>
 
-#include<fluidsynth.h>
+#include<fluidlite.h>
+
+#define TML_IMPLEMENTATION
+#include "../Audio.TinySoundFont/tml.h"
 
 using namespace hgl;
 using namespace openal;
@@ -71,7 +74,7 @@ static bool InitFluidSynth()
     
     // Load soundfont
     const char* sf_path = GetSoundFontPath();
-    if (fluid_synth_sfload(fluid_synth, sf_path, 1) == FLUID_FAILED)
+    if (fluid_synth_sfload(fluid_synth, sf_path, 1) < 0)
     {
         // Try alternative common paths
         const char* alt_paths[] = {
@@ -85,7 +88,7 @@ static bool InitFluidSynth()
         bool loaded = false;
         for (int i = 0; alt_paths[i] != nullptr; i++)
         {
-            if (fluid_synth_sfload(fluid_synth, alt_paths[i], 1) != FLUID_FAILED)
+            if (fluid_synth_sfload(fluid_synth, alt_paths[i], 1) >= 0)
             {
                 loaded = true;
                 break;
@@ -106,31 +109,58 @@ static bool InitFluidSynth()
     return true;
 }
 
+static void ProcessMidiMessage(const tml_message* msg)
+{
+    if (!msg || !fluidsynth_initialized || !fluid_synth)
+        return;
+
+    switch (msg->type)
+    {
+        case TML_PROGRAM_CHANGE:
+            fluid_synth_program_change(fluid_synth, msg->channel, msg->program);
+            break;
+        case TML_NOTE_ON:
+            if (msg->velocity > 0)
+                fluid_synth_noteon(fluid_synth, msg->channel, msg->key, msg->velocity);
+            else
+                fluid_synth_noteoff(fluid_synth, msg->channel, msg->key);
+            break;
+        case TML_NOTE_OFF:
+            fluid_synth_noteoff(fluid_synth, msg->channel, msg->key);
+            break;
+        case TML_PITCH_BEND:
+            fluid_synth_pitch_bend(fluid_synth, msg->channel, msg->pitch_bend);
+            break;
+        case TML_CONTROL_CHANGE:
+            fluid_synth_cc(fluid_synth, msg->channel, msg->control, msg->control_value);
+            break;
+        default:
+            break;
+    }
+}
+
 ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **data, ALsizei *size, ALsizei *freq, ALboolean *loop)
 {
     if (!InitFluidSynth())
         return;
 
-    // Create a player for this MIDI data
-    fluid_player_t* player = new_fluid_player(fluid_synth);
-    if (!player)
-        return;
-
     // Load MIDI from memory
-    if (fluid_player_add_mem(player, memory, memory_size) == FLUID_FAILED)
-    {
-        delete_fluid_player(player);
+    tml_message* midi = tml_load_memory(memory, memory_size);
+    if (!midi)
         return;
-    }
 
     // FluidSynth outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
     *freq = sample_rate;
 
     // Get total playing time (in milliseconds)
-    int total_ticks = fluid_player_get_total_ticks(player);
-    int tempo = fluid_player_get_bpm(player);
-    double total_time_sec = (double)total_ticks * 60.0 / (tempo * 1000.0);
+    double total_time_sec = 0.0;
+    for (tml_message* msg = midi; msg; msg = msg->next)
+    {
+        if (msg->time > total_time_sec)
+            total_time_sec = msg->time;
+    }
+    total_time_sec /= 1000.0;
     
     size_t total_samples = (size_t)(total_time_sec * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
@@ -139,18 +169,29 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     int16_t *ptr = new int16_t[total_stereo_samples];
     size_t out_size = 0;
 
-    // Start playback
-    fluid_player_play(player);
+    // Reset synth state before rendering
+    fluid_synth_system_reset(fluid_synth);
 
     // Render audio
     const size_t buffer_size = 4096; // samples per channel
     int16_t render_buffer[buffer_size * 2]; // stereo
     
-    while (fluid_player_get_status(player) == FLUID_PLAYER_PLAYING && out_size < pcm_total_bytes)
+    tml_message* msg = midi;
+    double current_time = 0.0;
+
+    while (out_size < pcm_total_bytes && msg)
     {
+        double next_time = current_time + (buffer_size / (double)sample_rate * 1000.0);
+
+        while (msg && msg->time <= next_time)
+        {
+            ProcessMidiMessage(msg);
+            msg = msg->next;
+        }
+
         // Render audio chunk
-        if (fluid_synth_write_s16(fluid_synth, buffer_size, render_buffer, 0, 2, 
-                                  render_buffer, 1, 2) == FLUID_FAILED)
+        if (fluid_synth_write_s16(fluid_synth, buffer_size, render_buffer, 0, 2,
+                                  render_buffer, 1, 2) != 0)
             break;
         
         size_t bytes_to_copy = buffer_size * 2 * sizeof(int16_t);
@@ -164,7 +205,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     *size = (int)out_size;
     *data = ptr;
 
-    delete_fluid_player(player);
+    tml_free(midi);
 }
 
 void ClearMIDI(ALenum, ALvoid *data, ALsizei, ALsizei)
@@ -176,7 +217,9 @@ void ClearMIDI(ALenum, ALvoid *data, ALsizei, ALsizei)
 //--------------------------------------------------------------------------------------------------
 struct MidiStream
 {
-    fluid_player_t* player;
+    tml_message* midi;
+    tml_message* current_msg;
+    double current_time;
     unsigned char *midi_data;
     size_t midi_size;
     unsigned long sample_rate;
@@ -195,33 +238,32 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     stream->midi_size = memory_size;
     stream->sample_rate = sample_rate;
     stream->playing = false;
-    
-    stream->player = new_fluid_player(fluid_synth);
-    if (!stream->player)
-    {
-        delete stream;
-        return nullptr;
-    }
+    stream->current_time = 0.0;
 
     // Load MIDI from memory
-    if (fluid_player_add_mem(stream->player, stream->midi_data, stream->midi_size) == FLUID_FAILED)
+    stream->midi = tml_load_memory(stream->midi_data, stream->midi_size);
+    if (!stream->midi)
     {
-        delete_fluid_player(stream->player);
         delete stream;
         return nullptr;
     }
+    stream->current_msg = stream->midi;
 
     // FluidSynth outputs stereo 16-bit
     *format = AL_FORMAT_STEREO16;
     *rate = stream->sample_rate;
 
     // Get total time
-    int total_ticks = fluid_player_get_total_ticks(stream->player);
-    int tempo = fluid_player_get_bpm(stream->player);
-    *total_time = (double)total_ticks * 60.0 / (tempo * 1000.0);
-    
-    // Start playback
-    fluid_player_play(stream->player);
+    double max_time = 0.0;
+    for (tml_message* msg = stream->midi; msg; msg = msg->next)
+    {
+        if (msg->time > max_time)
+            max_time = msg->time;
+    }
+    *total_time = max_time / 1000.0;
+
+    // Reset synth state before streaming
+    fluid_synth_system_reset(fluid_synth);
     stream->playing = true;
 
     return stream;
@@ -231,11 +273,8 @@ void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
-    if (stream->player)
-    {
-        fluid_player_stop(stream->player);
-        delete_fluid_player(stream->player);
-    }
+    if (stream->midi)
+        tml_free(stream->midi);
     
     delete stream;
 }
@@ -244,22 +283,29 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
     
-    if (!stream || !stream->player || !stream->playing)
+    if (!stream || !stream->midi || !stream->playing)
         return 0;
-    
-    // Check if still playing
-    if (fluid_player_get_status(stream->player) != FLUID_PLAYER_PLAYING)
+
+    size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
+    double next_time = stream->current_time + (samples / (double)stream->sample_rate * 1000.0);
+
+    while (stream->current_msg && stream->current_msg->time <= next_time)
+    {
+        ProcessMidiMessage(stream->current_msg);
+        stream->current_msg = stream->current_msg->next;
+    }
+
+    if (!stream->current_msg)
     {
         stream->playing = false;
         return 0;
     }
-    
-    // Render audio
-    size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
-    if (fluid_synth_write_s16(fluid_synth, samples, (int16_t*)data, 0, 2, 
-                              (int16_t*)data, 1, 2) == FLUID_FAILED)
+
+    if (fluid_synth_write_s16(fluid_synth, (int)samples, (int16_t*)data, 0, 2,
+                              (int16_t*)data, 1, 2) != 0)
         return 0;
 
+    stream->current_time = next_time;
     return buf_max;
 }
 
@@ -270,32 +316,12 @@ void RestartMIDI(void *ptr)
     if (!stream)
         return;
     
-    // Stop and delete current player
-    if (stream->player)
-    {
-        fluid_player_stop(stream->player);
-        delete_fluid_player(stream->player);
-        stream->player = nullptr;
-    }
-    
-    // Create new player and reload
-    stream->player = new_fluid_player(fluid_synth);
-    if (stream->player)
-    {
-        if (fluid_player_add_mem(stream->player, stream->midi_data, stream->midi_size) == FLUID_OK)
-        {
-            fluid_player_play(stream->player);
-            stream->playing = true;
-        }
-        else
-        {
-            delete_fluid_player(stream->player);
-            stream->player = nullptr;
-            stream->playing = false;
-        }
-    }
-    
-    // Note: If reload fails, player will be nullptr and subsequent ReadMIDI calls will return 0
+    stream->current_msg = stream->midi;
+    stream->current_time = 0.0;
+    stream->playing = (stream->midi != nullptr);
+
+    if (stream->playing)
+        fluid_synth_system_reset(fluid_synth);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -371,9 +397,9 @@ void EnableChorus(bool enable)
     }
 }
 
-const char* GetVersion()
+const char* GetMidiVersion()
 {
-    return "FluidSynth 2.x MIDI Synthesizer";
+    return "FluidLite MIDI Synthesizer";
 }
 
 const char* GetDefaultBank()
@@ -672,7 +698,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetMidiVersion,
     GetDefaultBank
 };
 
@@ -709,7 +735,7 @@ static MidiChannelInterface midi_channel_interface =
 };
 
 //--------------------------------------------------------------------------------------------------
-const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(FluidSynth)");
+const u16char plugin_intro[] = U16_TEXT("MIDI 音频文件解码(FluidLite)");
 
 HGL_PLUGIN_FUNC uint32 GetPlugInVersion()
 {

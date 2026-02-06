@@ -273,10 +273,7 @@ void SetBankID(int id)
 void SetVolume(float volume)
 {
     global_volume = volume;
-    if (opnmidi_initialized && g_opn_device)
-    {
-        opn2_setVolume(g_opn_device, volume);
-    }
+    // OPNMIDI does not expose a direct master volume setter in this build.
 }
 
 void SetSampleRate(int rate)
@@ -323,7 +320,7 @@ void EnableChorus(bool enable)
     // This is a no-op for OPNMIDI
 }
 
-const char* GetVersion()
+const char* GetMidiVersion()
 {
     return "OPNMIDI - YM2612 Chip Emulator";
 }
@@ -381,7 +378,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetMidiVersion,
     GetDefaultBank
 };
 

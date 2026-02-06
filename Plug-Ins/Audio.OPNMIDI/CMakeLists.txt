@@ -18,7 +18,8 @@ IF(AUDIO_OPNMIDI_INCLUDE_DIR AND AUDIO_OPNMIDI_LIBRARY)
     INCLUDE_DIRECTORIES(${AUDIO_OPNMIDI_INCLUDE_DIR})
     
     # Use the same plugin name as other MIDI plugins so only one is active
-    add_cm_plugin(CMP.Audio.OPNMIDI "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_OPNMIDI_LIBRARY})
+    add_cm_plugin(CMP.Audio.OPNMIDI "Plug-Ins//Audio" MidiRead.cpp)
+    target_link_libraries(CMP.Audio.OPNMIDI PRIVATE ${AUDIO_OPNMIDI_LIBRARY})
 ELSE()
     MESSAGE(STATUS "libOPNMIDI not found. OPNMIDI plugin will not be built.")
     MESSAGE(STATUS "  To enable OPNMIDI (YM2612/OPN chip emulation) support:")

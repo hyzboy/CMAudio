@@ -18,7 +18,8 @@ IF(AUDIO_ADLMIDI_INCLUDE_DIR AND AUDIO_ADLMIDI_LIBRARY)
     INCLUDE_DIRECTORIES(${AUDIO_ADLMIDI_INCLUDE_DIR})
     
     # Use the same plugin name as other MIDI plugins so only one is active
-    add_cm_plugin(CMP.Audio.ADLMIDI "Plug-Ins//Audio" MidiRead.cpp ${AUDIO_ADLMIDI_LIBRARY})
+    add_cm_plugin(CMP.Audio.ADLMIDI "Plug-Ins//Audio" MidiRead.cpp)
+    target_link_libraries(CMP.Audio.ADLMIDI PRIVATE ${AUDIO_ADLMIDI_LIBRARY})
 ELSE()
     MESSAGE(STATUS "libADLMIDI not found. ADLMIDI plugin will not be built.")
     MESSAGE(STATUS "  To enable ADLMIDI (OPL3/AdLib chip emulation) support:")

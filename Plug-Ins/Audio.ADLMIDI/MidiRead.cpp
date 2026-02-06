@@ -275,10 +275,7 @@ void SetBankID(int id)
 void SetVolume(float volume)
 {
     global_volume = volume;
-    if (adlmidi_initialized && g_adl_device)
-    {
-        adl_setVolume(g_adl_device, volume);
-    }
+    // ADLMIDI does not expose a direct master volume setter in this build.
 }
 
 void SetSampleRate(int rate)
@@ -325,7 +322,7 @@ void EnableChorus(bool enable)
     // This is a no-op for ADLMIDI
 }
 
-const char* GetVersion()
+const char* GetMidiVersion()
 {
     return "ADLMIDI - OPL3 Chip Emulator";
 }
@@ -393,7 +390,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetMidiVersion,
     GetDefaultBank
 };
 

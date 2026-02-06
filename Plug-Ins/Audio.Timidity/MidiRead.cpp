@@ -20,6 +20,25 @@ static float global_volume = 1.0f;
 static int sample_rate = 44100;
 static int polyphony = 64;
 
+static MidSong *LoadSongFromMemory(unsigned char *memory, size_t memory_size, unsigned long rate)
+{
+    MidIStream *stream = mid_istream_open_mem(memory, memory_size);
+    if (!stream)
+        return nullptr;
+
+    MidSongOptions options;
+    options.rate = (sint32)rate;
+    options.format = MID_AUDIO_S16LSB;
+    options.channels = 2;
+    options._pad = 0;
+    options.buffer_size = 4096;
+    options._reserved = 0;
+
+    MidSong *song = mid_song_load(stream, &options);
+    mid_istream_close(stream);
+    return song;
+}
+
 // Get config path from custom setting, environment, or use default
 static const char* GetConfigPath()
 {
@@ -51,7 +70,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
         timidity_initialized = true;
     }
 
-    MidSong *song = mid_song_load_dls(memory, memory_size, sample_rate, MID_AUDIO_S16LSB, 2, sample_rate * 2 * 2);
+    MidSong *song = LoadSongFromMemory((unsigned char*)memory, (size_t)memory_size, sample_rate);
     if (!song)
         return;
 
@@ -73,7 +92,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     // Read all MIDI data converted to PCM
     while (out_size < pcm_total_bytes)
     {
-        read_size = mid_song_read_wave(song, (char*)ptr + out_size, pcm_total_bytes - out_size);
+        read_size = (int)mid_song_read_wave(song, (sint8*)ptr + out_size, pcm_total_bytes - out_size);
         
         if (read_size <= 0)
             break;
@@ -121,9 +140,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     stream->midi_size = memory_size;
     stream->sample_rate = sample_rate;
     
-    stream->song = mid_song_load_dls(stream->midi_data, stream->midi_size, 
-                                     stream->sample_rate, MID_AUDIO_S16LSB, 2, 
-                                     stream->sample_rate * 2 * 2);
+    stream->song = LoadSongFromMemory(stream->midi_data, stream->midi_size, stream->sample_rate);
     if (!stream->song)
     {
         delete stream;
@@ -160,7 +177,7 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
     if (!stream || !stream->song)
         return 0;
     
-    int result = mid_song_read_wave(stream->song, data, buf_max);
+    int result = (int)mid_song_read_wave(stream->song, (sint8*)data, buf_max);
 
     if (result <= 0)
         return 0;
@@ -183,9 +200,7 @@ void RestartMIDI(void *ptr)
     }
     
     // Reload and restart
-    stream->song = mid_song_load_dls(stream->midi_data, stream->midi_size,
-                                     stream->sample_rate, MID_AUDIO_S16LSB, 2,
-                                     stream->sample_rate * 2 * 2);
+    stream->song = LoadSongFromMemory(stream->midi_data, stream->midi_size, stream->sample_rate);
     
     if (stream->song)
     {
@@ -253,7 +268,7 @@ void EnableChorus(bool enable)
     // This is a no-op for Timidity
 }
 
-const char* GetVersion()
+const char* GetMidiVersion()
 {
     return "Libtimidity MIDI Synthesizer";
 }
@@ -310,7 +325,7 @@ static MidiConfigInterface midi_config_interface =
     SetChipCount,
     EnableReverb,
     EnableChorus,
-    GetVersion,
+    GetMidiVersion,
     GetDefaultBank
 };
 

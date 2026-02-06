@@ -1,0 +1,6 @@
+[submodule "Plug-Ins/Audio.FluidSynth/FluidLite"]
+	path = Plug-Ins/Audio.FluidSynth/FluidLite
+	url = https://github.com/divideconcept/FluidLite.git
+[submodule "Plug-Ins/Audio.Timidity/libtimidity"]
+	path = Plug-Ins/Audio.Timidity/libtimidity
+	url = git://git.code.sf.net/p/libtimidity/libtimidity
