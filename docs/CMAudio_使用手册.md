@@ -60,10 +60,11 @@ CMAudio 是一个基于 OpenAL 的跨平台音频处理库，提供完整的音�
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │ AudioSource  │  │ AudioBuffer  │  │ AudioMixer   │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
-│  ┌──────────────┐  ┌──────────────┐                    │
-│  │SpatialAudio  │  │ AudioResampler│                   │
-│  │   World      │  └──────────────┘                    │
-│  └──────────────┘                                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │SpatialAudio  │  │AudioResampler│  │MIDI          │  │
+│  │   World      │  └──────────────┘  │Orchestra     │  │
+│  └──────────────┘                    │Player        │  │
+│                                       └──────────────┘  │
 └─────────────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────────────────────────────────────┐
@@ -89,6 +90,7 @@ CMAudio 是一个基于 OpenAL 的跨平台音频处理库，提供完整的音�
 | **AudioSource** | 单个发声源控制，管理播放状态和空间属性 |
 | **AudioPlayer** | 音频文件播放器，适合背景音乐等长音频 |
 | **MIDIPlayer** | MIDI 文件播放器，支持实时通道控制 |
+| **MIDIOrchestraPlayer** | 3D 空间交响乐团播放器，每个通道独立 3D 位置 |
 | **AudioMixer** | 离线音频混音器，多轨混音与导出 |
 | **SpatialAudioWorld** | 3D 空间音频场景管理 |
 | **AudioResampler** | 音频重采样，格式转换 |
@@ -754,6 +756,288 @@ for(int ch = 0; ch < 16; ch++)
 }
 ```
 
+### MIDIOrchestraPlayer - 3D 空间交响乐团播放器
+
+`MIDIOrchestraPlayer` 是专为沉浸式 3D 空间音乐体验设计的高级 MIDI 播放器。它将每个 MIDI 通道映射为独立的 `AudioSource` 和 3D 位置，模拟真实乐队的空间布局。
+
+#### 特点
+
+- **16 个独立音源**：每个 MIDI 通道有独立的 `AudioSource` 和 3D 位置
+- **预设乐队布局**：交响乐、室内乐、爵士、摇滚等布局
+- **实时位置调整**：动态修改每个乐器的 3D 位置
+- **完美同步**：所有通道完美同步播放
+- **独立空间效果**：每个通道独立的距离衰减和空间音频
+
+#### 与 MIDIPlayer 的对比
+
+| 特性 | MIDIPlayer | MIDIOrchestraPlayer |
+|------|-----------|-------------------|
+| **音频输出** | 单个混合音源 | 16 个独立音源 |
+| **3D 空间** | 整体位置 | 每个通道独立位置 |
+| **适用场景** | 背景音乐 | VR 音乐厅、沉浸式体验 |
+| **CPU 占用** | 低 | 高 |
+| **内存占用** | 低 | 高 |
+| **推荐后端** | 任意 MIDI 插件 | FluidSynth |
+
+#### 预设布局
+
+```cpp
+enum class OrchestraLayout
+{
+    Standard,   // 标准交响乐团布局
+    Chamber,    // 室内乐布局
+    Jazz,       // 爵士乐布局
+    Rock,       // 摇滚乐队布局
+    Custom      // 自定义布局
+};
+```
+
+**标准交响乐团布局 (Standard)**：
+- 通道 0-3：弦乐组（前方，左右分布）
+- 通道 4-7：木管组（中前方）
+- 通道 8-11：铜管组（后方，宽广分布）
+- 通道 12-15：打击乐和其他（侧方和后方）
+
+**室内乐布局 (Chamber)**：
+- 较小的空间范围
+- 乐器更靠近听者
+- 适合小型合奏
+
+**爵士布局 (Jazz)**：
+- 钢琴、贝司在中央
+- 管乐在前方两侧
+- 鼓组在后方中央
+
+**摇滚布局 (Rock)**：
+- 主唱在前方中央
+- 吉他和贝司在两侧
+- 鼓组在后方
+
+#### 基本使用
+
+```cpp
+#include <hgl/audio/MIDIOrchestraPlayer.h>
+
+using namespace hgl;
+
+// 创建播放器
+MIDIOrchestraPlayer orchestra;
+
+// 设置音色库（推荐 FluidSynth）
+orchestra.SetSoundFont("/usr/share/sounds/sf2/FluidR3_GM.sf2");
+orchestra.SetSampleRate(44100);
+
+// 加载 MIDI 文件
+if(orchestra.Load(OS_TEXT("symphony.mid")))
+{
+    // 设置标准交响乐团布局
+    orchestra.SetLayout(OrchestraLayout::Standard);
+    
+    // 设置乐团中心位置（舞台位置）
+    orchestra.SetOrchestraCenter(Vector3f(0.0f, 0.0f, 10.0f));
+    
+    // 设置缩放（调整乐团大小）
+    orchestra.SetOrchestraScale(1.5f);  // 1.5 倍大小
+    
+    // 开始播放
+    orchestra.Play();
+}
+```
+
+#### 自定义通道位置
+
+```cpp
+// 自定义布局
+orchestra.SetLayout(OrchestraLayout::Custom);
+
+// 设置各通道位置
+orchestra.SetChannelPosition(0, Vector3f(-2.0f, 0.0f, 8.0f));  // 第一小提琴（左前）
+orchestra.SetChannelPosition(1, Vector3f(2.0f, 0.0f, 8.0f));   // 第二小提琴（右前）
+orchestra.SetChannelPosition(2, Vector3f(-1.5f, 0.0f, 9.0f));  // 中提琴（左中）
+orchestra.SetChannelPosition(3, Vector3f(1.5f, 0.0f, 9.0f));   // 大提琴（右中）
+
+// 设置通道音量
+orchestra.SetChannelVolume(0, 0.9f);  // 第一小提琴稍弱
+orchestra.SetChannelVolume(1, 1.0f);  // 第二小提琴正常
+
+// 启用/禁用通道
+orchestra.SetChannelEnabled(9, false);  // 禁用通道 9（通常是鼓）
+```
+
+#### 访问通道 AudioSource
+
+可以直接访问每个通道的 `AudioSource` 以应用更多效果：
+
+```cpp
+// 获取通道 0 的 AudioSource
+AudioSource* violin = orchestra.GetChannelSource(0);
+
+if(violin)
+{
+    // 设置距离衰减
+    violin->SetDistance(1.0f, 30.0f);
+    
+    // 应用低通滤波器（模拟远距离）
+    violin->SetLowpassFilter(1.0f, 0.7f);
+    
+    // 设置 Rolloff 因子
+    violin->SetRolloffFactor(1.5f);
+}
+```
+
+#### 通道控制
+
+```cpp
+// 设置通道乐器
+orchestra.SetChannelProgram(0, 40);  // 通道 0 设为小提琴
+
+// 静音某个通道
+orchestra.MuteChannel(9, true);  // 静音鼓通道
+
+// 独奏某个通道（其他通道静音）
+orchestra.SoloChannel(0, true);  // 只听小提琴
+```
+
+#### 淡入淡出
+
+```cpp
+// 淡入（5 秒）
+orchestra.FadeIn(5.0f);
+
+// 淡出（3 秒）
+orchestra.FadeOut(3.0f);
+
+// 自定义增益控制
+orchestra.AutoGain(0.5f, 2.0f, 1.0f);  // 从 50% 增益过渡到 100%，持续 2 秒
+```
+
+#### 查询状态
+
+```cpp
+// 获取通道数量
+int channelCount = orchestra.GetChannelCount();
+
+// 获取通道信息
+MidiChannelInfo info = orchestra.GetChannelInfo(0);
+std::cout << "通道 0 乐器: " << info.program << std::endl;
+
+// 获取通道位置
+Vector3f pos = orchestra.GetChannelPosition(0);
+std::cout << "位置: (" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
+
+// 检查播放状态
+if(orchestra.IsPlaying())
+{
+    std::cout << "正在播放" << std::endl;
+}
+```
+
+#### 应用场景
+
+- **VR 音乐厅**：玩家可以在虚拟音乐厅中自由走动，聆听不同位置的乐器
+- **游戏音乐**：在游戏中展示乐队表演，玩家可以听到真实的空间音效
+- **音乐教育**：让学生了解乐团中每个乐器的位置和声音
+- **沉浸式音频**：为电影、展览创建立体声音乐体验
+
+#### VR 音乐厅示例
+
+```cpp
+#include <hgl/audio/MIDIOrchestraPlayer.h>
+#include <hgl/audio/Listener.h>
+
+using namespace hgl;
+
+// 创建交响乐团
+MIDIOrchestraPlayer orchestra;
+orchestra.SetSoundFont("/path/to/soundfont.sf2");
+orchestra.SetSampleRate(44100);
+
+if(orchestra.Load(OS_TEXT("beethoven_symphony.mid")))
+{
+    // 设置标准布局
+    orchestra.SetLayout(OrchestraLayout::Standard);
+    
+    // 舞台在前方 10 米
+    orchestra.SetOrchestraCenter(Vector3f(0.0f, 0.0f, 10.0f));
+    orchestra.SetOrchestraScale(2.0f);  // 大型音乐厅
+    
+    orchestra.Play(true);  // 循环播放
+}
+
+// 游戏主循环
+while(running)
+{
+    // 更新听者（玩家/摄像机）位置
+    Vector3f playerPos = GetPlayerPosition();
+    Vector3f playerForward = GetPlayerForward();
+    Vector3f playerUp = GetPlayerUp();
+    
+    Listener::SetPosition(playerPos);
+    Listener::SetOrientation(playerForward, playerUp);
+    
+    // 玩家可以自由移动，听到不同位置的乐器
+    // 靠近弦乐组时弦乐更响，靠近铜管时铜管更响
+}
+```
+
+#### 性能考虑
+
+**CPU 占用**：
+- 16 个独立音源意味着更高的 CPU 占用
+- 建议在高性能设备或 VR 应用中使用
+- 可以通过禁用不需要的通道来降低 CPU 占用
+
+**内存占用**：
+- 每个通道需要独立的音频缓冲区
+- 建议使用质量适中的 SoundFont（不要太大）
+
+**优化建议**：
+
+```cpp
+// 禁用不活跃的通道
+for(int ch = 0; ch < 16; ch++)
+{
+    if(!orchestra.GetChannelActivity(ch))
+    {
+        orchestra.SetChannelEnabled(ch, false);
+    }
+}
+
+// 降低采样率（如果音质要求不高）
+orchestra.SetSampleRate(22050);  // 降低一半采样率
+
+// 使用较小的缩放比例（降低空间范围）
+orchestra.SetOrchestraScale(0.5f);
+```
+
+#### 与其他系统集成
+
+**与 SpatialAudioWorld 配合**：
+
+```cpp
+// 可以将乐团作为场景中的一个音源群
+SpatialAudioWorld world;
+
+// 每个通道的 AudioSource 可以注册到空间音频世界
+for(int ch = 0; ch < 16; ch++)
+{
+    AudioSource* source = orchestra.GetChannelSource(ch);
+    if(source)
+    {
+        // 应用全局空间音频设置
+        source->SetAirAbsorptionFactor(0.1f);
+        source->SetDopplerFactor(1.0f);
+    }
+}
+```
+
+#### 注意事项
+
+- **依赖 FluidSynth**：推荐使用 FluidSynth 插件以获得最佳的多通道分离支持
+- **系统资源**：16 个独立音源需要更多系统资源，不适合低端设备
+- **同步性**：所有通道完美同步，但需要确保音频线程优先级足够高
+- **音色库**：使用高质量 SoundFont 可获得更好的音质，但会占用更多内存
+
 ---
 
 ## 高级功能
@@ -1330,6 +1614,79 @@ public:
     // 状态查询
     MIDIPlayState GetPlayState() const;
     PreciseTime GetPlayTime();
+};
+```
+
+### MIDIOrchestraPlayer API
+
+```cpp
+class MIDIOrchestraPlayer : public Thread
+{
+public:
+    MIDIOrchestraPlayer();
+    ~MIDIOrchestraPlayer();
+    
+    // 加载
+    bool Load(const os_char* filename);
+    bool Load(io::InputStream* stream, int size = -1);
+    
+    // 播放控制
+    void Play(bool loop = false);
+    void Pause();
+    void Resume();
+    void Stop();
+    void Close();
+    
+    // MIDI 配置
+    void SetSoundFont(const char* path);
+    void SetBank(int bank_id);
+    void SetSampleRate(int rate);
+    
+    // 3D 空间布局
+    void SetLayout(OrchestraLayout layout);
+    void SetOrchestraCenter(const Vector3f& center);
+    void SetOrchestraScale(float scale);
+    
+    void SetChannelPosition(int channel, const Vector3f& position);
+    Vector3f GetChannelPosition(int channel) const;
+    void SetChannelVolume(int channel, float volume);
+    void SetChannelEnabled(int channel, bool enabled);
+    AudioSource* GetChannelSource(int channel);
+    
+    // 通道控制
+    void SetChannelProgram(int channel, int program);
+    void MuteChannel(int channel, bool mute);
+    void SoloChannel(int channel, bool solo);
+    
+    // 自动增益
+    void AutoGain(float start_gain, float gap, float end_gain);
+    void FadeIn(float gap);
+    void FadeOut(float gap);
+    
+    // 状态查询
+    bool IsNone() const;
+    bool IsPlaying() const;
+    bool IsPaused() const;
+    int GetChannelCount();
+    MidiChannelInfo GetChannelInfo(int channel);
+};
+
+// 预设布局枚举
+enum class OrchestraLayout
+{
+    Standard,   // 标准交响乐团布局
+    Chamber,    // 室内乐布局
+    Jazz,       // 爵士乐布局
+    Rock,       // 摇滚乐队布局
+    Custom      // 自定义布局
+};
+
+// 通道位置配置
+struct OrchestraChannelPosition
+{
+    Vector3f position;  // 3D 位置
+    float gain;         // 音量增益 (0.0-1.0)
+    bool enabled;       // 是否启用此通道
 };
 ```
 
