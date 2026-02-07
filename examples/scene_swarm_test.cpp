@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     AudioMixerScene scene;
     scene.SetOutputFormat(config.output.format, config.output.sampleRate);
 
-    AudioSourceConfig srcConfig;
+    AudioMixerSourceConfig srcConfig;
     srcConfig.data = data;
     srcConfig.dataSize = dataSize;
     srcConfig.format = format;

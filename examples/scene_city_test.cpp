@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     std::cout << std::endl << "Configuring sources:" << std::endl;
     for (const auto& source : config.sources)
     {
-        AudioSourceConfig srcConfig;
+        AudioMixerSourceConfig srcConfig;
         srcConfig.data = wavData[source.wavFile];
         srcConfig.dataSize = wavSize[source.wavFile];
         srcConfig.format = wavFormat[source.wavFile];

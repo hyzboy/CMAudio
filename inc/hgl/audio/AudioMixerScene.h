@@ -1,6 +1,7 @@
 #pragma once
 
 #include<hgl/audio/AudioMixer.h>
+#include<hgl/audio/AudioMixerSourceConfig.h>
 #include<hgl/audio/AudioMemoryPool.h>
 #include<hgl/type/UnorderedMap.h>
 #include<hgl/log/Log.h>
@@ -8,59 +9,6 @@
 
 namespace hgl::audio
 {
-    /**
-        * 音频源配置
-        * 定义单个音频源的特性和生成参数
-        */
-    struct AudioSourceConfig
-    {
-        const void* data;           ///< 音频数据指针
-        uint dataSize;              ///< 数据大小
-        uint format;                ///< 音频格式
-        uint sampleRate;            ///< 采样率
-
-        // 生成控制参数
-        uint minCount;              ///< 最小生成数量
-        uint maxCount;              ///< 最大生成数量
-        float minInterval;          ///< 最小出现间隔(秒)
-        float maxInterval;          ///< 最大出现间隔(秒)
-
-        // 变化范围参数
-        float minVolume;            ///< 最小音量(0.0-1.0)
-        float maxVolume;            ///< 最大音量(0.0-1.0)
-        float minPitch;             ///< 最小音调(0.5-2.0)
-        float maxPitch;             ///< 最大音调(0.5-2.0)
-
-        AudioSourceConfig()
-        {
-            data = nullptr;
-            dataSize = 0;
-            format = 0;
-            sampleRate = 0;
-
-            minCount = 1;
-            maxCount = 1;
-            minInterval = 0.0f;
-            maxInterval = 0.0f;
-
-            minVolume = 0.8f;
-            maxVolume = 1.0f;
-            minPitch = 0.95f;
-            maxPitch = 1.05f;
-        }
-
-        const bool operator ==(const AudioSourceConfig& cfg) const
-        {
-            return (data == cfg.data) && (dataSize == cfg.dataSize) &&
-                   (format == cfg.format) && (sampleRate == cfg.sampleRate) &&
-                   (minCount == cfg.minCount) && (maxCount == cfg.maxCount) &&
-                   (minInterval == cfg.minInterval) && (maxInterval == cfg.maxInterval) &&
-                   (minVolume == cfg.minVolume) && (maxVolume == cfg.maxVolume) &&
-                   (minPitch == cfg.minPitch) && (maxPitch == cfg.maxPitch);
-        }
-
-    };//struct AudioSourceConfig
-
     /**
         * 音频场景混音器
         * 高级混音控制器，用于管理多种音源的混合
@@ -72,7 +20,7 @@ namespace hgl::audio
 
     private:
 
-        UnorderedMap<OSString,AudioSourceConfig> sources;    ///< 音频源字典
+        UnorderedMap<OSString,AudioMixerSourceConfig> sources;    ///< 音频源字典
         MixerConfig globalConfig;               ///< 全局混音配置
 
         uint sourceFormat;                      ///< 所有音源的统一格式(首个添加的音源决定)
@@ -97,6 +45,14 @@ namespace hgl::audio
             */
         uint RandomUInt(uint min, uint max);
 
+        bool HasAnyEffects() const;
+        AudioFilterConfig BuildRandomFilterConfig(const AudioMixerSourceConfig& config);
+        void ApplyLowpass(float* samples, uint count, float alpha);
+        void ApplyHighpass(float* samples, uint count, float alpha);
+        void ApplyFilter(float* samples, uint count, const AudioFilterConfig& config);
+        void ApplySimpleReverb(float* samples, uint count, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config);
+        bool ConvertFloatToOutput(const float* input, uint sampleCount, void** outputData, uint* outputSize);
+
     public:
 
         AudioMixerScene();
@@ -107,7 +63,7 @@ namespace hgl::audio
             * @param name 音频源名称(如"小轿车"、"SUV"、"喇叭"等)
             * @param config 音频源配置
             */
-        void AddSource(const OSString& name, const AudioSourceConfig& config);
+        void AddSource(const OSString& name, const AudioMixerSourceConfig& config);
 
         /**
             * 移除音频源

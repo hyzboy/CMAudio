@@ -22,6 +22,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioResampler.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerSourceConfig.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerScene.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
