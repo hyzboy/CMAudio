@@ -61,10 +61,13 @@ CMAudio 是一个基于 OpenAL 的跨平台音频处理库，提供完整的音�
 │  │ AudioSource  │  │ AudioBuffer  │  │ AudioMixer   │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │SpatialAudio  │  │AudioResampler│  │MIDI          │  │
-│  │   World      │  └──────────────┘  │Orchestra     │  │
-│  └──────────────┘                    │Player        │  │
-│                                       └──────────────┘  │
+│  │SpatialAudio  │  │AudioResampler│  │AudioMixer    │  │
+│  │   World      │  └──────────────┘  │Scene         │  │
+│  └──────────────┘  ┌──────────────┐  └──────────────┘  │
+│                    │MIDI          │                    │
+│                    │Orchestra     │                    │
+│                    │Player        │                    │
+│                    └──────────────┘                    │
 └─────────────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────────────────────────────────────┐
@@ -92,6 +95,7 @@ CMAudio 是一个基于 OpenAL 的跨平台音频处理库，提供完整的音�
 | **MIDIPlayer** | MIDI 文件播放器，支持实时通道控制 |
 | **MIDIOrchestraPlayer** | 3D 空间交响乐团播放器，每个通道独立 3D 位置 |
 | **AudioMixer** | 离线音频混音器，多轨混音与导出 |
+| **AudioMixerScene** | 场景音频生成器，随机化多音源环境音效 |
 | **SpatialAudioWorld** | 3D 空间音频场景管理 |
 | **AudioResampler** | 音频重采样，格式转换 |
 
@@ -651,6 +655,487 @@ mixer.SetOutputFormat(AL_FORMAT_MONO_FLOAT32); // 32位浮点
 - 音频剪辑拼接
 - 批量音频处理
 - 音效预渲染
+
+### AudioMixerScene - 音频场景混音器
+
+`AudioMixerScene` 是高级场景音频生成器，用于创建复杂的环境音效和氛围音频。它可以管理多种音源类型，自动生成随机化的音频实例，并将它们混合成完整的场景音频。
+
+#### 特点
+
+- **多音源管理**：统一管理多种音源类型（如城市中的汽车、喇叭、鸟叫等）
+- **随机化生成**：每种音源的实例数量、出现时间、音量、音调都可随机
+- **音频效果**：支持滤波器（低通、高通、带通）和简易混响
+- **场景导向**：专为生成环境背景音、群体声音、城市氛围等设计
+- **离线处理**：适合批量生成和预渲染场景音频
+
+#### 与 AudioMixer 的对比
+
+| 特性 | AudioMixer | AudioMixerScene |
+|------|-----------|----------------|
+| **控制方式** | 精确轨道控制 | 随机化场景生成 |
+| **音源管理** | 手动添加每个轨道 | 自动生成多个实例 |
+| **参数** | 固定的时间、音量、音调 | 随机范围内变化 |
+| **音效** | 无内置效果 | 滤波器 + 简易混响 |
+| **适用场景** | 精确的多轨混音 | 环境音、氛围音生成 |
+| **典型用途** | 音乐制作、音效叠加 | 游戏背景音、VR环境 |
+
+#### 核心概念
+
+**AudioMixerSourceConfig**：定义单个音源类型的生成规则
+
+```cpp
+struct AudioMixerSourceConfig
+{
+    // 音频数据
+    const void* data;       // PCM 数据指针
+    uint dataSize;          // 数据大小（字节）
+    uint format;            // 格式（AL_FORMAT_MONO8/16）
+    uint sampleRate;        // 采样率（必须与输出一致）
+    
+    // 生成控制
+    uint minCount;          // 最小生成数量
+    uint maxCount;          // 最大生成数量
+    float minInterval;      // 最小间隔（秒）
+    float maxInterval;      // 最大间隔（秒）
+    
+    // 变化范围
+    float minVolume;        // 音量范围 (0.0-1.0)
+    float maxVolume;
+    float minPitch;         // 音调范围 (0.5-2.0)
+    float maxPitch;
+    
+    // 音频效果
+    AudioFilterConfig filterConfig;      // 滤波器配置
+    FilterRandomRange filterRandom;      // 滤波参数随机范围
+    SimpleReverbConfig reverb;           // 简易混响配置
+};
+```
+
+#### 基本使用
+
+```cpp
+#include <hgl/audio/AudioMixerScene.h>
+#include <hgl/audio/AudioMixerSourceConfig.h>
+
+using namespace hgl::audio;
+
+// 1. 创建场景混音器
+AudioMixerScene scene;
+
+// 2. 设置输出格式
+scene.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+
+// 3. 配置音源类型
+AudioMixerSourceConfig carConfig;
+carConfig.data = carWavData;
+carConfig.dataSize = carWavSize;
+carConfig.format = AL_FORMAT_MONO16;
+carConfig.sampleRate = 44100;
+
+// 设置生成参数
+carConfig.minCount = 2;      // 至少 2 辆车
+carConfig.maxCount = 4;      // 最多 4 辆车
+carConfig.minInterval = 1.0f;   // 间隔 1-3 秒
+carConfig.maxInterval = 3.0f;
+
+// 设置变化范围
+carConfig.minVolume = 0.6f;
+carConfig.maxVolume = 1.0f;
+carConfig.minPitch = 0.95f;
+carConfig.maxPitch = 1.05f;
+
+// 4. 添加音源到场景
+scene.AddSource(OS_TEXT("小轿车"), carConfig);
+
+// 可以添加更多音源类型
+AudioMixerSourceConfig hornConfig;
+// ... 配置喇叭音效 ...
+scene.AddSource(OS_TEXT("喇叭"), hornConfig);
+
+// 5. 生成场景音频（30 秒）
+void* outputData;
+uint outputSize;
+if(scene.GenerateScene(&outputData, &outputSize, 30.0f))
+{
+    // 使用生成的音频数据...
+    // outputData 需要手动释放
+    delete[] (char*)outputData;
+}
+```
+
+#### 城市街道场景示例
+
+完整的城市环境音效生成：
+
+```cpp
+#include <hgl/audio/AudioMixerScene.h>
+#include <hgl/audio/AudioMixerSourceConfig.h>
+
+using namespace hgl::audio;
+
+AudioMixerScene cityScene;
+cityScene.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+
+// 1. 小轿车音效（频繁）
+AudioMixerSourceConfig smallCar;
+smallCar.data = LoadWAV("car_small.wav", &smallCar.dataSize);
+smallCar.format = AL_FORMAT_MONO16;
+smallCar.sampleRate = 44100;
+smallCar.minCount = 3;
+smallCar.maxCount = 5;
+smallCar.minInterval = 0.5f;
+smallCar.maxInterval = 2.0f;
+smallCar.minVolume = 0.7f;
+smallCar.maxVolume = 1.0f;
+smallCar.minPitch = 0.95f;
+smallCar.maxPitch = 1.05f;
+cityScene.AddSource(OS_TEXT("小轿车"), smallCar);
+
+// 2. SUV 音效（中等）
+AudioMixerSourceConfig suv;
+suv.data = LoadWAV("car_suv.wav", &suv.dataSize);
+suv.format = AL_FORMAT_MONO16;
+suv.sampleRate = 44100;
+suv.minCount = 1;
+suv.maxCount = 2;
+suv.minInterval = 2.0f;
+suv.maxInterval = 5.0f;
+suv.minVolume = 0.8f;
+suv.maxVolume = 1.0f;
+suv.minPitch = 0.9f;
+suv.maxPitch = 1.0f;
+cityScene.AddSource(OS_TEXT("SUV"), suv);
+
+// 3. 卡车音效（偶尔）
+AudioMixerSourceConfig truck;
+truck.data = LoadWAV("car_truck.wav", &truck.dataSize);
+truck.format = AL_FORMAT_MONO16;
+truck.sampleRate = 44100;
+truck.minCount = 0;
+truck.maxCount = 1;
+truck.minInterval = 5.0f;
+truck.maxInterval = 10.0f;
+truck.minVolume = 0.9f;
+truck.maxVolume = 1.0f;
+truck.minPitch = 0.85f;
+truck.maxPitch = 0.95f;
+cityScene.AddSource(OS_TEXT("卡车"), truck);
+
+// 4. 喇叭音效（随机）
+AudioMixerSourceConfig horn;
+horn.data = LoadWAV("horn_short.wav", &horn.dataSize);
+horn.format = AL_FORMAT_MONO16;
+horn.sampleRate = 44100;
+horn.minCount = 0;
+horn.maxCount = 3;
+horn.minInterval = 3.0f;
+horn.maxInterval = 8.0f;
+horn.minVolume = 0.5f;
+horn.maxVolume = 0.8f;
+horn.minPitch = 0.95f;
+horn.maxPitch = 1.05f;
+cityScene.AddSource(OS_TEXT("喇叭"), horn);
+
+// 5. 鸟叫音效（背景）
+AudioMixerSourceConfig bird;
+bird.data = LoadWAV("bird_chirp.wav", &bird.dataSize);
+bird.format = AL_FORMAT_MONO16;
+bird.sampleRate = 44100;
+bird.minCount = 2;
+bird.maxCount = 4;
+bird.minInterval = 1.0f;
+bird.maxInterval = 4.0f;
+bird.minVolume = 0.3f;
+bird.maxVolume = 0.5f;
+bird.minPitch = 0.9f;
+bird.maxPitch = 1.15f;
+cityScene.AddSource(OS_TEXT("鸟"), bird);
+
+// 生成 60 秒的城市环境音
+void* cityAudio;
+uint citySize;
+if(cityScene.GenerateScene(&cityAudio, &citySize, 60.0f))
+{
+    // 保存或使用音频
+    SaveWAV("city_ambience.wav", cityAudio, citySize, 44100);
+    delete[] (char*)cityAudio;
+}
+```
+
+#### 音频效果
+
+**1. 滤波器**
+
+使用预设滤波器快速配置：
+
+```cpp
+#include <hgl/audio/AudioFilterPreset.h>
+
+AudioMixerSourceConfig config;
+// ... 设置基本参数 ...
+
+// 应用预设滤波器
+ApplyAudioFilterPreset(config, AudioFilterPreset::Telephone);  // 电话效果
+// 或
+ApplyAudioFilterPreset(config, AudioFilterPreset::OldRadio);   // 老式收音机
+// 或
+ApplyAudioFilterPreset(config, AudioFilterPreset::Underwater); // 水下效果
+
+// 添加随机扰动（可选）
+config.filterRandom.gain = 0.05f;      // ±5% 增益变化
+config.filterRandom.gain_hf = 0.1f;    // ±10% 高频变化
+
+scene.AddSource(OS_TEXT("收音机"), config);
+```
+
+**2. 简易混响**
+
+添加环境混响效果：
+
+```cpp
+AudioMixerSourceConfig config;
+// ... 设置基本参数 ...
+
+// 启用混响
+config.reverb.enable = true;
+config.reverb.delay_ms = 90.0f;     // 90ms 延迟
+config.reverb.feedback = 0.35f;     // 35% 反馈
+config.reverb.mix = 0.25f;          // 25% 湿信号混合
+
+// 添加随机变化（模拟不同空间）
+config.reverb.delay_ms_rand = 10.0f;   // ±10ms
+config.reverb.feedback_rand = 0.05f;   // ±5%
+config.reverb.mix_rand = 0.05f;        // ±5%
+
+scene.AddSource(OS_TEXT("回声声音"), config);
+```
+
+**3. 组合效果**
+
+滤波器和混响同时使用：
+
+```cpp
+AudioMixerSourceConfig config;
+config.data = distantCarData;
+config.dataSize = distantCarSize;
+config.format = AL_FORMAT_MONO16;
+config.sampleRate = 44100;
+
+// 低通滤波（模拟远距离）
+config.filterConfig.type = AudioFilterType::Lowpass;
+config.filterConfig.enable = true;
+config.filterConfig.gain = 0.8f;
+config.filterConfig.gain_hf = 0.5f;  // 减少高频
+
+// 添加混响（模拟空旷环境）
+config.reverb.enable = true;
+config.reverb.delay_ms = 120.0f;
+config.reverb.feedback = 0.4f;
+config.reverb.mix = 0.3f;
+
+scene.AddSource(OS_TEXT("远处汽车"), config);
+```
+
+#### 全局配置
+
+```cpp
+// 设置全局混音配置
+MixerConfig globalConfig;
+globalConfig.useSoftClipper = true;  // 启用软削波
+globalConfig.useDither = true;       // 启用抖动
+scene.SetGlobalConfig(globalConfig);
+```
+
+#### 查询和管理
+
+```cpp
+// 获取音源数量
+int count = scene.GetSourceCount();
+
+// 移除音源
+scene.RemoveSource(OS_TEXT("卡车"));
+
+// 清除所有音源
+scene.ClearSources();
+
+// 查询输出格式
+uint format = scene.GetOutputFormat();
+uint sampleRate = scene.GetOutputSampleRate();
+```
+
+#### 应用场景
+
+**1. 游戏环境音**
+- 城市街道：车辆、人群、鸟叫的随机组合
+- 森林场景：风声、鸟叫、树叶沙沙声
+- 战场环境：枪声、爆炸、喊叫的密集叠加
+
+**2. VR/AR 体验**
+- 虚拟场景的背景音氛围
+- 预渲染环境音效降低运行时 CPU 占用
+
+**3. 影视后期**
+- 群众场景的背景音
+- 环境氛围音轨
+
+**4. 音频素材库**
+- 批量生成变化的音效素材
+- 创建音效模板
+
+#### 工作流程示例
+
+从 TOML 配置文件生成场景音频（参考 examples/scene_city_test.cpp）：
+
+```cpp
+// 1. 从配置文件加载参数
+// [source.car]
+// wav_file = "wav_samples/car_small.wav"
+// min_count = 2
+// max_count = 4
+// min_interval = 1.0
+// max_interval = 3.0
+// ...
+
+// 2. 创建场景
+AudioMixerScene scene;
+scene.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+
+// 3. 根据配置添加音源
+for(auto& sourceConfig : tomlConfig.sources)
+{
+    AudioMixerSourceConfig cfg;
+    cfg.data = LoadWAV(sourceConfig.wav_file);
+    cfg.minCount = sourceConfig.min_count;
+    cfg.maxCount = sourceConfig.max_count;
+    // ... 设置其他参数 ...
+    
+    scene.AddSource(sourceConfig.name, cfg);
+}
+
+// 4. 生成音频
+void* output;
+uint size;
+scene.GenerateScene(&output, &size, tomlConfig.duration);
+
+// 5. 保存结果
+SaveWAV(tomlConfig.output_file, output, size, 44100);
+delete[] (char*)output;
+```
+
+#### 性能考虑
+
+**内存占用**：
+- 每个音源类型的原始数据会被保留在内存中
+- 生成的实例会临时占用内存
+- 建议每次生成后释放输出数据
+
+**CPU 占用**：
+- 启用滤波器和混响会增加 CPU 占用
+- 实例越多、时长越长，处理时间越长
+- 适合离线处理，不适合实时生成
+
+**优化建议**：
+
+```cpp
+// 1. 限制实例数量
+config.maxCount = 3;  // 不要过多
+
+// 2. 合理设置间隔
+config.minInterval = 1.0f;  // 避免过于密集
+
+// 3. 谨慎使用效果
+// 只在必要时启用滤波和混响
+
+// 4. 分段生成
+// 对于超长音频，考虑分段生成再拼接
+```
+
+#### 限制和注意事项
+
+**格式限制**：
+- ⚠️ **仅支持单声道**：输入和输出都必须是单声道（MONO）
+- ⚠️ **采样率一致**：所有音源的采样率必须与输出采样率一致
+- 不在 AudioMixerScene 内部进行重采样
+
+**使用建议**：
+- 提前将所有音源转换为统一的采样率
+- 使用 AudioResampler 进行格式转换
+- 立体声音频需要先转换为单声道
+
+```cpp
+// 错误示例（采样率不一致）
+AudioMixerSourceConfig config1;
+config1.sampleRate = 44100;  // 44.1kHz
+AudioMixerSourceConfig config2;
+config2.sampleRate = 48000;  // 48kHz - 错误！
+
+scene.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+scene.AddSource(OS_TEXT("source1"), config1);  // OK
+scene.AddSource(OS_TEXT("source2"), config2);  // 失败！
+```
+
+**随机性**：
+- 每次调用 GenerateScene 会产生不同的结果
+- 如需可重复的结果，需要自己管理随机种子
+
+#### 实例：昆虫群音效
+
+生成逼真的蜜蜂群或蝉鸣声：
+
+```cpp
+AudioMixerScene swarm;
+swarm.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+
+AudioMixerSourceConfig bee;
+bee.data = LoadWAV("bee_buzz.wav", &bee.dataSize);
+bee.format = AL_FORMAT_MONO16;
+bee.sampleRate = 44100;
+
+// 密集的实例
+bee.minCount = 10;
+bee.maxCount = 15;
+bee.minInterval = 0.0f;   // 几乎同时开始
+bee.maxInterval = 0.5f;   // 少量错开
+
+// 音量和音调变化（模拟不同距离和个体）
+bee.minVolume = 0.4f;
+bee.maxVolume = 0.8f;
+bee.minPitch = 0.9f;   // 不同翅膀振动频率
+bee.maxPitch = 1.15f;
+
+swarm.AddSource(OS_TEXT("蜜蜂"), bee);
+
+void* swarmAudio;
+uint swarmSize;
+swarm.GenerateScene(&swarmAudio, &swarmSize, 10.0f);
+
+SaveWAV("bee_swarm.wav", swarmAudio, swarmSize, 44100);
+delete[] (char*)swarmAudio;
+```
+
+#### 调试技巧
+
+```cpp
+// 记录生成的实例信息
+std::cout << "音源数量: " << scene.GetSourceCount() << std::endl;
+
+// 逐个测试音源
+AudioMixerScene testScene;
+testScene.SetOutputFormat(AL_FORMAT_MONO16, 44100);
+testScene.AddSource(OS_TEXT("测试"), singleConfig);
+
+void* testOutput;
+uint testSize;
+if(testScene.GenerateScene(&testOutput, &testSize, 5.0f))
+{
+    std::cout << "生成成功: " << testSize << " 字节" << std::endl;
+    delete[] (char*)testOutput;
+}
+else
+{
+    std::cerr << "生成失败" << std::endl;
+}
+```
 
 ### MIDIPlayer - MIDI 播放器
 
@@ -1567,6 +2052,88 @@ namespace hgl::audio
         float volume = 1.0f;       // 音量 0.0-1.0
         float pitch = 1.0f;        // 音调 0.5-2.0
     };
+}
+```
+
+### AudioMixerScene API
+
+```cpp
+namespace hgl::audio
+{
+    class AudioMixerScene
+    {
+    public:
+        AudioMixerScene();
+        ~AudioMixerScene();
+        
+        // 音源管理
+        void AddSource(const OSString& name, const AudioMixerSourceConfig& config);
+        void RemoveSource(const OSString& name);
+        void ClearSources();
+        int GetSourceCount() const;
+        
+        // 配置
+        void SetGlobalConfig(const MixerConfig& config);
+        const MixerConfig& GetGlobalConfig() const;
+        void SetOutputFormat(uint format, uint sampleRate);
+        uint GetOutputFormat() const;
+        uint GetOutputSampleRate() const;
+        
+        // 生成场景
+        bool GenerateScene(void** outputData, uint* outputSize, float duration);
+    };
+    
+    // 音源配置结构
+    struct AudioMixerSourceConfig
+    {
+        // 音频数据
+        const void* data;           // PCM 数据指针
+        uint dataSize;              // 数据大小（字节）
+        uint format;                // AL_FORMAT_MONO8/16
+        uint sampleRate;            // 采样率（必须与输出一致）
+        
+        // 生成控制
+        uint minCount;              // 最小生成数量
+        uint maxCount;              // 最大生成数量
+        float minInterval;          // 最小间隔（秒）
+        float maxInterval;          // 最大间隔（秒）
+        
+        // 变化范围
+        float minVolume;            // 音量范围 (0.0-1.0)
+        float maxVolume;
+        float minPitch;             // 音调范围 (0.5-2.0)
+        float maxPitch;
+        
+        // 音频效果
+        AudioFilterConfig filterConfig;      // 滤波器配置
+        FilterRandomRange filterRandom;      // 滤波随机范围
+        SimpleReverbConfig reverb;           // 简易混响配置
+    };
+    
+    // 滤波参数随机范围
+    struct FilterRandomRange
+    {
+        float gain;        // 增益随机范围 (±gain)
+        float gain_lf;     // 低频增益随机范围
+        float gain_hf;     // 高频增益随机范围
+    };
+    
+    // 简易混响配置
+    struct SimpleReverbConfig
+    {
+        bool enable;            // 是否启用
+        float delay_ms;         // 延迟时间（毫秒）
+        float feedback;         // 反馈系数 (0-0.95)
+        float mix;              // 干湿比 (0-1)
+        
+        float delay_ms_rand;    // 延迟随机范围
+        float feedback_rand;    // 反馈随机范围
+        float mix_rand;         // 混合随机范围
+    };
+    
+    // 辅助函数：应用滤波预设
+    void ApplyAudioFilterPreset(AudioMixerSourceConfig& config, 
+                                AudioFilterPreset preset);
 }
 ```
 
