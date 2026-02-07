@@ -19,6 +19,18 @@ namespace hgl
     class AudioSource;
     class AudioListener;
 
+    struct SceneLowpassConfig
+    {
+        bool enable = true;
+        float gain = 1.0f;
+        float gain_hf = 1.0f;
+    };
+    struct FrequencyAttenuationConfig
+    {
+        bool enable = true;
+        float min_gain_hf = 0.3f;  ///< 远距离高频最低保留值
+    };
+
     /**
      * 音源配置参数结构体
      */
@@ -88,6 +100,7 @@ namespace hgl
 
         // 频率相关衰减状态
         uint lowpass_filter;                                ///< 低通滤波器ID（每个音源独立的OpenAL滤波器句柄）
+        float last_filter_gain;                             ///< 上次应用的低频增益（避免重复更新）
         float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
@@ -126,6 +139,7 @@ namespace hgl
             , last_gain(0)
             , last_update_frame(0)
             , lowpass_filter(0)
+            , last_filter_gain(-1.0f)
             , last_filter_gainhf(-1.0f)
             , is_fading(false)
             , fade_start_time(0)
@@ -221,6 +235,11 @@ namespace hgl
         // 频率相关衰减（模拟空气中高频衰减更快）
         bool frequency_dependent_attenuation;                                                       ///< 是否启用频率相关衰减
 
+        // 场景级低通滤波
+        bool scene_lowpass_enabled;                                                                  ///< 是否启用场景级低通
+        float scene_lowpass_gain;                                                                    ///< 场景级低通整体增益
+        float scene_lowpass_gainhf;                                                                  ///< 场景级低通高频增益
+
         // 淡入淡出插值类型
         audio::InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
 
@@ -287,6 +306,14 @@ namespace hgl
                 bool                InitFrequencyAttenuation();                                     ///< 初始化频率相关衰减
                 void                CloseFrequencyAttenuation();                                    ///< 关闭频率相关衰减
                 bool                EnableFrequencyAttenuation(bool enable);                        ///< 启用/禁用频率相关衰减
+                bool                SetFrequencyAttenuation(const FrequencyAttenuationConfig &config); ///< 设置频率相关衰减参数
+    float freq_atten_min_gain_hf;                                                               ///< 频率相关衰减最低高频保留值
+
+                bool                EnableSceneLowpass(bool enable);                                ///< 启用/禁用场景级低通
+                bool                SetSceneLowpass(const float gain,const float gain_hf);          ///< 设置场景级低通参数
+                bool                SetSceneLowpass(const SceneLowpassConfig &config);              ///< 设置场景级低通参数
+                void                DisableSceneLowpass();                                          ///< 禁用场景级低通
+                bool                IsSceneLowpassEnabled()const{return scene_lowpass_enabled;}      ///< 是否启用场景级低通
 
                 /**
                  * 设置音源的方向性增益图
@@ -325,4 +352,17 @@ namespace hgl
 
         virtual int                 Update(const double &ct=0);                                     ///< 刷新，返回仍在发声的音源数量
     };//class SpatialAudioWorld
+
+    /*
+     * Usage example:
+     *
+     * SpatialAudioWorld world(64, listener);
+     * world.SetSceneLowpass(SceneLowpassConfig{true, 1.0f, 0.5f});
+     * world.SetFrequencyAttenuation(FrequencyAttenuationConfig{true, 0.3f});
+     *
+     * SpatialAudioSourceConfig cfg;
+     * cfg.buffer = buffer;
+     * SpatialAudioSource *src = world.Create(cfg);
+     * if(src) src->Play();
+     */
 }//namespace hgl

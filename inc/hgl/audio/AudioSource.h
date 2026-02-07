@@ -12,6 +12,23 @@ namespace hgl
 
     class AudioListener;
 
+    enum class AudioFilterType
+    {
+        None=0,
+        Lowpass,
+        Highpass,
+        Bandpass
+    };
+
+    struct AudioFilterConfig
+    {
+        AudioFilterType type = AudioFilterType::None;
+        float gain = 1.0f;
+        float gain_lf = 1.0f;
+        float gain_hf = 1.0f;
+        bool enable = true;
+    };
+
     /**
     * 音频源，指的是一个发声源，要发声必须创建至少一个发声源。而这个类就是管理发声源所用的。
     */
@@ -29,26 +46,32 @@ namespace hgl
 
     protected:
 
-        uint index;
+        uint            index;                                              ///<音源索引
 
-        bool pause;
+        bool            pause;                                              ///<是否暂停
 
-        bool loop;
-        float pitch;
-        float gain;
-        float cone_gain;
-        Vector3f position;
-        Vector3f velocity;
-        Vector3f direction;
-        float ref_dist,max_dist;
-        uint distance_model;
-        float rolloff_factor;
-        ConeAngle angle;
+        bool            loop;                                               ///<是否循环
+        float           pitch;                                              ///<播放速率
+        float           gain;                                               ///<基础增益
+        float           cone_gain;                                          ///<锥形增益
+        Vector3f        position;                                           ///<位置
+        Vector3f        velocity;                                           ///<速度
+        Vector3f        direction;                                          ///<朝向
+        float           ref_dist,max_dist;                                  ///<参考/最大距离
+        uint            distance_model;                                     ///<距离衰减模型
+        float           rolloff_factor;                                     ///<距离衰减系数
+        ConeAngle       angle;                                              ///<锥形角度
 
-        float doppler_factor;
-        float doppler_velocity;
+        float           doppler_factor;                                     ///<多普勒强度
+        float           doppler_velocity;                                   ///<多普勒速度
 
-        float air_absorption_factor;
+        float           air_absorption_factor;                              ///<空气吸收因子
+
+        uint            direct_filter;                                      ///<直达声滤波器ID
+        AudioFilterType filter_type;                                        ///<滤波器类型
+        float           filter_gain;                                        ///<滤波增益
+        float           filter_gain_lf;                                     ///<低频增益
+        float           filter_gain_hf;                                     ///<高频增益
 
     public: //属性
 
@@ -94,6 +117,14 @@ namespace hgl
 
                 const   float   GetAirAbsorptionFactor()const{return air_absorption_factor;}        ///<获取空气吸收因子
                         void    SetAirAbsorptionFactor(const float &);                              ///<设置空气吸收因子(0.0-10.0,默认0.0)
+
+                const   bool    IsFilterEnabled()const{return filter_type!=AudioFilterType::None && direct_filter!=0;}
+                const   AudioFilterType GetFilterType()const{return filter_type;}
+                        bool    SetLowpassFilter(const float gain,const float gain_hf);
+                        bool    SetHighpassFilter(const float gain,const float gain_lf);
+                        bool    SetBandpassFilter(const float gain,const float gain_lf,const float gain_hf);
+                        bool    SetFilter(const AudioFilterConfig &config);
+                        void    DisableFilter();
 
                 const   void    GetDistance(float &rd,float &md)const                               ///<获取音源距离范围
                 {

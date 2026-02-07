@@ -188,6 +188,12 @@ namespace hgl
 
         // 初始化频率相关衰减变量
         frequency_dependent_attenuation=false;
+        freq_atten_min_gain_hf=FREQ_ATTEN_MIN_GAIN;
+
+        // 初始化场景级低通参数
+        scene_lowpass_enabled=false;
+        scene_lowpass_gain=1.0f;
+        scene_lowpass_gainhf=1.0f;
 
         // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
         fade_interpolation_type=audio::InterpolationType::Cosine;
@@ -250,6 +256,9 @@ namespace hgl
             asi->ref_distance = finalConfig.ref_distance;
             asi->max_distance = finalConfig.max_distance;
             asi->source = nullptr;  // 初始化物理音源为空
+            asi->lowpass_filter = 0;
+            asi->last_filter_gain = -1.0f;
+            asi->last_filter_gainhf = -1.0f;
         }
 
         // 在解锁前添加到列表，确保原子性
@@ -576,77 +585,121 @@ namespace hgl
             }
         }
 
-        // 频率相关衰减：根据距离动态调整低通滤波器
-        // 模拟空气中高频衰减比低频快的物理现象
-        // 每个音源拥有独立的滤波器
-        if(frequency_dependent_attenuation && listener && alGenFilters)
+        // 频率相关衰减 + 场景级低通：根据距离与场景参数动态调整低通滤波器
+        // 注意：如果 AudioSource 自己启用了滤波器，则场景级滤波不会覆盖它
+        if(asi->source && asi->source->IsFilterEnabled())
         {
-            const Vector3f &listener_pos = listener->GetPosition();
-            float distance = math::Length(listener_pos, asi->cur_pos);
-
-            // 计算距离因子（0=近距离，1=最大距离）
-            float distance_factor = 0.0f;
-            if(asi->max_distance > asi->ref_distance)
+            if(asi->lowpass_filter != 0)
             {
-                distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
+                if(alSourcei)
+                    alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
+
+                if(alDeleteFilters)
+                    alDeleteFilters(1, &asi->lowpass_filter);
+
+                asi->lowpass_filter = 0;
+                asi->last_filter_gain = -1.0f;
+                asi->last_filter_gainhf = -1.0f;
             }
+        }
+        else
+        {
+            const bool enable_scene_lowpass = scene_lowpass_enabled;
+            const bool enable_distance_lowpass = frequency_dependent_attenuation;
 
-            // 远距离时降低高频增益，模拟空气吸收
-            float gain_hf = 1.0f - distance_factor * (1.0f - FREQ_ATTEN_MIN_GAIN);
-
-            // 只在高频增益变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
-            if(std::abs(gain_hf - asi->last_filter_gainhf) > FREQ_ATTEN_CHANGE_THRESHOLD)
+            if((enable_scene_lowpass || enable_distance_lowpass) && listener && alGenFilters)
             {
-                // 创建per-source滤波器（如果尚未创建）
-                if(asi->lowpass_filter == 0)
-                {
-                    alGetError();  // 清除之前的错误
-                    alGenFilters(1, &asi->lowpass_filter);
-                    if(alGetError() != AL_NO_ERROR)
-                    {
-                        asi->lowpass_filter = 0;  // 创建失败，确保ID为0
-                        return(true);  // 继续执行，只是没有滤波器效果
-                    }
+                const Vector3f &listener_pos = listener->GetPosition();
+                float distance = math::Length(listener_pos, asi->cur_pos);
 
-                    if(alFilteri)
+                // 计算距离因子（0=近距离，1=最大距离）
+                float distance_factor = 0.0f;
+                if(enable_distance_lowpass && asi->max_distance > asi->ref_distance)
+                {
+                    distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
+                }
+
+                // 远距离时降低高频增益，模拟空气吸收
+                float distance_gain_hf = 1.0f;
+                if(enable_distance_lowpass)
+                {
+                    distance_gain_hf = 1.0f - distance_factor * (1.0f - freq_atten_min_gain_hf);
+                }
+
+                float final_gain = enable_scene_lowpass ? scene_lowpass_gain : 1.0f;
+                float final_gain_hf = distance_gain_hf * (enable_scene_lowpass ? scene_lowpass_gainhf : 1.0f);
+
+                final_gain = std::clamp(final_gain, 0.0f, 1.0f);
+                final_gain_hf = std::clamp(final_gain_hf, 0.0f, 1.0f);
+
+                // 只在参数变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
+                if(std::abs(final_gain - asi->last_filter_gain) > FREQ_ATTEN_CHANGE_THRESHOLD
+                 || std::abs(final_gain_hf - asi->last_filter_gainhf) > FREQ_ATTEN_CHANGE_THRESHOLD)
+                {
+                    // 创建per-source滤波器（如果尚未创建）
+                    if(asi->lowpass_filter == 0)
                     {
-                        alFilteri(asi->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+                        alGetError();  // 清除之前的错误
+                        alGenFilters(1, &asi->lowpass_filter);
                         if(alGetError() != AL_NO_ERROR)
                         {
-                            // 设置失败，清理并返回
-                            if(alDeleteFilters)
-                                alDeleteFilters(1, &asi->lowpass_filter);
-                            asi->lowpass_filter = 0;
-                            return(true);
+                            asi->lowpass_filter = 0;  // 创建失败，确保ID为0
+                            return(true);  // 继续执行，只是没有滤波器效果
                         }
-                    }
-                }
 
-                // 设置低通滤波器参数
-                if(asi->lowpass_filter != 0 && alFilterf)
-                {
-                    alGetError();  // 清除之前的错误
-
-                    // 尝试设置两个参数，任一失败都放弃更新
-                    alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, 1.0f);  // 保持整体增益
-                    bool gain_ok = (alGetError() == AL_NO_ERROR);
-
-                    alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, gain_hf);  // 高频增益随距离衰减
-                    bool gainhf_ok = (alGetError() == AL_NO_ERROR);
-
-                    // 只有两个参数都设置成功才应用滤波器
-                    if(gain_ok && gainhf_ok && alSourcei)
-                    {
-                        alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
-
-                        if(alGetError() == AL_NO_ERROR)
+                        if(alFilteri)
                         {
-                            asi->last_filter_gainhf = gain_hf;  // 只在成功应用后更新缓存值
+                            alFilteri(asi->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+                            if(alGetError() != AL_NO_ERROR)
+                            {
+                                // 设置失败，清理并返回
+                                if(alDeleteFilters)
+                                    alDeleteFilters(1, &asi->lowpass_filter);
+                                asi->lowpass_filter = 0;
+                                return(true);
+                            }
                         }
-                        // 如果应用失败，不更新缓存，下次会重试
                     }
-                    // 如果参数设置失败，不更新缓存，下次会重试
+
+                    // 设置低通滤波器参数
+                    if(asi->lowpass_filter != 0 && alFilterf)
+                    {
+                        alGetError();  // 清除之前的错误
+
+                        // 尝试设置两个参数，任一失败都放弃更新
+                        alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, final_gain);
+                        bool gain_ok = (alGetError() == AL_NO_ERROR);
+
+                        alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, final_gain_hf);
+                        bool gainhf_ok = (alGetError() == AL_NO_ERROR);
+
+                        // 只有两个参数都设置成功才应用滤波器
+                        if(gain_ok && gainhf_ok && alSourcei)
+                        {
+                            alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
+
+                            if(alGetError() == AL_NO_ERROR)
+                            {
+                                asi->last_filter_gain = final_gain;
+                                asi->last_filter_gainhf = final_gain_hf;
+                            }
+                            // 如果应用失败，不更新缓存，下次会重试
+                        }
+                        // 如果参数设置失败，不更新缓存，下次会重试
+                    }
                 }
+            }
+            else if(asi->lowpass_filter != 0)
+            {
+                if(alSourcei)
+                    alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
+
+                if(alDeleteFilters)
+                    alDeleteFilters(1, &asi->lowpass_filter);
+
+                asi->lowpass_filter = 0;
+                asi->last_filter_gain = -1.0f;
+                asi->last_filter_gainhf = -1.0f;
             }
         }
 
@@ -958,14 +1011,29 @@ namespace hgl
 
         frequency_dependent_attenuation = false;
 
-        // 清理所有音源的滤波器
-        for(auto source : source_list)
+        if(!scene_lowpass_enabled)
         {
-            if(source && source->lowpass_filter != 0)
+            // 清理所有音源的滤波器
+            for(auto source : source_list)
             {
-                if(alDeleteFilters)
-                    alDeleteFilters(1, &source->lowpass_filter);
-                source->lowpass_filter = 0;
+                if(source && source->lowpass_filter != 0)
+                {
+                    if(alDeleteFilters)
+                        alDeleteFilters(1, &source->lowpass_filter);
+                    source->lowpass_filter = 0;
+                }
+            }
+        }
+        else
+        {
+            // 保留滤波器，强制下一帧重新应用场景低通参数
+            for(auto source : source_list)
+            {
+                if(source)
+                {
+                    source->last_filter_gain = -1.0f;
+                    source->last_filter_gainhf = -1.0f;
+                }
             }
         }
 
@@ -984,16 +1052,30 @@ namespace hgl
 
         scene_mutex.Lock();
 
-        // 如果禁用，清理所有现有滤波器
+        // 如果禁用，按需清理或重置所有现有滤波器
         if(!enable && frequency_dependent_attenuation)
         {
-            for(auto source : source_list)
+            if(!scene_lowpass_enabled)
             {
-                if(source && source->lowpass_filter != 0)
+                for(auto source : source_list)
                 {
-                    if(alDeleteFilters)
-                        alDeleteFilters(1, &source->lowpass_filter);
-                    source->lowpass_filter = 0;
+                    if(source && source->lowpass_filter != 0)
+                    {
+                        if(alDeleteFilters)
+                            alDeleteFilters(1, &source->lowpass_filter);
+                        source->lowpass_filter = 0;
+                    }
+                }
+            }
+            else
+            {
+                for(auto source : source_list)
+                {
+                    if(source)
+                    {
+                        source->last_filter_gain = -1.0f;
+                        source->last_filter_gainhf = -1.0f;
+                    }
                 }
             }
         }
@@ -1002,6 +1084,136 @@ namespace hgl
         scene_mutex.Unlock();
 
         return true;
+    }
+
+    /**
+     * 设置频率相关衰减参数
+     */
+    bool SpatialAudioWorld::SetFrequencyAttenuation(const FrequencyAttenuationConfig &config)
+    {
+        if(!config.enable)
+        {
+            EnableFrequencyAttenuation(false);
+            return true;
+        }
+
+        if(!alGenFilters)
+        {
+            return false;  // EFX 不可用
+        }
+
+        scene_mutex.Lock();
+
+        frequency_dependent_attenuation = true;
+        freq_atten_min_gain_hf = std::clamp(config.min_gain_hf, 0.0f, 1.0f);
+
+        for(auto source : source_list)
+        {
+            if(source)
+            {
+                source->last_filter_gain = -1.0f;
+                source->last_filter_gainhf = -1.0f;
+            }
+        }
+
+        scene_mutex.Unlock();
+        return true;
+    }
+
+    /**
+     * 启用/禁用场景级低通
+     */
+    bool SpatialAudioWorld::EnableSceneLowpass(bool enable)
+    {
+        if(enable && !alGenFilters)
+        {
+            return false;  // EFX 不可用
+        }
+
+        scene_mutex.Lock();
+
+        if(!enable && scene_lowpass_enabled)
+        {
+            if(!frequency_dependent_attenuation)
+            {
+                for(auto source : source_list)
+                {
+                    if(source && source->lowpass_filter != 0)
+                    {
+                        if(alDeleteFilters)
+                            alDeleteFilters(1, &source->lowpass_filter);
+                        source->lowpass_filter = 0;
+                    }
+                }
+            }
+            else
+            {
+                for(auto source : source_list)
+                {
+                    if(source)
+                    {
+                        source->last_filter_gain = -1.0f;
+                        source->last_filter_gainhf = -1.0f;
+                    }
+                }
+            }
+        }
+
+        scene_lowpass_enabled = enable;
+        scene_mutex.Unlock();
+
+        return true;
+    }
+
+    /**
+     * 设置场景级低通参数
+     */
+    bool SpatialAudioWorld::SetSceneLowpass(const float gain,const float gain_hf)
+    {
+        if(!alGenFilters)
+        {
+            return false;  // EFX 不可用
+        }
+
+        scene_mutex.Lock();
+
+        scene_lowpass_gain = std::clamp(gain, 0.0f, 1.0f);
+        scene_lowpass_gainhf = std::clamp(gain_hf, 0.0f, 1.0f);
+        scene_lowpass_enabled = true;
+
+        for(auto source : source_list)
+        {
+            if(source)
+            {
+                source->last_filter_gain = -1.0f;
+                source->last_filter_gainhf = -1.0f;
+            }
+        }
+
+        scene_mutex.Unlock();
+        return true;
+    }
+
+    /**
+     * 设置场景级低通参数(结构体版本)
+     */
+    bool SpatialAudioWorld::SetSceneLowpass(const SceneLowpassConfig &config)
+    {
+        if(!config.enable)
+        {
+            DisableSceneLowpass();
+            return true;
+        }
+
+        return SetSceneLowpass(config.gain, config.gain_hf);
+    }
+
+    /**
+     * 禁用场景级低通
+     */
+    void SpatialAudioWorld::DisableSceneLowpass()
+    {
+        EnableSceneLowpass(false);
     }
 
     /**

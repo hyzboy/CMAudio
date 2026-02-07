@@ -2,6 +2,8 @@
 #include<hgl/audio/OpenAL.h>
 #include<hgl/log/Log.h>
 
+#include <algorithm>
+
 using namespace openal;
 namespace hgl
 {
@@ -21,6 +23,11 @@ namespace hgl
     {
         index=InvalidIndex;
         Buffer=nullptr;
+        direct_filter=0;
+        filter_type=AudioFilterType::None;
+        filter_gain=1.0f;
+        filter_gain_lf=1.0f;
+        filter_gain_hf=1.0f;
     }
 
     /**
@@ -253,6 +260,227 @@ namespace hgl
         alSourcef(index, AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
     }
 
+    bool AudioSource::SetLowpassFilter(const float gain,const float gain_hf)
+    {
+        if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
+            return(false);
+        if(index==InvalidIndex)return(false);
+
+        const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
+        const float clamped_gain_hf = std::clamp(gain_hf, 0.0f, 1.0f);
+
+        ALuint filter_id = direct_filter;
+        if(filter_id==0)
+        {
+            alGetError();
+            alGenFilters(1,&filter_id);
+            if(alGetError()!=AL_NO_ERROR)
+                return(false);
+        }
+
+        alFilteri(filter_id, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_LOWPASS_GAIN, clamped_gain);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_LOWPASS_GAINHF, clamped_gain_hf);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        direct_filter = filter_id;
+        filter_type = AudioFilterType::Lowpass;
+        filter_gain = clamped_gain;
+        filter_gain_hf = clamped_gain_hf;
+        filter_gain_lf = 1.0f;
+        return(true);
+    }
+
+    bool AudioSource::SetHighpassFilter(const float gain,const float gain_lf)
+    {
+        if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
+            return(false);
+        if(index==InvalidIndex)return(false);
+
+        const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
+        const float clamped_gain_lf = std::clamp(gain_lf, 0.0f, 1.0f);
+
+        ALuint filter_id = direct_filter;
+        if(filter_id==0)
+        {
+            alGetError();
+            alGenFilters(1,&filter_id);
+            if(alGetError()!=AL_NO_ERROR)
+                return(false);
+        }
+
+        alFilteri(filter_id, AL_FILTER_TYPE, AL_FILTER_HIGHPASS);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_HIGHPASS_GAIN, clamped_gain);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_HIGHPASS_GAINLF, clamped_gain_lf);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        direct_filter = filter_id;
+        filter_type = AudioFilterType::Highpass;
+        filter_gain = clamped_gain;
+        filter_gain_lf = clamped_gain_lf;
+        filter_gain_hf = 1.0f;
+        return(true);
+    }
+
+    bool AudioSource::SetBandpassFilter(const float gain,const float gain_lf,const float gain_hf)
+    {
+        if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
+            return(false);
+        if(index==InvalidIndex)return(false);
+
+        const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
+        const float clamped_gain_lf = std::clamp(gain_lf, 0.0f, 1.0f);
+        const float clamped_gain_hf = std::clamp(gain_hf, 0.0f, 1.0f);
+
+        ALuint filter_id = direct_filter;
+        if(filter_id==0)
+        {
+            alGetError();
+            alGenFilters(1,&filter_id);
+            if(alGetError()!=AL_NO_ERROR)
+                return(false);
+        }
+
+        alFilteri(filter_id, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_BANDPASS_GAIN, clamped_gain);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_BANDPASS_GAINLF, clamped_gain_lf);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alFilterf(filter_id, AL_BANDPASS_GAINHF, clamped_gain_hf);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        if(alGetError()!=AL_NO_ERROR)
+        {
+            if(direct_filter==0 && alDeleteFilters)
+                alDeleteFilters(1,&filter_id);
+            return(false);
+        }
+
+        direct_filter = filter_id;
+        filter_type = AudioFilterType::Bandpass;
+        filter_gain = clamped_gain;
+        filter_gain_lf = clamped_gain_lf;
+        filter_gain_hf = clamped_gain_hf;
+        return(true);
+    }
+
+    bool AudioSource::SetFilter(const AudioFilterConfig &config)
+    {
+        if(!config.enable || config.type==AudioFilterType::None)
+        {
+            DisableFilter();
+            return(true);
+        }
+
+        switch(config.type)
+        {
+            case AudioFilterType::Lowpass:
+                return SetLowpassFilter(config.gain, config.gain_hf);
+            case AudioFilterType::Highpass:
+                return SetHighpassFilter(config.gain, config.gain_lf);
+            case AudioFilterType::Bandpass:
+                return SetBandpassFilter(config.gain, config.gain_lf, config.gain_hf);
+            default:
+                break;
+        }
+
+        return(false);
+    }
+
+    void AudioSource::DisableFilter()
+    {
+        if(index!=InvalidIndex && alSourcei)
+            alSourcei(index, AL_DIRECT_FILTER, AL_FILTER_NULL);
+
+        if(direct_filter!=0 && alDeleteFilters)
+            alDeleteFilters(1,&direct_filter);
+
+        direct_filter=0;
+        filter_type=AudioFilterType::None;
+        filter_gain=1.0f;
+        filter_gain_lf=1.0f;
+        filter_gain_hf=1.0f;
+    }
+
     /**
      * 播放当前音源
      */
@@ -394,6 +622,7 @@ namespace hgl
         if(!alDeleteSources)return;
         if(index==InvalidIndex)return;
 
+        DisableFilter();
         alSourceStop(index);
         alSourcei(index,AL_BUFFER,0);
         alDeleteSources(1,&index);
