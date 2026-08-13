@@ -47,10 +47,10 @@ namespace hgl::audio
 
         bool HasAnyEffects() const;
         AudioFilterConfig BuildRandomFilterConfig(const AudioMixerSourceConfig& config);
-        void ApplyLowpass(float* samples, uint count, float alpha);
-        void ApplyHighpass(float* samples, uint count, float alpha);
-        void ApplyFilter(float* samples, uint count, const AudioFilterConfig& config);
-        void ApplySimpleReverb(float* samples, uint count, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config);
+        void ApplyLowpass(float* samples, uint count, uint channels, float alpha);
+        void ApplyHighpass(float* samples, uint count, uint channels, float alpha);
+        void ApplyFilter(float* samples, uint count, uint channels, const AudioFilterConfig& config);
+        void ApplySimpleReverb(float* samples, uint count, uint channels, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config);
         bool ConvertFloatToOutput(const float* input, uint sampleCount, void** outputData, uint* outputSize);
 
     public:
@@ -92,7 +92,7 @@ namespace hgl::audio
 
         /**
             * 设置输出格式
-            * @param format 输出音频格式 (AL_FORMAT_MONO8/MONO16)
+            * @param format 输出音频格式 (AL_FORMAT_*，声道数须与音源一致)
             * @param sampleRate 输出采样率 (如44100, 48000)
             */
         void SetOutputFormat(uint format, uint sampleRate);

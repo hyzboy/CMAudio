@@ -10,7 +10,7 @@ namespace hgl::audio
     /**
      * 音频混音器
      * 用于将多个音轨叠加混音成一个新的音频数据
-     * 仅支持单声道音频，支持时间偏移、音量调整、音调变化等变换
+     * 支持单声道及多声道音频，支持时间偏移、音量调整、音调变化等变换
      * 多个音源必须统一格式与采样率，不在此处进行重采样
      */
     class AudioMixer
@@ -47,16 +47,11 @@ namespace hgl::audio
 
         AudioDataInfo commonInfo;               ///< 统一音频格式信息
         bool hasCommonInfo;                     ///< 是否已设置统一格式
-        uint outputFormat;                      ///< 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
+        uint outputFormat;                      ///< 输出格式 (AL_FORMAT_*)
 
         // 内存池 - 避免频繁分配/释放
         AudioMemoryPool<float> poolBuffer;      ///< 主混音缓冲池
         AudioMemoryPool<float> tempBuffer;      ///< 临时格式转换缓冲池
-
-        /**
-            * 获取音频格式信息
-            */
-        bool ParseAudioFormat(uint format, AudioDataInfo& info);
 
         /**
             * 将整数采样转换为浮点 (-1.0 到 1.0)
@@ -64,15 +59,16 @@ namespace hgl::audio
         void ConvertToFloat(const void* input, uint inputSize, float** output, uint* outputCount, const AudioDataInfo& info);
 
         /**
-            * 将浮点采样转换为整数格式
+            * 将浮点采样转换为目标格式
             */
-        void ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, uint targetFormat);
+        void ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, const AudioDataInfo& outputInfo);
 
         /**
             * 应用简单的音调变化(线性插值重采样) - float版本
+            * 按帧处理，逐声道插值
             */
-        void ApplyPitchShift(const float* input, uint inputCount,
-                            float** output, uint* outputCount, float pitch);
+        void ApplyPitchShift(const float* input, uint inputFrameCount, uint channels,
+                            float** output, uint* outputFrameCount, float pitch);
 
         /**
             * 软削波函数 - 使用tanh提供平滑的削波效果
@@ -158,7 +154,7 @@ namespace hgl::audio
 
         /**
             * 设置输出格式
-            * @param format 输出格式 (AL_FORMAT_MONO16 或 AL_FORMAT_MONO_FLOAT32)
+            * @param format 输出格式 (AL_FORMAT_*，须与音源声道数一致)
             */
         void SetOutputFormat(uint format) { outputFormat = format; }
 

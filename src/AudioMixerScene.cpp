@@ -3,6 +3,7 @@
 #include<string.h>
 #include<algorithm>
 #include<vector>
+#include<cstdint>
 
 using namespace openal;
 
@@ -81,37 +82,49 @@ namespace hgl
             return filter;
         }
 
-        void AudioMixerScene::ApplyLowpass(float* samples, uint count, float alpha)
+        void AudioMixerScene::ApplyLowpass(float* samples, uint count, uint channels, float alpha)
         {
             if(!samples || count == 0)
                 return;
 
-            float y = samples[0];
-            for(uint i = 0; i < count; i++)
+            if(channels == 0)
+                channels = 1;
+
+            for(uint ch = 0; ch < channels; ch++)
             {
-                y = y + alpha * (samples[i] - y);
-                samples[i] = y;
+                float y = samples[ch];
+                for(uint i = ch; i < count; i += channels)
+                {
+                    y = y + alpha * (samples[i] - y);
+                    samples[i] = y;
+                }
             }
         }
 
-        void AudioMixerScene::ApplyHighpass(float* samples, uint count, float alpha)
+        void AudioMixerScene::ApplyHighpass(float* samples, uint count, uint channels, float alpha)
         {
             if(!samples || count == 0)
                 return;
 
-            float y = 0.0f;
-            float x_prev = samples[0];
+            if(channels == 0)
+                channels = 1;
 
-            for(uint i = 0; i < count; i++)
+            for(uint ch = 0; ch < channels; ch++)
             {
-                float x = samples[i];
-                y = alpha * (y + x - x_prev);
-                samples[i] = y;
-                x_prev = x;
+                float y = 0.0f;
+                float x_prev = samples[ch];
+
+                for(uint i = ch; i < count; i += channels)
+                {
+                    float x = samples[i];
+                    y = alpha * (y + x - x_prev);
+                    samples[i] = y;
+                    x_prev = x;
+                }
             }
         }
 
-        void AudioMixerScene::ApplyFilter(float* samples, uint count, const AudioFilterConfig& config)
+        void AudioMixerScene::ApplyFilter(float* samples, uint count, uint channels, const AudioFilterConfig& config)
         {
             if(!config.enable || config.type == AudioFilterType::None)
                 return;
@@ -122,14 +135,14 @@ namespace hgl
             switch(config.type)
             {
                 case AudioFilterType::Lowpass:
-                    ApplyLowpass(samples, count, alpha_lp);
+                    ApplyLowpass(samples, count, channels, alpha_lp);
                     break;
                 case AudioFilterType::Highpass:
-                    ApplyHighpass(samples, count, alpha_hp);
+                    ApplyHighpass(samples, count, channels, alpha_hp);
                     break;
                 case AudioFilterType::Bandpass:
-                    ApplyLowpass(samples, count, alpha_lp);
-                    ApplyHighpass(samples, count, alpha_hp);
+                    ApplyLowpass(samples, count, channels, alpha_lp);
+                    ApplyHighpass(samples, count, channels, alpha_hp);
                     break;
                 default:
                     break;
@@ -144,10 +157,13 @@ namespace hgl
             }
         }
 
-        void AudioMixerScene::ApplySimpleReverb(float* samples, uint count, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config)
+        void AudioMixerScene::ApplySimpleReverb(float* samples, uint count, uint channels, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config)
         {
             if(!config.enable || count == 0 || sampleRate == 0)
                 return;
+
+            if(channels == 0)
+                channels = 1;
 
             float delay_ms = std::clamp(config.delay_ms, 1.0f, 200.0f);
             float feedback = std::clamp(config.feedback, 0.0f, 0.95f);
@@ -157,21 +173,27 @@ namespace hgl
             if(delay_samples < 1)
                 return;
 
+            // 每个声道独立使用一个延迟缓冲
             std::vector<float> delayBuffer(delay_samples, 0.0f);
-            uint index = 0;
 
-            for(uint i = 0; i < count; i++)
+            for(uint ch = 0; ch < channels; ch++)
             {
-                float dry = samples[i];
-                float delayed = delayBuffer[index];
-                float wet = delayed;
+                std::fill(delayBuffer.begin(), delayBuffer.end(), 0.0f);
+                uint index = 0;
 
-                samples[i] = dry * (1.0f - mix) + wet * mix;
-                delayBuffer[index] = dry + delayed * feedback;
+                for(uint i = ch; i < count; i += channels)
+                {
+                    float dry = samples[i];
+                    float delayed = delayBuffer[index];
+                    float wet = delayed;
 
-                index++;
-                if(index >= delay_samples)
-                    index = 0;
+                    samples[i] = dry * (1.0f - mix) + wet * mix;
+                    delayBuffer[index] = dry + delayed * feedback;
+
+                    index++;
+                    if(index >= delay_samples)
+                        index = 0;
+                }
             }
         }
 
@@ -181,14 +203,35 @@ namespace hgl
             if(!input || !outputData || !outputSize)
                 return(false);
 
-            if(outputFormat == AL_FORMAT_MONO_FLOAT32)
+            AudioDataInfo outInfo;
+            if(!ParseAudioFormatInfo(outputFormat, outInfo))
+                return(false);
+
+            if(outInfo.isFloat && outInfo.bitsPerSample == 32)
             {
                 *outputData = (void*)input;
                 *outputSize = sampleCount * sizeof(float);
                 return(true);
             }
 
-            if(outputFormat == AL_FORMAT_MONO16)
+            if(outInfo.bitsPerSample == 32)
+            {
+                uint totalSize = sampleCount * sizeof(int32_t);
+                tempBuffer.Ensure(totalSize);
+                int32_t* output = (int32_t*)tempBuffer.Get();
+
+                for(uint i = 0; i < sampleCount; i++)
+                {
+                    float sample = std::clamp(input[i], -1.0f, 1.0f);
+                    output[i] = (int32_t)((double)sample * 2147483647.0);
+                }
+
+                *outputData = output;
+                *outputSize = totalSize;
+                return(true);
+            }
+
+            if(outInfo.bitsPerSample == 16)
             {
                 uint totalSize = sampleCount * sizeof(int16_t);
                 tempBuffer.Ensure(totalSize);
@@ -205,7 +248,7 @@ namespace hgl
                 return(true);
             }
 
-            if(outputFormat == AL_FORMAT_MONO8)
+            if(outInfo.bitsPerSample == 8)
             {
                 uint totalSize = sampleCount * sizeof(int8_t);
                 tempBuffer.Ensure(totalSize);
@@ -320,11 +363,25 @@ namespace hgl
                    OS_TEXT(" seconds, output format=") + OSString::numberOf((int)outputFormat) +
                    OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputSampleRate));
 
-            if(outputFormat != AL_FORMAT_MONO8 &&
-               outputFormat != AL_FORMAT_MONO16 &&
-               outputFormat != AL_FORMAT_MONO_FLOAT32)
+            AudioDataInfo sourceInfo;
+            if(!ParseAudioFormatInfo(sourceFormat, sourceInfo))
             {
-                LogError(OS_TEXT("Unsupported audio format (only mono supported)"));
+                LogError(OS_TEXT("Unsupported source format"));
+                RETURN_FALSE;
+            }
+
+            const uint channels = sourceInfo.channels ? sourceInfo.channels : 1;
+
+            AudioDataInfo outInfo;
+            if(!ParseAudioFormatInfo(outputFormat, outInfo))
+            {
+                LogError(OS_TEXT("Unsupported output format"));
+                RETURN_FALSE;
+            }
+
+            if(outInfo.channels != channels)
+            {
+                LogError(OS_TEXT("Output channel count must match source channel count"));
                 RETURN_FALSE;
             }
 
@@ -334,12 +391,13 @@ namespace hgl
                 RETURN_FALSE;
             }
 
-            bool mix_in_float = (outputFormat == AL_FORMAT_MONO_FLOAT32) || HasAnyEffects();
+            bool mix_in_float = outInfo.isFloat || HasAnyEffects();
 
-            uint bytesPerSample = mix_in_float ? sizeof(float) : (outputFormat == AL_FORMAT_MONO8 ? 1 : 2);
-            uint bytesPerFrame = bytesPerSample;  // 单声道，每帧就是一个采样
-            uint totalSamples = (uint)(duration * outputSampleRate);
-            uint totalSize = totalSamples * bytesPerFrame;
+            uint bytesPerSample = mix_in_float ? sizeof(float) : (outInfo.bitsPerSample / 8);
+            uint bytesPerFrame = bytesPerSample * channels;
+            uint totalFrames = (uint)(duration * outputSampleRate);
+            uint totalSamples = totalFrames * channels;
+            uint totalSize = totalFrames * bytesPerFrame;
 
             // 使用内存池分配输出缓冲区（预分配2倍大小以减少重新分配）
             poolBuffer.EnsureWithEstimate(totalSize, totalSize);
@@ -373,7 +431,9 @@ namespace hgl
                         LogError(OS_TEXT("Failed to add source audio for mixer instance"));
                         RETURN_FALSE;
                     }
-                    instanceMixer.SetOutputFormat(mix_in_float ? AL_FORMAT_MONO_FLOAT32 : outputFormat);  // 设置输出格式
+                    // 浮点混音时，AudioMixer::Mix 会直接透传按源声道数交织的 float 缓冲，
+                    // 输出格式声明的声道数被忽略，因此 MONO_FLOAT32 仅作为占位符。
+                    instanceMixer.SetOutputFormat(mix_in_float ? AL_FORMAT_MONO_FLOAT32 : outputFormat);
 
                     // 生成随机时间偏移
                     if(i == 0)
@@ -433,8 +493,8 @@ namespace hgl
                                         reverb.mix = std::clamp(reverb.mix + RandomFloat(-reverb.mix_rand, reverb.mix_rand), 0.0f, 1.0f);
                                 }
 
-                                ApplyFilter(instanceSamples, sampleCount, filter);
-                                ApplySimpleReverb(instanceSamples, sampleCount, outputSampleRate, reverb);
+                                ApplyFilter(instanceSamples, sampleCount, channels, filter);
+                                ApplySimpleReverb(instanceSamples, sampleCount, channels, outputSampleRate, reverb);
                             }
 
                             float* outputSamples = (float*)outputBuffer;
@@ -443,7 +503,7 @@ namespace hgl
                                 outputSamples[s] += instanceSamples[s];
                             }
                         }
-                        else if(outputFormat == AL_FORMAT_MONO16)
+                        else if(outInfo.bitsPerSample == 16)
                         {
                             int16_t* outputSamples = (int16_t*)outputBuffer;
                             const int16_t* instanceSamples = (const int16_t*)tempBuffer.Get();
@@ -462,7 +522,7 @@ namespace hgl
                                 outputSamples[s] = (int16_t)mixed;
                             }
                         }
-                        else if(outputFormat == AL_FORMAT_MONO8)
+                        else if(outInfo.bitsPerSample == 8)
                         {
                             int8_t* outputSamples = (int8_t*)outputBuffer;
                             const int8_t* instanceSamples = (const int8_t*)tempBuffer.Get();
@@ -479,6 +539,25 @@ namespace hgl
                                 if(mixed < -128) mixed = -128;
 
                                 outputSamples[s] = (int8_t)mixed;
+                            }
+                        }
+                        else if(outInfo.bitsPerSample == 32)
+                        {
+                            int32_t* outputSamples = (int32_t*)outputBuffer;
+                            const int32_t* instanceSamples = (const int32_t*)tempBuffer.Get();
+                            uint outputSampleCount = totalSize / sizeof(int32_t);
+                            uint instanceSampleCount = instanceSize / sizeof(int32_t);
+                            uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
+
+                            for(uint s = 0; s < sampleCount; s++)
+                            {
+                                int64_t mixed = (int64_t)outputSamples[s] + instanceSamples[s];
+
+                                // 限幅
+                                if(mixed > 2147483647LL) mixed = 2147483647LL;
+                                if(mixed < -2147483648LL) mixed = -2147483648LL;
+
+                                outputSamples[s] = (int32_t)mixed;
                             }
                         }
                     }

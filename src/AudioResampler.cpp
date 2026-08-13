@@ -120,7 +120,7 @@ namespace hgl::audio
                     float sample = input[i];
                     if(sample > 1.0f) sample = 1.0f;
                     if(sample < -1.0f) sample = -1.0f;
-                    dst[i] = static_cast<int32_t>(sample * 2147483647.0f);
+                    dst[i] = static_cast<int32_t>(static_cast<double>(sample) * 2147483647.0);
                 }
                 *output = data;
                 return;

@@ -3,6 +3,7 @@
 #include<hgl/type/Smart.h>
 #include<math.h>
 #include<string.h>
+#include<cstdint>
 
 using namespace openal;
 
@@ -25,35 +26,49 @@ namespace hgl
         }
 
         /**
-         * 解析音频格式 - 仅支持单声道
+         * 解析音频格式 - 支持单声道及多声道
          */
-        bool AudioMixer::ParseAudioFormat(uint format, AudioDataInfo& info)
+        bool ParseAudioFormatInfo(uint format, AudioDataInfo& info)
         {
             info.format = format;
-            info.channels = 1;  // 仅支持单声道
             info.isFloat = false;
 
             switch(format)
             {
-                case AL_FORMAT_MONO8:
-                    info.bitsPerSample = 8;
-                    break;
+                case AL_FORMAT_MONO8:        info.bitsPerSample=8;  info.channels=1; return true;
+                case AL_FORMAT_MONO16:       info.bitsPerSample=16; info.channels=1; return true;
+                case AL_FORMAT_MONO_FLOAT32: info.bitsPerSample=32; info.channels=1; info.isFloat=true; return true;
 
-                case AL_FORMAT_MONO16:
-                    info.bitsPerSample = 16;
-                    break;
+                case AL_FORMAT_STEREO8:        info.bitsPerSample=8;  info.channels=2; return true;
+                case AL_FORMAT_STEREO16:       info.bitsPerSample=16; info.channels=2; return true;
+                case AL_FORMAT_STEREO_FLOAT32: info.bitsPerSample=32; info.channels=2; info.isFloat=true; return true;
 
-                case AL_FORMAT_MONO_FLOAT32:
-                    info.bitsPerSample = 32;
-                    info.isFloat = true;
-                    break;
+                case AL_FORMAT_QUAD8:  info.bitsPerSample=8;  info.channels=4; return true;
+                case AL_FORMAT_QUAD16: info.bitsPerSample=16; info.channels=4; return true;
+                case AL_FORMAT_QUAD32: info.bitsPerSample=32; info.channels=4; return true;
+
+                case AL_FORMAT_REAR8:  info.bitsPerSample=8;  info.channels=4; return true;
+                case AL_FORMAT_REAR16: info.bitsPerSample=16; info.channels=4; return true;
+                case AL_FORMAT_REAR32: info.bitsPerSample=32; info.channels=4; return true;
+
+                case AL_FORMAT_51CHN8:  info.bitsPerSample=8;  info.channels=6; return true;
+                case AL_FORMAT_51CHN16: info.bitsPerSample=16; info.channels=6; return true;
+                case AL_FORMAT_51CHN32: info.bitsPerSample=32; info.channels=6; return true;
+
+                case AL_FORMAT_61CHN8:  info.bitsPerSample=8;  info.channels=7; return true;
+                case AL_FORMAT_61CHN16: info.bitsPerSample=16; info.channels=7; return true;
+                case AL_FORMAT_61CHN32: info.bitsPerSample=32; info.channels=7; return true;
+
+                case AL_FORMAT_71CHN8:  info.bitsPerSample=8;  info.channels=8; return true;
+                case AL_FORMAT_71CHN16: info.bitsPerSample=16; info.channels=8; return true;
+                case AL_FORMAT_71CHN32: info.bitsPerSample=32; info.channels=8; return true;
 
                 default:
-                    LogError(OS_TEXT("Unsupported audio format (only mono supported): ") + OSString::numberOf(format));
+                    GLogError(OS_TEXT("Unsupported audio format: ") + OSString::numberOf(format));
                     RETURN_FALSE;
             }
 
-            return(true);
+            return false;
         }
 
         /**
@@ -69,7 +84,22 @@ namespace hgl
             tempBuffer.Ensure(*outputCount);
             *output = tempBuffer.Get();
 
-            if(info.bitsPerSample == 16)
+            if(info.isFloat && info.bitsPerSample == 32)
+            {
+                // 已经是float，直接复制
+                const float* samples = (const float*)input;
+                memcpy(*output, samples, (*outputCount) * sizeof(float));
+            }
+            else if(info.bitsPerSample == 32)
+            {
+                const int32_t* samples = (const int32_t*)input;
+                for(uint i = 0; i < *outputCount; i++)
+                {
+                    // 转换为 -1.0 到 1.0 范围
+                    (*output)[i] = samples[i] / 2147483648.0f;
+                }
+            }
+            else if(info.bitsPerSample == 16)
             {
                 const int16_t* samples = (const int16_t*)input;
                 for(uint i = 0; i < *outputCount; i++)
@@ -86,12 +116,6 @@ namespace hgl
                     // 转换为 -1.0 到 1.0 范围
                     (*output)[i] = samples[i] / 128.0f;
                 }
-            }
-            else if(info.isFloat && info.bitsPerSample == 32)
-            {
-                // 已经是float，直接复制
-                const float* samples = (const float*)input;
-                memcpy(*output, samples, (*outputCount) * sizeof(float));
             }
         }
 
@@ -114,18 +138,35 @@ namespace hgl
 
         /**
          * 将浮点采样转换为目标格式
-         * 支持float32和int16输出，int16转换时可选择使用TPDF抖动
+         * 支持float32/int32/int16/int8输出，int16转换时可选择使用TPDF抖动
          */
-        void AudioMixer::ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, uint targetFormat)
+        void AudioMixer::ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, const AudioDataInfo& outputInfo)
         {
-            if(targetFormat == AL_FORMAT_MONO_FLOAT32)
+            if(outputInfo.isFloat && outputInfo.bitsPerSample == 32)
             {
                 // 输出float32
                 *outputSize = sampleCount * sizeof(float);
                 *output = new float[sampleCount];
                 memcpy(*output, input, *outputSize);
             }
-            else if(targetFormat == AL_FORMAT_MONO16)
+            else if(outputInfo.bitsPerSample == 32)
+            {
+                // 输出int32
+                *outputSize = sampleCount * sizeof(int32_t);
+                int32_t* samples = new int32_t[sampleCount];
+                *output = samples;
+
+                for(uint i = 0; i < sampleCount; i++)
+                {
+                    // 钳位到 -1.0 到 1.0
+                    float sample = input[i];
+                    if(sample > 1.0f) sample = 1.0f;
+                    if(sample < -1.0f) sample = -1.0f;
+
+                    samples[i] = (int32_t)((double)sample * 2147483647.0);
+                }
+            }
+            else if(outputInfo.bitsPerSample == 16)
             {
                 // 输出int16
                 *outputSize = sampleCount * sizeof(int16_t);
@@ -167,7 +208,7 @@ namespace hgl
                     }
                 }
             }
-            else if(targetFormat == AL_FORMAT_MONO8)
+            else if(outputInfo.bitsPerSample == 8)
             {
                 // 输出int8
                 *outputSize = sampleCount * sizeof(int8_t);
@@ -199,7 +240,7 @@ namespace hgl
             }
 
             AudioDataInfo info;
-            if(!ParseAudioFormat(format, info))
+            if(!ParseAudioFormatInfo(format, info))
             {
                 return -1;
             }
@@ -268,47 +309,59 @@ namespace hgl
 
         /**
          * 应用音调变化(简单的线性插值重采样) - float版本
+         * 按帧处理，逐声道线性插值
          */
-        void AudioMixer::ApplyPitchShift(const float* input, uint inputCount,
-                                         float** output, uint* outputCount, float pitch)
+        void AudioMixer::ApplyPitchShift(const float* input, uint inputFrameCount, uint channels,
+                                         float** output, uint* outputFrameCount, float pitch)
         {
+            if(channels == 0)
+                channels = 1;
+
             if(pitch < MinPitch || pitch > MaxPitch)
                 pitch = DefaultPitch;
 
             // 如果音调不变，直接复制
             if(fabs(pitch - DefaultPitch) < 0.001f)
             {
-                *outputCount = inputCount;
-                *output = new float[inputCount];
-                memcpy(*output, input, inputCount * sizeof(float));
+                *outputFrameCount = inputFrameCount;
+                *output = new float[inputFrameCount * channels];
+                memcpy(*output, input, inputFrameCount * channels * sizeof(float));
                 return;
             }
 
-            // 计算输出大小
-            *outputCount = (uint)(inputCount / pitch);
-            *output = new float[*outputCount];
+            // 计算输出帧数
+            *outputFrameCount = (uint)(inputFrameCount / pitch);
+            *output = new float[*outputFrameCount * channels];
 
-            // 线性插值重采样
-            for(uint i = 0; i < *outputCount; i++)
+            const uint inputSampleCount = inputFrameCount * channels;
+
+            // 逐声道线性插值重采样
+            for(uint ch = 0; ch < channels; ch++)
             {
-                float sourcePos = i * pitch;
-                uint sourceIndex = (uint)sourcePos;
-                float fraction = sourcePos - sourceIndex;
+                for(uint i = 0; i < *outputFrameCount; i++)
+                {
+                    float sourcePos = i * pitch;
+                    uint sourceFrame = (uint)sourcePos;
+                    float fraction = sourcePos - sourceFrame;
 
-                // 确保不会越界
-                if(sourceIndex >= inputCount)
-                    sourceIndex = inputCount - 1;
+                    // 确保不会越界
+                    if(sourceFrame >= inputFrameCount)
+                        sourceFrame = inputFrameCount - 1;
 
-                // 线性插值
-                float sample1 = input[sourceIndex];
-                float sample2;
+                    uint idx0 = sourceFrame * channels + ch;
+                    uint idx1 = idx0 + channels;
 
-                if(sourceIndex + 1 < inputCount)
-                    sample2 = input[sourceIndex + 1];
-                else
-                    sample2 = sample1; // 最后一个采样，使用相同的值
+                    // 线性插值
+                    float sample1 = input[idx0];
+                    float sample2;
 
-                (*output)[i] = sample1 * (1.0f - fraction) + sample2 * fraction;
+                    if(idx1 < inputSampleCount)
+                        sample2 = input[idx1];
+                    else
+                        sample2 = sample1; // 最后一个采样，使用相同的值
+
+                    (*output)[i * channels + ch] = sample1 * (1.0f - fraction) + sample2 * fraction;
+                }
             }
         }
 
@@ -373,9 +426,12 @@ namespace hgl
                     }
 
                     const SourceAudio& source = sources[track.sourceIndex];
+                    uint channels = source.info.channels;
+                    if(channels == 0) channels = 1;
+
                     uint bytesPerSample = source.info.bitsPerSample / 8;
-                    uint sourceSampleCount = source.dataSize / bytesPerSample;
-                    float sourceDuration = (float)sourceSampleCount / source.info.sampleRate;
+                    uint sourceFrameCount = (source.dataSize / bytesPerSample) / channels;
+                    float sourceDuration = (float)sourceFrameCount / source.info.sampleRate;
                     float trackEnd = track.timeOffset + sourceDuration / track.pitch;
 
                     if(trackEnd > loopLength)
@@ -383,8 +439,11 @@ namespace hgl
                 }
             }
 
-            // 计算输出采样数
-            uint outputSampleCount = (uint)(loopLength * commonInfo.sampleRate);
+            const uint channels = commonInfo.channels ? commonInfo.channels : 1;
+
+            // 计算输出帧数与采样数
+            uint outputFrameCount = (uint)(loopLength * commonInfo.sampleRate);
+            uint outputSampleCount = outputFrameCount * channels;
 
             // 预分配2倍大小的缓冲区以减少动态分配（基于用户要求）
             poolBuffer.Preallocate(outputSampleCount, 2.0f);
@@ -392,7 +451,8 @@ namespace hgl
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) +
                     OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength,3) +
                     OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)commonInfo.sampleRate) +
-                    OS_TEXT(", output format: ") + (outputFormat == AL_FORMAT_MONO_FLOAT32 ? OS_TEXT("float32") : OS_TEXT("int16")) +
+                    OS_TEXT(", output channels: ") + OSString::numberOf((int)channels) +
+                    OS_TEXT(", output format: ") + (commonInfo.isFloat ? OS_TEXT("float32") : OS_TEXT("int")) +
                     OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
 
             // 使用池缓冲区进行混音
@@ -415,17 +475,21 @@ namespace hgl
                 uint sourceFloatCount = 0;
                 ConvertToFloat(source.data, source.dataSize, &sourceFloat, &sourceFloatCount, source.info);
 
-                // 应用音调变化
+                // 应用音调变化（按帧处理）
+                uint sourceFrameCount = sourceFloatCount / channels;
                 float* pitchShiftedData = nullptr;
-                uint pitchShiftedCount = 0;
-                ApplyPitchShift(sourceFloat, sourceFloatCount,
-                              &pitchShiftedData, &pitchShiftedCount, track.pitch);
+                uint pitchShiftedFrameCount = 0;
+                ApplyPitchShift(sourceFloat, sourceFrameCount, channels,
+                              &pitchShiftedData, &pitchShiftedFrameCount, track.pitch);
 
-                // 计算起始位置
-                uint startSample = (uint)(track.timeOffset * commonInfo.sampleRate);
+                uint pitchShiftedSampleCount = pitchShiftedFrameCount * channels;
+
+                // 计算起始采样位置
+                uint startFrame = (uint)(track.timeOffset * commonInfo.sampleRate);
+                uint startSample = startFrame * channels;
 
                 // 混合到输出 (float混音，无需担心溢出)
-                for(uint i = 0; i < pitchShiftedCount && (startSample + i) < outputSampleCount; i++)
+                for(uint i = 0; i < pitchShiftedSampleCount && (startSample + i) < outputSampleCount; i++)
                 {
                     // 应用音量并混合 - float混音非常简单
                     mixBuffer[startSample + i] += pitchShiftedData[i] * track.volume * config.masterVolume;
@@ -469,7 +533,20 @@ namespace hgl
             // 如果都不启用，则可能存在超出[-1.0, 1.0]的数据，在转换时会被硬削波
 
             // 转换为目标格式（注意：不再使用mixBuffer，因为ConvertFromFloat会分配新内存）
-            ConvertFromFloat(mixBuffer, outputSampleCount, outputData, outputSize, outputFormat);
+            AudioDataInfo outputInfo;
+            if(!ParseAudioFormatInfo(outputFormat, outputInfo))
+            {
+                LogError(OS_TEXT("Unsupported output format"));
+                RETURN_FALSE;
+            }
+
+            if(!outputInfo.isFloat && outputInfo.channels != channels)
+            {
+                LogError(OS_TEXT("Output format channel count must match source channel count"));
+                RETURN_FALSE;
+            }
+
+            ConvertFromFloat(mixBuffer, outputSampleCount, outputData, outputSize, outputInfo);
 
             // 不再删除mixBuffer，因为它是池缓冲区
 

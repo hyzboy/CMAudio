@@ -66,9 +66,9 @@ namespace hgl
          */
         struct AudioDataInfo
         {
-            uint format;            ///< 音频格式 (AL_FORMAT_MONO8/MONO16/MONO_FLOAT32)
+            uint format;            ///< 音频格式 (AL_FORMAT_*)
             uint sampleRate;        ///< 采样率
-            uint channels;          ///< 声道数 (固定为1，仅支持单声道)
+            uint channels;          ///< 声道数 (1/2/4/6/7/8)
             uint bitsPerSample;     ///< 每个采样的位数 (8, 16, 32)
             bool isFloat;           ///< 是否为浮点格式
             uint dataSize;          ///< 数据大小(字节)
@@ -77,12 +77,20 @@ namespace hgl
             {
                 format = 0;
                 sampleRate = 0;
-                channels = 1;  // 固定为单声道
+                channels = 0;
                 bitsPerSample = 0;
                 isFloat = false;
                 dataSize = 0;
             }
         };
+
+        /**
+         * 解析音频格式，填充声道数、每采样位数、是否浮点
+         * @param format OpenAL格式常量(AL_FORMAT_*)
+         * @param info  输出格式信息
+         * @return 是否支持该格式
+         */
+        bool ParseAudioFormatInfo(uint format, AudioDataInfo& info);
 
     }//namespace audio
 }//namespace hgl
