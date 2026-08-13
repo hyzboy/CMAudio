@@ -11,11 +11,40 @@
 using namespace hgl;
 using namespace openal;
 
+ALenum GetOpusFormat16(const int channels)
+{
+    switch(channels)
+    {
+        case 1: return(AL_FORMAT_MONO16);
+        case 2: return(AL_FORMAT_STEREO16);
+        case 4: return(AL_FORMAT_QUAD16);
+        case 6: return(AL_FORMAT_51CHN16);
+        case 7: return(AL_FORMAT_61CHN16);
+        case 8: return(AL_FORMAT_71CHN16);
+        default: return(0);
+    }
+}
+
+ALenum GetOpusFormatFloat32(const int channels)
+{
+    switch(channels)
+    {
+        case 1: return(AL_FORMAT_MONO_FLOAT32);
+        case 2: return(AL_FORMAT_STEREO_FLOAT32);
+        default: return(0);
+    }
+}
+
 ALvoid LoadOpus(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **data, ALsizei *size, ALsizei *freq, ALboolean *loop)
 {
     OggOpusFile *of;
 
     int op_error;
+
+    *format=0;
+    *data=nullptr;
+    *size=0;
+    *freq=0;
 
     of=op_open_memory((const unsigned char *)memory,memory_size,&op_error);
 
@@ -24,9 +53,12 @@ ALvoid LoadOpus(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **dat
 
     const OpusHead *head=op_head(of,0);
 
-    if(head->channel_count==1)*format=AL_FORMAT_MONO16;else
-    if(head->channel_count==2)*format=AL_FORMAT_STEREO16;else
+    *format=GetOpusFormat16(head->channel_count);
+    if(!*format)
+    {
+        op_free(of);
         return;
+    }
 
     long pcm_total=op_pcm_total(of,-1)*head->channel_count;
 
@@ -63,6 +95,11 @@ ALvoid LoadOpusFloat32(ALbyte *memory, ALsizei memory_size,ALenum *format, float
 
     int op_error;
 
+    *format=0;
+    *data=nullptr;
+    *size=0;
+    *freq=0;
+
     of=op_open_memory((const unsigned char *)memory,memory_size,&op_error);
 
     if(!of)
@@ -70,9 +107,12 @@ ALvoid LoadOpusFloat32(ALbyte *memory, ALsizei memory_size,ALenum *format, float
 
     const OpusHead *head=op_head(of,0);
 
-    if(head->channel_count==1)*format=AL_FORMAT_MONO_FLOAT32;else
-    if(head->channel_count==2)*format=AL_FORMAT_STEREO_FLOAT32;else
+    *format=GetOpusFormatFloat32(head->channel_count);
+    if(!*format)
+    {
+        op_free(of);
         return;
+    }
 
     long pcm_total=op_pcm_total(of,-1)*head->channel_count;
 
@@ -119,9 +159,12 @@ void *OpenOpus(ALbyte *memory,ALsizei memory_size,ALenum *format,ALsizei *freq,d
 
     const OpusHead *head=op_head(of,0);
 
-    if(head->channel_count==1)*format=AL_FORMAT_MONO16;else
-    if(head->channel_count==2)*format=AL_FORMAT_STEREO16;else
+    *format=GetOpusFormat16(head->channel_count);
+    if(!*format)
+    {
+        op_free(of);
         return(nullptr);
+    }
 
     *freq=head->input_sample_rate;
 

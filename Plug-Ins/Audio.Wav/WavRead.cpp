@@ -67,6 +67,20 @@ typedef struct                                  /* WAV Chunk-header */
 }
 WAVChunkHdr_Struct;
 
+ALenum GetWAVFormat(const ALushort channels,const ALushort bits)
+{
+    switch(channels)
+    {
+        case 1: return(bits==8?AL_FORMAT_MONO8:AL_FORMAT_MONO16);
+        case 2: return(bits==8?AL_FORMAT_STEREO8:AL_FORMAT_STEREO16);
+        case 4: return(bits==8?AL_FORMAT_QUAD8:AL_FORMAT_QUAD16);
+        case 6: return(bits==8?AL_FORMAT_51CHN8:AL_FORMAT_51CHN16);
+        case 7: return(bits==8?AL_FORMAT_61CHN8:AL_FORMAT_61CHN16);
+        case 8: return(bits==8?AL_FORMAT_71CHN8:AL_FORMAT_71CHN16);
+        default: return(0);
+    }
+}
+
 ALvoid alutLoadWAVMemory(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **data, ALsizei *size, ALsizei *freq, ALboolean *loop)
 {
     WAVChunkHdr_Struct ChunkHdr;
@@ -99,8 +113,7 @@ ALvoid alutLoadWAVMemory(ALbyte *memory, ALsizei memory_size,ALenum *format, ALv
                     memcpy(&FmtHdr, Stream, sizeof(WAVFmtHdr_Struct));
                     if (FmtHdr.Format==0x0001)
                     {
-                        *format=(FmtHdr.Channels==1? (FmtHdr.BitsPerSample==8?AL_FORMAT_MONO8:AL_FORMAT_MONO16):
-                             (FmtHdr.BitsPerSample==8?AL_FORMAT_STEREO8:AL_FORMAT_STEREO16));
+                        *format=GetWAVFormat(FmtHdr.Channels,FmtHdr.BitsPerSample);
                         *freq=FmtHdr.SamplesPerSec;
                         Stream+=ChunkHdr.Size;
                     }

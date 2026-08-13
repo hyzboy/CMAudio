@@ -92,11 +92,20 @@ ALvoid LoadOGG(ALbyte *memory, ALsizei memory_size,ALenum *format, ALvoid **data
     ogg_memory.size=memory_size;
 
     *size=0;
+    *format=0;
+    *data=nullptr;
+    *freq=0;
 
     if(ov_open_callbacks(&ogg_memory,&ogg_stream,NULL,0,func)!=0)
         return;
 
     info    =ov_info(&ogg_stream,-1);
+
+    if(info->channels<1||info->channels>2)
+    {
+        ov_clear(&ogg_stream);
+        return;
+    }
 
     if(info->channels==1)*format=AL_FORMAT_MONO16;
                     else *format=AL_FORMAT_STEREO16;
@@ -156,6 +165,13 @@ void *OpenOGG(ALbyte *memory,ALsizei memory_size,ALenum *format,ALsizei *rate,do
         return(nullptr);
 
     info    =ov_info(&(ptr->ogg_stream),-1);
+
+    if(info->channels<1||info->channels>2)
+    {
+        ov_clear(&(ptr->ogg_stream));
+        delete ptr;
+        return(nullptr);
+    }
 
     if(info->channels==1)*format=AL_FORMAT_MONO16;
                     else *format=AL_FORMAT_STEREO16;

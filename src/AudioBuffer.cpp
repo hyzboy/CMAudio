@@ -35,16 +35,29 @@ namespace hgl
 
         const bool use_float_data=(IsSupportFloatAudioData()&&decode_float.Load);
 
+        bool use_float=use_float_data;
+
         if(use_float_data)
+        {
             decode_float.Load((ALbyte *)memory, memory_size, &format,(float **)&data, &size, &freq, &loop);
+
+            // 浮点解码失败(例如多声道浮点格式不受OpenAL支持)时，回退到16位解码
+            if(format==0||data==nullptr||size<=0)
+            {
+                use_float=false;
+                decode.Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
+            }
+        }
         else
+        {
             decode.Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
+        }
 
         alLastError();
 
         alBufferData(index, format, data, size, freq);
 
-        if(use_float_data)
+        if(use_float)
             decode_float.Clear(format, data, size, freq);
         else
             decode.Clear(format, data, size, freq);
