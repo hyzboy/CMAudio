@@ -1,5 +1,6 @@
 ﻿#include<hgl/audio/AudioFileType.h>
 #include<hgl/type/StrChar.h>
+#include"AudioDecode.h"
 
 namespace hgl
 {
@@ -64,6 +65,26 @@ namespace hgl
     {
         if(!RangeCheck(aft))return(nullptr);
 
-        return audio_decode_name[(size_t)aft-(size_t)AudioFileType::BEGIN_RANGE];
+        // 文件格式插件已通过 FileExtensions 能力上报扩展名，
+        // 这里优先按规范扩展名走动态映射，硬编码表作为兜底。
+        static const char *canonical_ext[]=
+        {
+            "wav",      // Wav
+            "ogg",      // Vorbis
+            "opus",     // Opus
+            nullptr     // MIDI: 多个插件均上报 mid/midi，无唯一映射，保持旧行为
+        };
+
+        const size_t idx=(size_t)aft-(size_t)AudioFileType::BEGIN_RANGE;
+
+        if(canonical_ext[idx])
+        {
+            const OSString *name=GetAudioPluginNameByExtension(canonical_ext[idx]);
+
+            if(name)
+                return name->c_str();
+        }
+
+        return audio_decode_name[idx];
     }
 }//namespace hgl

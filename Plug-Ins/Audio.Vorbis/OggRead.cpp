@@ -274,6 +274,23 @@ bool GetPlugInInterface(uint32 ver,void *data)
     return(true);
 }
 
+static const char *plugin_extensions[]={"ogg"};
+
+bool GetCapability(uint32 id,void *data)
+{
+    if(id==uint32(PlugInCapability::FileExtensions))
+    {
+        PlugInFileExtensions *fe=(PlugInFileExtensions *)data;
+
+        fe->count=1;
+        fe->items=plugin_extensions;
+
+        return(true);
+    }
+
+    return(false);
+}
+
 static PlugInInterface pii=
 {
     nullptr,
@@ -282,10 +299,7 @@ static PlugInInterface pii=
     GetPlugInIntro,
 
     GetPlugInInterface,
-    nullptr,
-
-    nullptr,
-    nullptr
+    GetCapability
 };
 
 HGL_PLUGIN_FUNC PlugInInterface *InitPlugIn()
