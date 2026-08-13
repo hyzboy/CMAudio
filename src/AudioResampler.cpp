@@ -5,6 +5,7 @@
 #include<samplerate.h>
 #include<cmath>
 #include<cstring>
+#include<cstdint>
 
 using namespace openal;
 
@@ -15,26 +16,46 @@ namespace hgl::audio
         struct FormatInfo
         {
             uint bitsPerSample = 0;
+            uint channels = 0;
             bool isFloat = false;
         };
 
         bool ParseFormat(uint format, FormatInfo& info)
         {
             info.bitsPerSample = 0;
+            info.channels = 0;
             info.isFloat = false;
 
             switch(format)
             {
-                case AL_FORMAT_MONO8:
-                    info.bitsPerSample = 8;
-                    return true;
-                case AL_FORMAT_MONO16:
-                    info.bitsPerSample = 16;
-                    return true;
-                case AL_FORMAT_MONO_FLOAT32:
-                    info.bitsPerSample = 32;
-                    info.isFloat = true;
-                    return true;
+                case AL_FORMAT_MONO8:        info.bitsPerSample=8;  info.channels=1; return true;
+                case AL_FORMAT_MONO16:       info.bitsPerSample=16; info.channels=1; return true;
+                case AL_FORMAT_MONO_FLOAT32: info.bitsPerSample=32; info.channels=1; info.isFloat=true; return true;
+
+                case AL_FORMAT_STEREO8:        info.bitsPerSample=8;  info.channels=2; return true;
+                case AL_FORMAT_STEREO16:       info.bitsPerSample=16; info.channels=2; return true;
+                case AL_FORMAT_STEREO_FLOAT32: info.bitsPerSample=32; info.channels=2; info.isFloat=true; return true;
+
+                case AL_FORMAT_QUAD8:  info.bitsPerSample=8;  info.channels=4; return true;
+                case AL_FORMAT_QUAD16: info.bitsPerSample=16; info.channels=4; return true;
+                case AL_FORMAT_QUAD32: info.bitsPerSample=32; info.channels=4; return true;
+
+                case AL_FORMAT_REAR8:  info.bitsPerSample=8;  info.channels=4; return true;
+                case AL_FORMAT_REAR16: info.bitsPerSample=16; info.channels=4; return true;
+                case AL_FORMAT_REAR32: info.bitsPerSample=32; info.channels=4; return true;
+
+                case AL_FORMAT_51CHN8:  info.bitsPerSample=8;  info.channels=6; return true;
+                case AL_FORMAT_51CHN16: info.bitsPerSample=16; info.channels=6; return true;
+                case AL_FORMAT_51CHN32: info.bitsPerSample=32; info.channels=6; return true;
+
+                case AL_FORMAT_61CHN8:  info.bitsPerSample=8;  info.channels=7; return true;
+                case AL_FORMAT_61CHN16: info.bitsPerSample=16; info.channels=7; return true;
+                case AL_FORMAT_61CHN32: info.bitsPerSample=32; info.channels=7; return true;
+
+                case AL_FORMAT_71CHN8:  info.bitsPerSample=8;  info.channels=8; return true;
+                case AL_FORMAT_71CHN16: info.bitsPerSample=16; info.channels=8; return true;
+                case AL_FORMAT_71CHN32: info.bitsPerSample=32; info.channels=8; return true;
+
                 default:
                     return false;
             }
@@ -45,6 +66,16 @@ namespace hgl::audio
             if(info.isFloat && info.bitsPerSample == 32)
             {
                 memcpy(output, input, sampleCount * sizeof(float));
+                return;
+            }
+
+            if(info.bitsPerSample == 32)
+            {
+                const int32_t* samples = static_cast<const int32_t*>(input);
+                for(uint i = 0; i < sampleCount; i++)
+                {
+                    output[i] = samples[i] / 2147483648.0f;
+                }
                 return;
             }
 
@@ -68,42 +99,56 @@ namespace hgl::audio
             }
         }
 
-        void ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, uint targetFormat)
+        void ConvertFromFloat(const float* input, uint sampleCount, const FormatInfo& info, void** output, uint* outputSize)
         {
-            if(targetFormat == AL_FORMAT_MONO_FLOAT32)
+            const uint bytesPerSample = info.bitsPerSample / 8;
+            *outputSize = sampleCount * bytesPerSample;
+            uint8_t* data = new uint8_t[*outputSize];
+
+            if(info.isFloat && info.bitsPerSample == 32)
             {
-                *outputSize = sampleCount * sizeof(float);
-                float* data = new float[sampleCount];
                 memcpy(data, input, *outputSize);
                 *output = data;
                 return;
             }
 
-            if(targetFormat == AL_FORMAT_MONO16)
+            if(info.bitsPerSample == 32)
             {
-                *outputSize = sampleCount * sizeof(int16_t);
-                int16_t* data = new int16_t[sampleCount];
+                int32_t* dst = reinterpret_cast<int32_t*>(data);
                 for(uint i = 0; i < sampleCount; i++)
                 {
                     float sample = input[i];
                     if(sample > 1.0f) sample = 1.0f;
                     if(sample < -1.0f) sample = -1.0f;
-                    data[i] = static_cast<int16_t>(sample * 32767.0f);
+                    dst[i] = static_cast<int32_t>(sample * 2147483647.0f);
                 }
                 *output = data;
                 return;
             }
 
-            if(targetFormat == AL_FORMAT_MONO8)
+            if(info.bitsPerSample == 16)
             {
-                *outputSize = sampleCount * sizeof(int8_t);
-                int8_t* data = new int8_t[sampleCount];
+                int16_t* dst = reinterpret_cast<int16_t*>(data);
                 for(uint i = 0; i < sampleCount; i++)
                 {
                     float sample = input[i];
                     if(sample > 1.0f) sample = 1.0f;
                     if(sample < -1.0f) sample = -1.0f;
-                    data[i] = static_cast<int8_t>(sample * 127.0f);
+                    dst[i] = static_cast<int16_t>(sample * 32767.0f);
+                }
+                *output = data;
+                return;
+            }
+
+            if(info.bitsPerSample == 8)
+            {
+                int8_t* dst = reinterpret_cast<int8_t*>(data);
+                for(uint i = 0; i < sampleCount; i++)
+                {
+                    float sample = input[i];
+                    if(sample > 1.0f) sample = 1.0f;
+                    if(sample < -1.0f) sample = -1.0f;
+                    dst[i] = static_cast<int8_t>(sample * 127.0f);
                 }
                 *output = data;
             }
@@ -126,15 +171,15 @@ namespace hgl::audio
         }
     }
 
-    bool ResampleMono(const void* inputData,
-                      uint inputSize,
-                      uint inputFormat,
-                      uint inputSampleRate,
-                      uint outputSampleRate,
-                      uint outputFormat,
-                      ResampleQuality quality,
-                      void** outputData,
-                      uint* outputSize)
+    bool Resample(const void* inputData,
+                  uint inputSize,
+                  uint inputFormat,
+                  uint inputSampleRate,
+                  uint outputSampleRate,
+                  uint outputFormat,
+                  ResampleQuality quality,
+                  void** outputData,
+                  uint* outputSize)
     {
         if(!inputData || inputSize == 0 || inputSampleRate == 0 || outputSampleRate == 0)
             return false;
@@ -159,15 +204,32 @@ namespace hgl::audio
             return false;
         }
 
-        uint bytesPerSample = inputInfo.bitsPerSample / 8;
-        uint inputSampleCount = inputSize / bytesPerSample;
+        if(inputInfo.channels != outputInfo.channels)
+        {
+            GLogError(OS_TEXT("Input and output channel counts must match for resampling"));
+            return false;
+        }
+
+        const uint channels = inputInfo.channels;
+        const uint bytesPerSample = inputInfo.bitsPerSample / 8;
+        const uint inputSampleCount = inputSize / bytesPerSample;
         if(inputSampleCount == 0)
             return false;
 
-        double ratio = static_cast<double>(outputSampleRate) / static_cast<double>(inputSampleRate);
-        uint outputSampleCount = static_cast<uint>(std::ceil(inputSampleCount * ratio));
-        if(outputSampleCount == 0)
+        if(inputSampleCount % channels != 0)
+        {
+            GLogError(OS_TEXT("Input size is not a whole number of frames"));
             return false;
+        }
+
+        const uint inputFrameCount = inputSampleCount / channels;
+
+        const double ratio = static_cast<double>(outputSampleRate) / static_cast<double>(inputSampleRate);
+        const uint outputFrameCount = static_cast<uint>(std::ceil(inputFrameCount * ratio));
+        if(outputFrameCount == 0)
+            return false;
+
+        const uint outputSampleCount = outputFrameCount * channels;
 
         float* inputFloat = new float[inputSampleCount];
         ConvertToFloat(inputData, inputSize, inputFloat, inputSampleCount, inputInfo);
@@ -177,13 +239,13 @@ namespace hgl::audio
         SRC_DATA data;
         data.data_in = inputFloat;
         data.data_out = outputFloat;
-        data.input_frames = static_cast<long>(inputSampleCount);
-        data.output_frames = static_cast<long>(outputSampleCount);
+        data.input_frames = static_cast<long>(inputFrameCount);
+        data.output_frames = static_cast<long>(outputFrameCount);
         data.end_of_input = 1;
         data.src_ratio = ratio;
 
-        int converter = ToLibSampleRateQuality(quality);
-        int result = src_simple(&data, converter, 1);
+        const int converter = ToLibSampleRateQuality(quality);
+        const int result = src_simple(&data, converter, static_cast<int>(channels));
         if(result != 0)
         {
             GLogError(OS_TEXT("libsamplerate failed"));
@@ -193,8 +255,8 @@ namespace hgl::audio
             return false;
         }
 
-        uint generated = static_cast<uint>(data.output_frames_gen);
-        if(generated == 0)
+        const uint generatedFrames = static_cast<uint>(data.output_frames_gen);
+        if(generatedFrames == 0)
         {
             delete[] inputFloat;
             delete[] outputFloat;
@@ -203,9 +265,23 @@ namespace hgl::audio
 
         delete[] inputFloat;
 
-        ConvertFromFloat(outputFloat, generated, outputData, outputSize, outputFormat);
+        const uint generated = generatedFrames * channels;
+        ConvertFromFloat(outputFloat, generated, outputInfo, outputData, outputSize);
         delete[] outputFloat;
 
         return true;
+    }
+
+    bool ResampleMono(const void* inputData,
+                      uint inputSize,
+                      uint inputFormat,
+                      uint inputSampleRate,
+                      uint outputSampleRate,
+                      uint outputFormat,
+                      ResampleQuality quality,
+                      void** outputData,
+                      uint* outputSize)
+    {
+        return Resample(inputData, inputSize, inputFormat, inputSampleRate, outputSampleRate, outputFormat, quality, outputData, outputSize);
     }
 }
