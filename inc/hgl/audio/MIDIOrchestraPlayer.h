@@ -4,6 +4,7 @@
 #include<hgl/thread/ThreadMutex.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
+#include<hgl/audio/GainEnvelope.h>
 #include<hgl/math/Vector.h>
 #include<hgl/time/Time.h>
 #include"AudioDecode.h"
@@ -128,18 +129,7 @@ namespace hgl
         Vector3f orchestra_center;                                                              ///<乐队中心位置
         float orchestra_scale;                                                                  ///<乐队缩放比例
 
-        struct
-        {
-            bool open;
-            uint64 time;
-            float gap;
-
-            struct
-            {
-                float gain;
-                double time;
-            }start,end;
-        }auto_gain;                                                                             ///<自动增益
+        audio::GainRamp auto_gain;                                                              ///<自动增益(增益过渡斜坡)
 
         bool ReadChannelData(int channel, ALuint buffer_id);
         bool UpdateAllChannelBuffers();

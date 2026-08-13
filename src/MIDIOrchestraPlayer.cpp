@@ -100,8 +100,6 @@ namespace hgl
             return;
         }
 
-        auto_gain.open=false;
-
         audio_ptr=nullptr;
 
         audio_data=nullptr;
@@ -482,31 +480,17 @@ namespace hgl
             UpdateAllChannelBuffers();
 
             // Apply auto gain if enabled
-            if(auto_gain.open)
+            if(auto_gain.active)
             {
-                uint64 cur_time=GetUptimeUs();
-                double gap=double(cur_time-auto_gain.time)/1000000.0;
+                const double cur_time=double(GetUptimeUs())/1000000.0;
+                float new_gain;
 
-                if(gap>=auto_gain.gap)
-                {
-                    float new_gain=auto_gain.end.gain;
-                    for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)
-                    {
-                        if(sources[ch])
-                            sources[ch]->SetGain(new_gain * channel_positions[ch].gain);
-                    }
-                    auto_gain.open=false;
-                }
-                else
-                {
-                    float t=gap/auto_gain.gap;
-                    float new_gain=auto_gain.start.gain+(auto_gain.end.gain-auto_gain.start.gain)*t;
+                auto_gain.Evaluate(cur_time,new_gain);
 
-                    for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)
-                    {
-                        if(sources[ch])
-                            sources[ch]->SetGain(new_gain * channel_positions[ch].gain);
-                    }
+                for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)
+                {
+                    if(sources[ch])
+                        sources[ch]->SetGain(new_gain * channel_positions[ch].gain);
                 }
             }
 
@@ -798,11 +782,7 @@ namespace hgl
     // Auto Gain
     void MIDIOrchestraPlayer::AutoGain(float start_gain,float gap,float end_gain)
     {
-        auto_gain.open=true;
-        auto_gain.time=GetUptimeUs();
-        auto_gain.gap=gap;
-        auto_gain.start.gain=start_gain;
-        auto_gain.end.gain=end_gain;
+        auto_gain.Start(double(GetUptimeUs())/1000000.0,start_gain,end_gain,gap);
 
         // Apply start gain to all channels
         for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)

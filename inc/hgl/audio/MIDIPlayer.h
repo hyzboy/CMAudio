@@ -4,6 +4,7 @@
 #include<hgl/thread/ThreadMutex.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
+#include<hgl/audio/GainEnvelope.h>
 #include<hgl/math/Vector.h>
 #include<hgl/time/Time.h>
 #include"AudioDecode.h"
@@ -83,18 +84,7 @@ namespace hgl
         ALenum format;                                                                              ///<音频数据格式
         ALsizei rate;                                                                               ///<音频数据采样率
 
-        struct
-        {
-            bool open;
-            uint64 time;
-            float gap;
-
-            struct
-            {
-                float gain;
-                double time;
-            }start,end;
-        }auto_gain;                                                                                 ///<自动增益
+        audio::GainRamp auto_gain;                                                                  ///<自动增益(增益过渡斜坡)
 
         bool ReadData(ALuint);
         bool UpdateBuffer();

@@ -6,6 +6,7 @@
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/GainEnvelope.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFilterPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioPlayer.h

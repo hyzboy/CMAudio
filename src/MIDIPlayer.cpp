@@ -15,7 +15,10 @@ namespace hgl
             return;
         }
 
-        auto_gain.open=false;
+        fade_in_time=0;
+        fade_out_time=0;
+
+        gain=1.0;
 
         audio_ptr=nullptr;
 
@@ -431,38 +434,27 @@ namespace hgl
                 }
 
                 // 处理自动增益
-                if(auto_gain.open)
+                if(auto_gain.active)
                 {
-                    uint64 cur_time=GetTimeSec();
+                    const double cur_time=GetTimeSec();
+                    float g;
 
-                    if(cur_time>=auto_gain.time)
+                    if(!auto_gain.Evaluate(cur_time,g))
                     {
-                        audiosource.SetGain(auto_gain.end.gain);
-                        auto_gain.open=false;
+                        audiosource.SetGain(auto_gain.end_gain);
                     }
                     else
                     {
-                        double gap=(cur_time-auto_gain.start.time)/auto_gain.gap;
-
-                        audiosource.SetGain(auto_gain.start.gain+(auto_gain.end.gain-auto_gain.start.gain)*gap);
+                        audiosource.SetGain(g);
                     }
                 }
 
                 // 处理淡入淡出
                 if(fade_in_time>0||fade_out_time>0)
                 {
-                    double cur_pos=GetPlayTime();
+                    const double cur_pos=GetPlayTime();
 
-                    if(fade_in_time>0&&cur_pos<fade_in_time)
-                    {
-                        float fade_gain=cur_pos/fade_in_time;
-                        audiosource.SetGain(fade_gain*gain);
-                    }
-                    else if(fade_out_time>0&&cur_pos>(total_time-fade_out_time))
-                    {
-                        float fade_gain=(total_time-cur_pos)/fade_out_time;
-                        audiosource.SetGain(fade_gain*gain);
-                    }
+                    audiosource.SetGain(float(audio::FadeFactor(cur_pos,fade_in_time,fade_out_time,total_time)*gain));
                 }
             }
 
@@ -496,13 +488,7 @@ namespace hgl
     {
         lock.Lock();
 
-        auto_gain.open=true;
-        auto_gain.start.gain=audiosource.GetGain();
-        auto_gain.start.time=cur_time;
-        auto_gain.end.gain=target_gain;
-        auto_gain.end.time=cur_time+duration;
-        auto_gain.gap=duration;
-        auto_gain.time=cur_time+duration;
+        auto_gain.Start(cur_time,audiosource.GetGain(),target_gain,duration);
 
         lock.Unlock();
     }

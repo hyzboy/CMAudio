@@ -17,7 +17,10 @@ namespace hgl
             return;
         }
 
-        auto_gain.open=false;
+        fade_in_time=0;
+        fade_out_time=0;
+
+        gain=1.0;
 
         audio_ptr=nullptr;
 
@@ -353,30 +356,27 @@ namespace hgl
 
         const PreciseTime cur_time=GetTimeSec();
 
-        if(cur_time-start_time<fade_in_time)        //淡入时间
+        if(fade_in_time>0||fade_out_time>0)
         {
-            audiosource.SetGain(((cur_time-start_time)/fade_in_time)*gain);
-        }
-        else
-        if(cur_time-start_time>total_time-fade_out_time)    //淡出时间
-        {
-            audiosource.SetGain(((total_time-(cur_time-start_time))/fade_out_time)*gain);
+            const float factor=audio::FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time);
+
+            audiosource.SetGain(float(factor*gain));
         }
 
-        if(auto_gain.open)
+        if(auto_gain.active)
         {
-            if(cur_time>=auto_gain.end.time)
+            float g;
+
+            if(!auto_gain.Evaluate(cur_time,g))
             {
-                auto_gain.open=false;
+                SetGain(auto_gain.end_gain);
 
-                SetGain(auto_gain.end.gain);
-
-                if(auto_gain.end.gain<=0)
+                if(auto_gain.end_gain<=0)
                     ps=PlayState::Exit;
             }
             else
             {
-                SetGain(auto_gain.start.gain+auto_gain.gap*((cur_time-auto_gain.start.time)/auto_gain.time));
+                SetGain(g);
             }
         }
 
@@ -498,15 +498,7 @@ namespace hgl
         if(!audio_data)return;
 
         lock.Lock();
-            auto_gain.start.gain=GetGain();
-            auto_gain.start.time=cur_time;
-            auto_gain.end.gain=target_gain;
-            auto_gain.end.time=auto_gain.start.time+adjust_time;
-
-            auto_gain.time=adjust_time;
-            auto_gain.gap=target_gain-auto_gain.start.gain;
-
-            auto_gain.open=true;
+            auto_gain.Start(cur_time,GetGain(),target_gain,adjust_time);
         lock.Unlock();
     }
 
