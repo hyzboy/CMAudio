@@ -84,6 +84,7 @@ namespace openal                                                                
 
     unsigned int AudioTime(ALenum,ALsizei);
     double AudioDataTime(ALuint,ALenum,ALsizei);
+    int GetChannelCount(ALenum);                                                                    ///<获取音频格式的通道数
 
     bool IsSupportFloatAudioData();                                                                 ///<是否支持浮点音频数据
 

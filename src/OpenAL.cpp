@@ -499,39 +499,35 @@ namespace openal
     {
         ALenum format;
         uint bytes;
+        uint channels;
     }
     al_format_bytes[]=
     {
-        {AL_FORMAT_MONO8,           1},
-        {AL_FORMAT_MONO16,          2},
-        {AL_FORMAT_STEREO8,         2},
-        {AL_FORMAT_STEREO16,        4},
+        {AL_FORMAT_MONO8,           1, 1},
+        {AL_FORMAT_MONO16,          2, 1},
+        {AL_FORMAT_STEREO8,         2, 2},
+        {AL_FORMAT_STEREO16,        4, 2},
 
-//         {AL_FORMAT_QUAD16,            8},
-//         {AL_FORMAT_51CHN16,            12},
-//         {AL_FORMAT_61CHN16,            14},
-//         {AL_FORMAT_71CHN16,            16},
-//
-        {AL_FORMAT_MONO_FLOAT32,    4},
-        {AL_FORMAT_STEREO_FLOAT32,  8},
-//
-//         {AL_FORMAT_QUAD8,            4},
-//         {AL_FORMAT_QUAD16,            8},
-//         {AL_FORMAT_QUAD32,            16},
-//         {AL_FORMAT_REAR8,            4},
-//         {AL_FORMAT_REAR16,            8},
-//         {AL_FORMAT_REAR32,            16},
-//         {AL_FORMAT_51CHN8,            6},
-//         {AL_FORMAT_51CHN16,            12},
-//         {AL_FORMAT_51CHN32,            24},
-//         {AL_FORMAT_61CHN8,            7},
-//         {AL_FORMAT_61CHN16,            14},
-//         {AL_FORMAT_61CHN32,            28},
-//         {AL_FORMAT_71CHN8,            8},
-//         {AL_FORMAT_71CHN16,            16},
-//         {AL_FORMAT_71CHN32,            32},
+        {AL_FORMAT_QUAD8,           4, 4},
+        {AL_FORMAT_QUAD16,          8, 4},
+        {AL_FORMAT_QUAD32,         16, 4},
+        {AL_FORMAT_REAR8,           4, 4},
+        {AL_FORMAT_REAR16,          8, 4},
+        {AL_FORMAT_REAR32,         16, 4},
+        {AL_FORMAT_51CHN8,          6, 6},
+        {AL_FORMAT_51CHN16,        12, 6},
+        {AL_FORMAT_51CHN32,        24, 6},
+        {AL_FORMAT_61CHN8,          7, 7},
+        {AL_FORMAT_61CHN16,        14, 7},
+        {AL_FORMAT_61CHN32,        28, 7},
+        {AL_FORMAT_71CHN8,          8, 8},
+        {AL_FORMAT_71CHN16,        16, 8},
+        {AL_FORMAT_71CHN32,        32, 8},
 
-        {0,0}
+        {AL_FORMAT_MONO_FLOAT32,    4, 1},
+        {AL_FORMAT_STEREO_FLOAT32,  8, 2},
+
+        {0,0,0}
     };
 
     const int al_get_format_byte(ALenum format)
@@ -542,6 +538,26 @@ namespace openal
         {
             if(p->format==format)
                 return p->bytes;
+
+            ++p;
+        }
+
+        return(0);
+    }
+
+    /**
+    * 获取音频格式的通道数
+    * @param format 数据格式
+    * @return 通道数(未知返回0)
+    */
+    int GetChannelCount(ALenum format)
+    {
+        const ALFormatBytes *p=al_format_bytes;
+
+        while(p->format)
+        {
+            if(p->format==format)
+                return p->channels;
 
             ++p;
         }
