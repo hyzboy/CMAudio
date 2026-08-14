@@ -71,13 +71,11 @@
 - `Audio.OPNMIDI`
 - `Audio.Timidity`
 - `Audio.TinySoundFont`
-- `Audio.WildMidi`
+- `Audio.WildMIDI`
 
 ### 仍然支持的插件
 
 - `Audio.Opus`
-- `Audio.Tremolo`
-- `Audio.Tremor`
 - `Audio.Vorbis`
 - `Audio.Wav`
 - `libogg`

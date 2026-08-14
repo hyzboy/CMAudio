@@ -16,24 +16,24 @@ namespace hgl::audio
     {
         OBJECT_LOGGER
 
-        bool ok;
+        bool loaded;
 
         void InitPrivate();
 
     private:
 
-        uint      Index;
-        double    Time;                                                                             ///<缓冲区中音频数据可以播放的时间(秒)
-        uint      Size;                                                                             ///<缓冲区中音频数据的总字节数
-        uint      Freq;                                                                             ///<音频数量采样率
+        uint      buffer_id;
+        double    duration;                                                                             ///<缓冲区中音频数据可以播放的时间(秒)
+        uint      data_size;                                                                             ///<缓冲区中音频数据的总字节数
+        uint      sample_rate;                                                                             ///<音频数量采样率
 
     public:
 
-        uint            GetIndex()const{return Index;}
-        double          GetTime()const{return Time;}
-        uint            GetSize()const{return Size;}
-        uint            GetFreq()const{return Freq;}
-        bool            IsValid()const{return ok;}                                                  ///<缓冲区是否已成功加载数据
+        uint            GetIndex()const{return buffer_id;}
+        double          GetTime()const{return duration;}
+        uint            GetSize()const{return data_size;}
+        uint            GetFreq()const{return sample_rate;}
+        bool            IsLoaded()const{return loaded;}                                                  ///<缓冲区是否已成功加载数据
 
     public:
 

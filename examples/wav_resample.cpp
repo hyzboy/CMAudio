@@ -12,39 +12,39 @@ using namespace hgl::audio;
 
 namespace
 {
-    bool GetFormatInfo(openal::ALenum format, uint16_t& channels, uint16_t& bitsPerSample, openal::ALenum& monoFormat)
+    bool GetFormatInfo(openal::ALenum format, uint16_t& channels, uint16_t& bits_per_sample, openal::ALenum& monoFormat)
     {
         switch(format)
         {
             case AL_FORMAT_MONO8:
                 channels = 1;
-                bitsPerSample = 8;
+                bits_per_sample = 8;
                 monoFormat = AL_FORMAT_MONO8;
                 return true;
             case AL_FORMAT_MONO16:
                 channels = 1;
-                bitsPerSample = 16;
+                bits_per_sample = 16;
                 monoFormat = AL_FORMAT_MONO16;
                 return true;
             case AL_FORMAT_MONO_FLOAT32:
                 channels = 1;
-                bitsPerSample = 32;
+                bits_per_sample = 32;
                 monoFormat = AL_FORMAT_MONO_FLOAT32;
                 return true;
             case AL_FORMAT_STEREO8:
                 channels = 2;
-                bitsPerSample = 8;
+                bits_per_sample = 8;
                 monoFormat = AL_FORMAT_MONO8;
                 return true;
             case AL_FORMAT_STEREO16:
                 channels = 2;
-                bitsPerSample = 16;
+                bits_per_sample = 16;
                 monoFormat = AL_FORMAT_MONO16;
                 return true;
 #ifdef AL_FORMAT_STEREO_FLOAT32
             case AL_FORMAT_STEREO_FLOAT32:
                 channels = 2;
-                bitsPerSample = 32;
+                bits_per_sample = 32;
                 monoFormat = AL_FORMAT_MONO_FLOAT32;
                 return true;
 #endif
@@ -66,14 +66,14 @@ namespace
         }
     }
 
-    void SplitStereo(const void* interleaved, uint32_t frameCount, uint16_t bitsPerSample,
+    void SplitStereo(const void* interleaved, uint32_t frameCount, uint16_t bits_per_sample,
                      std::vector<uint8_t>& left, std::vector<uint8_t>& right)
     {
-        uint32_t bytesPerSample = bitsPerSample / 8;
+        uint32_t bytesPerSample = bits_per_sample / 8;
         left.resize(frameCount * bytesPerSample);
         right.resize(frameCount * bytesPerSample);
 
-        if(bitsPerSample == 16)
+        if(bits_per_sample == 16)
         {
             const int16_t* src = static_cast<const int16_t*>(interleaved);
             int16_t* leftDst = reinterpret_cast<int16_t*>(left.data());
@@ -84,7 +84,7 @@ namespace
                 rightDst[i] = src[i * 2 + 1];
             }
         }
-        else if(bitsPerSample == 8)
+        else if(bits_per_sample == 8)
         {
             const int8_t* src = static_cast<const int8_t*>(interleaved);
             int8_t* leftDst = reinterpret_cast<int8_t*>(left.data());
@@ -95,7 +95,7 @@ namespace
                 rightDst[i] = src[i * 2 + 1];
             }
         }
-        else if(bitsPerSample == 32)
+        else if(bits_per_sample == 32)
         {
             const float* src = static_cast<const float*>(interleaved);
             float* leftDst = reinterpret_cast<float*>(left.data());
@@ -108,13 +108,13 @@ namespace
         }
     }
 
-    void InterleaveStereo(const void* leftData, const void* rightData, uint32_t frameCount, uint16_t bitsPerSample,
+    void InterleaveStereo(const void* leftData, const void* rightData, uint32_t frameCount, uint16_t bits_per_sample,
                           std::vector<uint8_t>& output)
     {
-        uint32_t bytesPerSample = bitsPerSample / 8;
+        uint32_t bytesPerSample = bits_per_sample / 8;
         output.resize(frameCount * bytesPerSample * 2);
 
-        if(bitsPerSample == 16)
+        if(bits_per_sample == 16)
         {
             const int16_t* leftSrc = static_cast<const int16_t*>(leftData);
             const int16_t* rightSrc = static_cast<const int16_t*>(rightData);
@@ -125,7 +125,7 @@ namespace
                 dst[i * 2 + 1] = rightSrc[i];
             }
         }
-        else if(bitsPerSample == 8)
+        else if(bits_per_sample == 8)
         {
             const int8_t* leftSrc = static_cast<const int8_t*>(leftData);
             const int8_t* rightSrc = static_cast<const int8_t*>(rightData);
@@ -136,7 +136,7 @@ namespace
                 dst[i * 2 + 1] = rightSrc[i];
             }
         }
-        else if(bitsPerSample == 32)
+        else if(bits_per_sample == 32)
         {
             const float* leftSrc = static_cast<const float*>(leftData);
             const float* rightSrc = static_cast<const float*>(rightData);
@@ -172,18 +172,18 @@ int main(int argc, char** argv)
     openal::ALenum format = 0;
     void* data = nullptr;
     uint32_t size = 0;
-    uint32_t sampleRate = 0;
+    uint32_t sample_rate = 0;
 
-    if(!WavReader::Load(inputFile, &format, &data, &size, &sampleRate))
+    if(!WavReader::Load(inputFile, &format, &data, &size, &sample_rate))
     {
         std::cerr << "Failed to load WAV: " << inputFile << "\n";
         return 1;
     }
 
     uint16_t channels = 0;
-    uint16_t bitsPerSample = 0;
+    uint16_t bits_per_sample = 0;
     openal::ALenum monoFormat = 0;
-    if(!GetFormatInfo(format, channels, bitsPerSample, monoFormat))
+    if(!GetFormatInfo(format, channels, bits_per_sample, monoFormat))
     {
         std::cerr << "Unsupported format in input WAV\n";
         free(data);
@@ -199,13 +199,13 @@ int main(int argc, char** argv)
 
     void* outData = nullptr;
     uint32_t outSize = 0;
-    openal::ALenum outputFormat = format;
+    openal::ALenum output_format = format;
 
     AudioDataInfo inputInfo;
-    inputInfo.sampleRate = sampleRate;
+    inputInfo.sample_rate = sample_rate;
     inputInfo.channels = channels;
-    inputInfo.bitsPerSample = bitsPerSample;
-    inputInfo.isFloat = (bitsPerSample == 32);
+    inputInfo.bits_per_sample = bits_per_sample;
+    inputInfo.is_float = (bits_per_sample == 32);
 
     AudioDataInfo monoInfo = inputInfo;
     monoInfo.channels = 1;
@@ -221,12 +221,12 @@ int main(int argc, char** argv)
     }
     else
     {
-        uint32_t bytesPerSample = bitsPerSample / 8;
+        uint32_t bytesPerSample = bits_per_sample / 8;
         uint32_t frameCount = size / (bytesPerSample * 2);
 
         std::vector<uint8_t> left;
         std::vector<uint8_t> right;
-        SplitStereo(data, frameCount, bitsPerSample, left, right);
+        SplitStereo(data, frameCount, bits_per_sample, left, right);
 
         void* leftOut = nullptr;
         void* rightOut = nullptr;
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
         uint32_t outFrames = (leftFrames < rightFrames) ? leftFrames : rightFrames;
 
         std::vector<uint8_t> interleaved;
-        InterleaveStereo(leftOut, rightOut, outFrames, bitsPerSample, interleaved);
+        InterleaveStereo(leftOut, rightOut, outFrames, bits_per_sample, interleaved);
 
         outSize = (uint32_t)interleaved.size();
         outData = new uint8_t[outSize];
@@ -264,7 +264,7 @@ int main(int argc, char** argv)
     }
 
     WavWriter writer;
-    if(!writer.Open(outputFile, outputFormat, targetRate))
+    if(!writer.Open(outputFile, output_format, targetRate))
     {
         std::cerr << "Failed to open output WAV\n";
         delete[] (char*)outData;

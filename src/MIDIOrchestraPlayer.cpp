@@ -112,7 +112,7 @@ namespace hgl::audio
             sources[i]=nullptr;
         }
 
-        decode=nullptr;
+        decoder=nullptr;
         midi_config=nullptr;
         midi_channels=nullptr;
         
@@ -218,7 +218,7 @@ namespace hgl::audio
     {
         Close();
 
-        SAFE_CLEAR(decode);
+        SAFE_CLEAR(decoder);
 
         ReleaseChannelSources();
     }
@@ -229,12 +229,12 @@ namespace hgl::audio
         // FluidSynth provides the best audio quality and native multi-channel support
         const os_char *plugin_name=OS_TEXT("FluidSynth");
 
-        decode=new AudioPlugInInterface;
+        decoder=new AudioPlugInInterface;
 
-        if (!GetAudioInterface(plugin_name, decode, nullptr))
+        if (!GetAudioInterface(plugin_name, decoder, nullptr))
         {
-            delete decode;
-            decode=nullptr;
+            delete decoder;
+            decoder=nullptr;
 
             LogError(OS_TEXT("Failed to load FluidSynth plugin - MIDIOrchestraPlayer requires FluidSynth for optimal multi-channel MIDI rendering"));
             LogError(OS_TEXT("Please ensure FluidSynth plugin (Audio.FluidSynth) is installed"));
@@ -267,7 +267,7 @@ namespace hgl::audio
 
         {
             double total_time=0;
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            audio_ptr=decoder->Open(audio_data,audio_data_size,&al_format,&sample_rate,&total_time);
 
             if(!audio_ptr)
             {
@@ -275,7 +275,7 @@ namespace hgl::audio
                 return(false);
             }
 
-            audio_buffer_size=(AudioTime(format,rate)+9)/10;        // 1/10 second per buffer
+            audio_buffer_size=(AudioTime(al_format,sample_rate)+9)/10;        // 1/10 second per buffer
 
             // Allocate buffers for each channel
             for(int i=0;i<MAX_MIDI_CHANNELS;i++)
@@ -315,17 +315,17 @@ namespace hgl::audio
         if(!alGenBuffers)return(false);
         if(!filename||!*filename)return(false);
 
-        io::FileInputStream fis;
+        io::FileInputStream file_stream;
 
-        if(!fis.Open(filename))
+        if(!file_stream.Open(filename))
             return(false);
 
         Close();
 
-        audio_data_size=fis.GetSize();
+        audio_data_size=file_stream.GetSize();
         audio_data=new ALbyte[audio_data_size];
 
-        fis.Read(audio_data,audio_data_size);
+        file_stream.Read(audio_data,audio_data_size);
 
         return LoadMIDI(filename);
     }
@@ -358,7 +358,7 @@ namespace hgl::audio
             return false;
 
         // Upload to OpenAL buffer
-        alBufferData(buffer_id, format, channel_buffers[channel], bytes_read, rate);
+        alBufferData(buffer_id, al_format, channel_buffers[channel], bytes_read, sample_rate);
 
         return true;
     }
@@ -480,12 +480,12 @@ namespace hgl::audio
             UpdateAllChannelBuffers();
 
             // Apply auto gain if enabled
-            if(auto_gain.active)
+            if(gain_ramp.active)
             {
                 const double cur_time=double(GetUptimeUs())/1000000.0;
                 float new_gain;
 
-                auto_gain.Evaluate(cur_time,new_gain);
+                gain_ramp.Evaluate(cur_time,new_gain);
 
                 for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)
                 {
@@ -511,11 +511,11 @@ namespace hgl::audio
                 if(play) // Check loop
                 {
                     // Restart from beginning
-                    if(decode&&audio_ptr)
+                    if(decoder&&audio_ptr)
                     {
-                        decode->Close(audio_ptr);
+                        decoder->Close(audio_ptr);
                         double total_time=0;
-                        audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+                        audio_ptr=decoder->Open(audio_data,audio_data_size,&al_format,&sample_rate,&total_time);
                         
                         ClearAllBuffers();
                         PlaybackAllChannels();
@@ -584,11 +584,11 @@ namespace hgl::audio
         }
 
         // Restart decoder
-        if(decode&&audio_ptr)
+        if(decoder&&audio_ptr)
         {
-            decode->Close(audio_ptr);
+            decoder->Close(audio_ptr);
             double total_time=0;
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            audio_ptr=decoder->Open(audio_data,audio_data_size,&al_format,&sample_rate,&total_time);
         }
     }
 
@@ -599,9 +599,9 @@ namespace hgl::audio
         state=MIDIOrchestraState::Exit;
         WaitExit();
 
-        if(decode&&audio_ptr)
+        if(decoder&&audio_ptr)
         {
-            decode->Close(audio_ptr);
+            decoder->Close(audio_ptr);
             audio_ptr=nullptr;
         }
 
@@ -621,10 +621,10 @@ namespace hgl::audio
             midi_config->SetBankID(bank_id);
     }
 
-    void MIDIOrchestraPlayer::SetSampleRate(int rate)
+    void MIDIOrchestraPlayer::SetSampleRate(int sample_rate)
     {
         if(midi_config)
-            midi_config->SetSampleRate(rate);
+            midi_config->SetSampleRate(sample_rate);
     }
 
     // 3D Spatial Layout
@@ -767,9 +767,9 @@ namespace hgl::audio
         return 16; // Standard MIDI channel count
     }
 
-    MidiChannelInfo MIDIOrchestraPlayer::GetChannelInfo(int channel)
+    MIDIChannelInfo MIDIOrchestraPlayer::GetChannelInfo(int channel)
     {
-        MidiChannelInfo info={0};
+        MIDIChannelInfo info={0};
 
         if(midi_channels)
         {
@@ -782,7 +782,7 @@ namespace hgl::audio
     // Auto Gain
     void MIDIOrchestraPlayer::AutoGain(float start_gain,float gap,float end_gain)
     {
-        auto_gain.Start(double(GetUptimeUs())/1000000.0,start_gain,end_gain,gap);
+        gain_ramp.Start(double(GetUptimeUs())/1000000.0,start_gain,end_gain,gap);
 
         // Apply start gain to all channels
         for(int ch=0;ch<MAX_MIDI_CHANNELS;ch++)

@@ -46,7 +46,7 @@ namespace hgl::audio
         double duration=0.0;                               ///< 过渡时长(秒)
         float  start_gain=0.0f;                            ///< 起始增益
         float  end_gain=0.0f;                              ///< 目标增益
-        InterpolationType type=InterpolationType::Linear;  ///< 插值类型
+        InterpolationType interpolation_type=InterpolationType::Linear;  ///< 插值类型
 
         /**
          * 开始一次增益过渡
@@ -85,7 +85,7 @@ namespace hgl::audio
                 return false;
             }
 
-            out=Interpolation::Interpolate(type,start_gain,end_gain,float((now-start_time)/duration));
+            out=Interpolation::Interpolate(interpolation_type,start_gain,end_gain,float((now-start_time)/duration));
             return true;
         }
     };

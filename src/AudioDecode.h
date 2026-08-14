@@ -40,7 +40,7 @@ namespace hgl::audio
         const char* (AL_APIENTRY *GetDefaultBank)();                  // Get default bank/soundfont path
     };//struct AudioMidiConfigInterface
 
-    struct MidiChannelInfo
+    struct MIDIChannelInfo
     {
         int channel;                    // Channel number (0-15)
         int program;                    // Current program/instrument (0-127)
@@ -51,13 +51,13 @@ namespace hgl::audio
         bool solo;                      // Is channel soloed
         int note_count;                 // Number of active notes on this channel
         const char* instrument_name;    // Name of current instrument (if available)
-    };//struct MidiChannelInfo
+    };//struct MIDIChannelInfo
 
     struct AudioMidiChannelInterface
     {
         // Channel information
         int     (AL_APIENTRY *GetChannelCount   )();                          // Get total number of MIDI channels (usually 16)
-        bool    (AL_APIENTRY *GetChannelInfo    )(int channel, MidiChannelInfo*);  // Get information about a specific channel
+        bool    (AL_APIENTRY *GetChannelInfo    )(int channel, MIDIChannelInfo*);  // Get information about a specific channel
         
         // Channel control
         void    (AL_APIENTRY *SetChannelProgram )(int channel, int program);  // Change instrument on a channel (0-127)

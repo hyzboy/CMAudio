@@ -51,38 +51,38 @@ namespace hgl::audio
 
     /**
      * 计算音源的综合重要性分数（作为类静态成员定义，访问私有字段）
-     * @param asi 音源
+     * @param spatial_source 音源
      * @param audible_gain 实际可听增益（经过距离衰减后）
      * @param listener_pos 监听者位置
      * @return 重要性分数(0-1范围，1为最重要)
      */
-    double SpatialAudioWorld::CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos)
+    double SpatialAudioWorld::CalculateImportance(const SpatialAudioSource *spatial_source, double audible_gain, const Vector3f &listener_pos)
     {
-        if (!asi) return 0.0;
+        if (!spatial_source) return 0.0;
 
         // 1. 实际可听增益因子（最重要，这是用户真正听到的音量）
         double audible_gain_factor = std::min(audible_gain, 1.0);
 
         // 2. 优先级因子（归一化到0-1范围）
-        double priority_factor = std::min(static_cast<double>(asi->priority) / MAX_EXPECTED_PRIORITY, 1.0);
+        double priority_factor = std::min(static_cast<double>(spatial_source->priority) / MAX_EXPECTED_PRIORITY, 1.0);
 
         // 3. 速度因子（移动的音源更重要，如接近的敌人、飞过的子弹等）
-        // 注意：仅在启用多普勒时考虑速度，因为只有这时才计算和更新 move_speed
+        // 注意：仅在启用多普勒时考虑速度，因为只有这时才计算和更新 movement_speed
         // 对于不使用多普勒的场景，可以通过提高优先级来补偿
         double velocity_factor = 0.0;
-        if (asi->doppler_factor > 0)  // 只有启用多普勒效果时才考虑速度
+        if (spatial_source->doppler_factor > 0)  // 只有启用多普勒效果时才考虑速度
         {
-            double speed = asi->move_speed;
+            double speed = spatial_source->movement_speed;
             // 将速度归一化
             velocity_factor = std::min(speed / HIGH_SPEED_THRESHOLD, 1.0);
         }
 
         // 4. 距离因子（作为辅助，距离越近可能意味着更需要精确更新）
-        float distance = math::Length(listener_pos, asi->cur_pos);
+        float distance = math::Length(listener_pos, spatial_source->current_position);
         double distance_factor = 1.0;
-        if (asi->max_distance > 0)
+        if (spatial_source->max_distance > 0)
         {
-            distance_factor = 1.0 - std::min(distance / asi->max_distance, 1.0f);
+            distance_factor = 1.0 - std::min(distance / spatial_source->max_distance, 1.0f);
         }
 
         // 综合重要性 = 各因子加权和
@@ -111,7 +111,7 @@ namespace hgl::audio
 
         const Vector3f &        lpos=l->GetPosition();
 
-        distance=math::Length(lpos,cur_pos);
+        distance=math::Length(lpos,current_position);
 
         if(distance_model==AL_INVERSE_DISTANCE_CLAMPED||distance_model==AL_INVERSE_DISTANCE)
         {
@@ -170,8 +170,8 @@ namespace hgl::audio
         // 预创建空间音源对象并加入池
         for(int i = 0; i < max_source; i++)
         {
-            SpatialAudioSource *asi = new SpatialAudioSource(SpatialAudioSourceConfig());
-            spatial_source_pool.AddObject(asi);
+            SpatialAudioSource *spatial_source = new SpatialAudioSource(SpatialAudioSourceConfig());
+            spatial_source_pool.AddObject(spatial_source);
         }
 
         listener=al;
@@ -193,7 +193,7 @@ namespace hgl::audio
         // 初始化场景级低通参数
         scene_lowpass_enabled=false;
         scene_lowpass_gain=1.0f;
-        scene_lowpass_gainhf=1.0f;
+        scene_lowpass_gain_hf=1.0f;
 
         // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
         fade_interpolation_type=InterpolationType::Cosine;
@@ -231,12 +231,12 @@ namespace hgl::audio
             finalConfig.distance_model = AL_INVERSE_DISTANCE_CLAMPED;
 
         // 从对象池获取对象，或创建新对象
-        SpatialAudioSource *asi = spatial_source_pool.Acquire();
-        if(!asi)
+        SpatialAudioSource *spatial_source = spatial_source_pool.Acquire();
+        if(!spatial_source)
         {
             // 池空则创建新对象
-            asi = new SpatialAudioSource(finalConfig);
-            if(!asi)
+            spatial_source = new SpatialAudioSource(finalConfig);
+            if(!spatial_source)
             {
                 scene_mutex.Unlock();
                 return nullptr;
@@ -245,42 +245,42 @@ namespace hgl::audio
         else
         {
             // 重新初始化对象的音频配置（因为对象来自池，可能被前面的用户修改过）
-            asi->buffer = finalConfig.buffer;
-            asi->loop = finalConfig.loop;
-            asi->gain = finalConfig.gain;
-            asi->priority = finalConfig.priority;
-            asi->distance_model = finalConfig.distance_model;
-            asi->rolloff_factor = finalConfig.rolloff_factor;
-            asi->doppler_factor = finalConfig.doppler_factor;
-            asi->air_absorption_factor = finalConfig.air_absorption_factor;
-            asi->ref_distance = finalConfig.ref_distance;
-            asi->max_distance = finalConfig.max_distance;
-            asi->source = nullptr;  // 初始化物理音源为空
-            asi->lowpass_filter = 0;
-            asi->last_filter_gain = -1.0f;
-            asi->last_filter_gainhf = -1.0f;
+            spatial_source->buffer = finalConfig.buffer;
+            spatial_source->loop = finalConfig.loop;
+            spatial_source->gain = finalConfig.gain;
+            spatial_source->priority = finalConfig.priority;
+            spatial_source->distance_model = finalConfig.distance_model;
+            spatial_source->rolloff_factor = finalConfig.rolloff_factor;
+            spatial_source->doppler_factor = finalConfig.doppler_factor;
+            spatial_source->air_absorption_factor = finalConfig.air_absorption_factor;
+            spatial_source->ref_distance = finalConfig.ref_distance;
+            spatial_source->max_distance = finalConfig.max_distance;
+            spatial_source->source = nullptr;  // 初始化物理音源为空
+            spatial_source->lowpass_filter = 0;
+            spatial_source->last_filter_gain = -1.0f;
+            spatial_source->last_filter_gain_hf = -1.0f;
         }
 
         // 在解锁前添加到列表，确保原子性
-        source_list.Add(asi);
+        source_list.Add(spatial_source);
 
         scene_mutex.Unlock();
 
-        return asi;
+        return spatial_source;
     }
 
-    void SpatialAudioWorld::Delete(SpatialAudioSource *asi)
+    void SpatialAudioWorld::Delete(SpatialAudioSource *spatial_source)
     {
-        if(!asi)return;
+        if(!spatial_source)return;
 
         scene_mutex.Lock();
 
-        ToMute(asi);
+        ToMute(spatial_source);
 
-        source_list.Delete(asi);
+        source_list.Delete(spatial_source);
 
         // 归还到对象池（PointerObjectPool 会保留对象以供重用）
-        spatial_source_pool.Release(asi);
+        spatial_source_pool.Release(spatial_source);
 
         scene_mutex.Unlock();
     }
@@ -305,77 +305,77 @@ namespace hgl::audio
         scene_mutex.Unlock();
     }
 
-    bool SpatialAudioWorld::ToMute(SpatialAudioSource *asi)
+    bool SpatialAudioWorld::ToMute(SpatialAudioSource *spatial_source)
     {
-        if(!asi)return(false);
-        if(!asi->source)return(false);
+        if(!spatial_source)return(false);
+        if(!spatial_source->source)return(false);
 
-        OnToMute(asi);
+        OnToMute(spatial_source);
 
         // 启动淡出效果
-        asi->is_fading = true;
-        asi->fade_start_time = cur_time;
-        asi->fade_duration = FADE_DURATION;
-        asi->fade_start_gain = asi->source->GetGain();
-        asi->fade_target_gain = 0.0;
+        spatial_source->is_fading = true;
+        spatial_source->fade_start_time = current_time;
+        spatial_source->fade_duration = FADE_DURATION;
+        spatial_source->fade_start_gain = spatial_source->source->GetGain();
+        spatial_source->fade_target_gain = 0.0;
 
         // 释放per-source的低通滤波器
-        if(asi->lowpass_filter != 0)
+        if(spatial_source->lowpass_filter != 0)
         {
             if(alDeleteFilters)
-                alDeleteFilters(1, &asi->lowpass_filter);
-            asi->lowpass_filter = 0;
+                alDeleteFilters(1, &spatial_source->lowpass_filter);
+            spatial_source->lowpass_filter = 0;
         }
 
         return(true);
     }
 
-    bool SpatialAudioWorld::ToHear(SpatialAudioSource *asi)
+    bool SpatialAudioWorld::ToHear(SpatialAudioSource *spatial_source)
     {
-        if(!asi)return(false);
-        if(!asi->buffer)return(false);
+        if(!spatial_source)return(false);
+        if(!spatial_source->buffer)return(false);
 
-        if(asi->start_play_time>cur_time)       // 还没到开始播放时间
+        if(spatial_source->start_play_time>current_time)       // 还没到开始播放时间
             return(false);
 
         double time_off=0;
 
-        if(asi->start_play_time>0
-         &&asi->start_play_time<=cur_time)      // 修复：使用 <= 以处理精确时间匹配
+        if(spatial_source->start_play_time>0
+         &&spatial_source->start_play_time<=current_time)      // 修复：使用 <= 以处理精确时间匹配
         {
-            time_off=cur_time-asi->start_play_time;
+            time_off=current_time-spatial_source->start_play_time;
 
-            if(time_off>=asi->buffer->GetTime())     // 超过整个音频时长
+            if(time_off>=spatial_source->buffer->GetTime())     // 超过整个音频时长
             {
-                if(!asi->loop)                  // 不循环播放
+                if(!spatial_source->loop)                  // 不循环播放
                 {
-                    asi->is_play=false;         // 不再播放
+                    spatial_source->should_play=false;         // 不再播放
                     return(false);
                 }
                 else                            // 循环播放
                 {
-                    const int count=int(time_off/asi->buffer->GetTime());        // 计算超出的循环次数并取整
+                    const int count=int(time_off/spatial_source->buffer->GetTime());        // 计算超出的循环次数并取整
 
-                    time_off-=asi->buffer->GetTime()*count;                      // 计算单次的偏移时间
+                    time_off-=spatial_source->buffer->GetTime()*count;                      // 计算单次的偏移时间
                 }
             }
         }
 
-        if(!asi->source)
+        if(!spatial_source->source)
         {
             // 从对象池获取音源
-            asi->source = source_pool.Acquire();
-            if(!asi->source)
+            spatial_source->source = source_pool.Acquire();
+            if(!spatial_source->source)
             {
                 // 物理音源耗尽，尝试进行音源抢占（voice stealing）
                     // 基于 gain * priority 找到当前优先级最低的音源
                     SpatialAudioSource *lowest_priority_source = nullptr;
-                    double lowest_score = asi->gain * asi->priority;  // 当前音源的调度分数
+                    double lowest_score = spatial_source->gain * spatial_source->priority;  // 当前音源的调度分数
 
                     for(auto candidate : source_list)
                 {
                     // 只考虑已分配物理音源且正在播放的音源
-                    if(candidate && candidate->source && candidate != asi)
+                    if(candidate && candidate->source && candidate != spatial_source)
                     {
                         double candidate_score = candidate->gain * candidate->priority;
 
@@ -404,7 +404,7 @@ namespace hgl::audio
                     stolen_source->Unlink();
 
                     // 将被抢占的物理音源分配给当前音源
-                    asi->source = stolen_source;
+                    spatial_source->source = stolen_source;
                     lowest_priority_source->source = nullptr;
                 }
                 else
@@ -415,191 +415,191 @@ namespace hgl::audio
             }
         }
 
-        asi->source->Link(asi->buffer);
+        spatial_source->source->Link(spatial_source->buffer);
 
-        asi->source->SetGain(asi->gain);
-        asi->source->SetDistanceModel(asi->distance_model);
-        asi->source->SetRolloffFactor(asi->rolloff_factor);
-        asi->source->SetDistance(asi->ref_distance,asi->max_distance);
-        asi->source->SetPosition(asi->cur_pos);
-        asi->source->SetConeAngle(asi->cone_angle);
-        asi->source->SetVelocity(asi->velocity);
-        asi->source->SetDirection(asi->direction);
-        asi->source->SetDopplerFactor(asi->doppler_factor);
-        asi->source->SetDopplerVelocity(0);
-        asi->source->SetAirAbsorptionFactor(asi->air_absorption_factor);
+        spatial_source->source->SetGain(spatial_source->gain);
+        spatial_source->source->SetDistanceModel(spatial_source->distance_model);
+        spatial_source->source->SetRolloffFactor(spatial_source->rolloff_factor);
+        spatial_source->source->SetDistance(spatial_source->ref_distance,spatial_source->max_distance);
+        spatial_source->source->SetPosition(spatial_source->current_position);
+        spatial_source->source->SetConeAngle(spatial_source->cone_angle);
+        spatial_source->source->SetVelocity(spatial_source->velocity);
+        spatial_source->source->SetDirection(spatial_source->direction);
+        spatial_source->source->SetDopplerFactor(spatial_source->doppler_factor);
+        spatial_source->source->SetDopplerVelocity(0);
+        spatial_source->source->SetAirAbsorptionFactor(spatial_source->air_absorption_factor);
 
         // 应用混响效果
         if(reverb_enabled && aux_effect_slot != 0 && alSource3i)
         {
-            alSource3i(asi->source->GetIndex(), AL_AUXILIARY_SEND_FILTER, aux_effect_slot, 0, AL_FILTER_NULL);
+            alSource3i(spatial_source->source->GetIndex(), AL_AUXILIARY_SEND_FILTER, aux_effect_slot, 0, AL_FILTER_NULL);
         }
 
-        asi->source->SetCurTime(time_off);
+        spatial_source->source->SetPlaybackTime(time_off);
 
         // 启动淡入效果（在播放开始之前设置）
-        asi->is_fading = true;
-        asi->fade_start_time = cur_time;
-        asi->fade_duration = FADE_DURATION;
-        asi->fade_start_gain = 0.0;
-        asi->fade_target_gain = asi->gain;
-        asi->source->SetGain(0.0);  // 从0开始淡入
+        spatial_source->is_fading = true;
+        spatial_source->fade_start_time = current_time;
+        spatial_source->fade_duration = FADE_DURATION;
+        spatial_source->fade_start_gain = 0.0;
+        spatial_source->fade_target_gain = spatial_source->gain;
+        spatial_source->source->SetGain(0.0);  // 从0开始淡入
 
-        asi->source->Play(asi->loop);
+        spatial_source->source->Play(spatial_source->loop);
 
-        OnToHear(asi);
+        OnToHear(spatial_source);
 
         return(true);
     }
 
-    bool SpatialAudioWorld::UpdateSource(SpatialAudioSource *asi)
+    bool SpatialAudioWorld::UpdateSource(SpatialAudioSource *spatial_source)
     {
-        if(!asi)return(false);
-        if(!asi->source)return(false);
+        if(!spatial_source)return(false);
+        if(!spatial_source->source)return(false);
 
         // 处理淡入淡出效果
-        if(asi->is_fading)
+        if(spatial_source->is_fading)
         {
-            double elapsed = cur_time - asi->fade_start_time;
+            double elapsed = current_time - spatial_source->fade_start_time;
 
-            if(elapsed >= asi->fade_duration)
+            if(elapsed >= spatial_source->fade_duration)
             {
                 // 淡入淡出完成
-                asi->source->SetGain(asi->fade_target_gain);
-                asi->is_fading = false;
+                spatial_source->source->SetGain(spatial_source->fade_target_gain);
+                spatial_source->is_fading = false;
 
                 // 如果是淡出到静音，现在停止并释放音源
-                if(asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)  // 使用命名常量
+                if(spatial_source->fade_target_gain <= FADE_SILENCE_THRESHOLD)  // 使用命名常量
                 {
-                    asi->source->Stop();
-                    asi->source->Unlink();
-                    source_pool.Release(asi->source);  // 将音源归还到对象池
-                    asi->source = nullptr;
+                    spatial_source->source->Stop();
+                    spatial_source->source->Unlink();
+                    source_pool.Release(spatial_source->source);  // 将音源归还到对象池
+                    spatial_source->source = nullptr;
                     return(true);
                 }
             }
             else
             {
                 // 计算当前增益（使用配置的插值算法）
-                double t = elapsed / asi->fade_duration;
+                double t = elapsed / spatial_source->fade_duration;
                 double current_gain = Interpolation::Interpolate(
                     fade_interpolation_type,
-                    (float)asi->fade_start_gain,
-                    (float)asi->fade_target_gain,
+                    (float)spatial_source->fade_start_gain,
+                    (float)spatial_source->fade_target_gain,
                     (float)t
                 );
-                asi->source->SetGain(current_gain);
+                spatial_source->source->SetGain(current_gain);
             }
         }
 
-        if(asi->source->GetState()==AL_STOPPED)    // 停止播放状态
+        if(spatial_source->source->GetState()==AL_STOPPED)    // 停止播放状态
         {
             // 如果正在淡出，不要中断，让淡出完成
-            if(asi->is_fading && asi->fade_target_gain <= FADE_SILENCE_THRESHOLD)
+            if(spatial_source->is_fading && spatial_source->fade_target_gain <= FADE_SILENCE_THRESHOLD)
                 return(true);
 
-            if(!asi->loop)                  // 不是循环播放
+            if(!spatial_source->loop)                  // 不是循环播放
             {
-                if(OnStopped(asi))
-                    ToMute(asi);
+                if(OnStopped(spatial_source))
+                    ToMute(spatial_source);
 
                 return(true);
             }
             else
             {
                 // 循环播放：先触发事件，允许用户决定是否继续
-                bool continue_play = OnStopped(asi);
+                bool continue_play = OnStopped(spatial_source);
                 if(continue_play)
                 {
-                    if(!asi->source->Play())  // 尝试继续播放
+                    if(!spatial_source->source->Play())  // 尝试继续播放
                     {
                         // 播放失败，释放音源
-                        ToMute(asi);
+                        ToMute(spatial_source);
                     }
                 }
                 else
                 {
                     // 用户不希望继续播放，释放音源
-                    ToMute(asi);
+                    ToMute(spatial_source);
                 }
             }
         }
 
-        if(asi->doppler_factor>0)                   // 需要多普勒效果
+        if(spatial_source->doppler_factor>0)                   // 需要多普勒效果
         {
-            if(asi->last_pos!=asi->cur_pos)         // 位置发生变化
+            if(spatial_source->last_position!=spatial_source->current_position)         // 位置发生变化
             {
                 // 检查时间差，避免除以零或数值不稳定
-                double time_diff = asi->cur_time - asi->last_time;
+                double time_diff = spatial_source->current_position_time - spatial_source->last_position_time;
                 if(time_diff > MIN_TIME_DIFF)       // 使用最小时间阈值避免数值问题
                 {
                     // 计算当前帧的速度矢量
                     Vector3f raw_velocity;
-                    raw_velocity.x = (asi->cur_pos.x - asi->last_pos.x) / time_diff;
-                    raw_velocity.y = (asi->cur_pos.y - asi->last_pos.y) / time_diff;
-                    raw_velocity.z = (asi->cur_pos.z - asi->last_pos.z) / time_diff;
+                    raw_velocity.x = (spatial_source->current_position.x - spatial_source->last_position.x) / time_diff;
+                    raw_velocity.y = (spatial_source->current_position.y - spatial_source->last_position.y) / time_diff;
+                    raw_velocity.z = (spatial_source->current_position.z - spatial_source->last_position.z) / time_diff;
 
                     // 应用低通滤波平滑速度，防止帧率波动导致的音调抖动
                     // 使用指数移动平均: smoothed = smoothed * (1 - alpha) + raw * alpha
                     const double smooth_factor = VELOCITY_SMOOTHING_FACTOR;
                     const double retain_factor = 1.0 - smooth_factor;
-                    asi->smoothed_velocity.x = asi->smoothed_velocity.x * retain_factor + raw_velocity.x * smooth_factor;
-                    asi->smoothed_velocity.y = asi->smoothed_velocity.y * retain_factor + raw_velocity.y * smooth_factor;
-                    asi->smoothed_velocity.z = asi->smoothed_velocity.z * retain_factor + raw_velocity.z * smooth_factor;
+                    spatial_source->smoothed_velocity.x = spatial_source->smoothed_velocity.x * retain_factor + raw_velocity.x * smooth_factor;
+                    spatial_source->smoothed_velocity.y = spatial_source->smoothed_velocity.y * retain_factor + raw_velocity.y * smooth_factor;
+                    spatial_source->smoothed_velocity.z = spatial_source->smoothed_velocity.z * retain_factor + raw_velocity.z * smooth_factor;
 
                     // 设置平滑后的矢量速度（OpenAL会自动计算多普勒效果）
-                    asi->source->SetVelocity(asi->smoothed_velocity);
+                    spatial_source->source->SetVelocity(spatial_source->smoothed_velocity);
 
                     // 计算标量速度用于记录
-                    asi->move_speed = math::Length(asi->last_pos, asi->cur_pos) / time_diff;
+                    spatial_source->movement_speed = math::Length(spatial_source->last_position, spatial_source->current_position) / time_diff;
                 }
             }
 
-            if(cur_time>asi->cur_time)          // 更新时间和位置
+            if(current_time>spatial_source->current_position_time)          // 更新时间和位置
             {
-                asi->last_pos=asi->cur_pos;
-                asi->last_time=asi->cur_time;
+                spatial_source->last_position=spatial_source->current_position;
+                spatial_source->last_position_time=spatial_source->current_position_time;
             }
         }
 
         // 方向性增益图：使用极坐标增益图计算方向性增益
         // 如果启用了方向性增益图（非全向），则计算并应用方向性增益
-        if(listener && asi->directional_pattern.IsEnabled())
+        if(listener && spatial_source->directional_pattern.IsEnabled())
         {
             const Vector3f &listener_pos = listener->GetPosition();
 
             // 计算从音源指向监听者的向量（归一化）
-            Vector3f to_listener = listener_pos - asi->cur_pos;
+            Vector3f to_listener = listener_pos - spatial_source->current_position;
             float distance = math::Length(to_listener);
             if(distance > 0.0001f)  // 避免除以零
             {
                 to_listener = to_listener / distance;  // 归一化
 
                 // 计算方向性增益
-                float directional_gain = asi->directional_pattern.CalculateGain(asi->direction, to_listener);
+                float directional_gain = spatial_source->directional_pattern.CalculateGain(spatial_source->direction, to_listener);
 
                 // 应用方向性增益
                 // 注意：这会覆盖 OpenAL 的锥形角度效果
                 // 当使用极坐标增益图时，建议将 cone_angle 设置为 (360, 360) 以禁用 OpenAL 的锥形效果
-                asi->source->SetConeGain(directional_gain);
+                spatial_source->source->SetConeGain(directional_gain);
             }
         }
 
         // 频率相关衰减 + 场景级低通：根据距离与场景参数动态调整低通滤波器
         // 注意：如果 AudioSource 自己启用了滤波器，则场景级滤波不会覆盖它
-        if(asi->source && asi->source->IsFilterEnabled())
+        if(spatial_source->source && spatial_source->source->IsFilterEnabled())
         {
-            if(asi->lowpass_filter != 0)
+            if(spatial_source->lowpass_filter != 0)
             {
                 if(alSourcei)
-                    alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
+                    alSourcei(spatial_source->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
 
                 if(alDeleteFilters)
-                    alDeleteFilters(1, &asi->lowpass_filter);
+                    alDeleteFilters(1, &spatial_source->lowpass_filter);
 
-                asi->lowpass_filter = 0;
-                asi->last_filter_gain = -1.0f;
-                asi->last_filter_gainhf = -1.0f;
+                spatial_source->lowpass_filter = 0;
+                spatial_source->last_filter_gain = -1.0f;
+                spatial_source->last_filter_gain_hf = -1.0f;
             }
         }
         else
@@ -610,13 +610,13 @@ namespace hgl::audio
             if((enable_scene_lowpass || enable_distance_lowpass) && listener && alGenFilters)
             {
                 const Vector3f &listener_pos = listener->GetPosition();
-                float distance = math::Length(listener_pos, asi->cur_pos);
+                float distance = math::Length(listener_pos, spatial_source->current_position);
 
                 // 计算距离因子（0=近距离，1=最大距离）
                 float distance_factor = 0.0f;
-                if(enable_distance_lowpass && asi->max_distance > asi->ref_distance)
+                if(enable_distance_lowpass && spatial_source->max_distance > spatial_source->ref_distance)
                 {
-                    distance_factor = std::clamp((distance - asi->ref_distance) / (asi->max_distance - asi->ref_distance), 0.0f, 1.0f);
+                    distance_factor = std::clamp((distance - spatial_source->ref_distance) / (spatial_source->max_distance - spatial_source->ref_distance), 0.0f, 1.0f);
                 }
 
                 // 远距离时降低高频增益，模拟空气吸收
@@ -627,61 +627,61 @@ namespace hgl::audio
                 }
 
                 float final_gain = enable_scene_lowpass ? scene_lowpass_gain : 1.0f;
-                float final_gain_hf = distance_gain_hf * (enable_scene_lowpass ? scene_lowpass_gainhf : 1.0f);
+                float final_gain_hf = distance_gain_hf * (enable_scene_lowpass ? scene_lowpass_gain_hf : 1.0f);
 
                 final_gain = std::clamp(final_gain, 0.0f, 1.0f);
                 final_gain_hf = std::clamp(final_gain_hf, 0.0f, 1.0f);
 
                 // 只在参数变化显著时才更新滤波器（避免每帧都触发昂贵的OpenAL状态更新）
-                if(std::abs(final_gain - asi->last_filter_gain) > FREQ_ATTEN_CHANGE_THRESHOLD
-                 || std::abs(final_gain_hf - asi->last_filter_gainhf) > FREQ_ATTEN_CHANGE_THRESHOLD)
+                if(std::abs(final_gain - spatial_source->last_filter_gain) > FREQ_ATTEN_CHANGE_THRESHOLD
+                 || std::abs(final_gain_hf - spatial_source->last_filter_gain_hf) > FREQ_ATTEN_CHANGE_THRESHOLD)
                 {
                     // 创建per-source滤波器（如果尚未创建）
-                    if(asi->lowpass_filter == 0)
+                    if(spatial_source->lowpass_filter == 0)
                     {
                         alGetError();  // 清除之前的错误
-                        alGenFilters(1, &asi->lowpass_filter);
+                        alGenFilters(1, &spatial_source->lowpass_filter);
                         if(alGetError() != AL_NO_ERROR)
                         {
-                            asi->lowpass_filter = 0;  // 创建失败，确保ID为0
+                            spatial_source->lowpass_filter = 0;  // 创建失败，确保ID为0
                             return(true);  // 继续执行，只是没有滤波器效果
                         }
 
                         if(alFilteri)
                         {
-                            alFilteri(asi->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+                            alFilteri(spatial_source->lowpass_filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
                             if(alGetError() != AL_NO_ERROR)
                             {
                                 // 设置失败，清理并返回
                                 if(alDeleteFilters)
-                                    alDeleteFilters(1, &asi->lowpass_filter);
-                                asi->lowpass_filter = 0;
+                                    alDeleteFilters(1, &spatial_source->lowpass_filter);
+                                spatial_source->lowpass_filter = 0;
                                 return(true);
                             }
                         }
                     }
 
                     // 设置低通滤波器参数
-                    if(asi->lowpass_filter != 0 && alFilterf)
+                    if(spatial_source->lowpass_filter != 0 && alFilterf)
                     {
                         alGetError();  // 清除之前的错误
 
                         // 尝试设置两个参数，任一失败都放弃更新
-                        alFilterf(asi->lowpass_filter, AL_LOWPASS_GAIN, final_gain);
+                        alFilterf(spatial_source->lowpass_filter, AL_LOWPASS_GAIN, final_gain);
                         bool gain_ok = (alGetError() == AL_NO_ERROR);
 
-                        alFilterf(asi->lowpass_filter, AL_LOWPASS_GAINHF, final_gain_hf);
+                        alFilterf(spatial_source->lowpass_filter, AL_LOWPASS_GAINHF, final_gain_hf);
                         bool gainhf_ok = (alGetError() == AL_NO_ERROR);
 
                         // 只有两个参数都设置成功才应用滤波器
                         if(gain_ok && gainhf_ok && alSourcei)
                         {
-                            alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, asi->lowpass_filter);
+                            alSourcei(spatial_source->source->GetIndex(), AL_DIRECT_FILTER, spatial_source->lowpass_filter);
 
                             if(alGetError() == AL_NO_ERROR)
                             {
-                                asi->last_filter_gain = final_gain;
-                                asi->last_filter_gainhf = final_gain_hf;
+                                spatial_source->last_filter_gain = final_gain;
+                                spatial_source->last_filter_gain_hf = final_gain_hf;
                             }
                             // 如果应用失败，不更新缓存，下次会重试
                         }
@@ -689,17 +689,17 @@ namespace hgl::audio
                     }
                 }
             }
-            else if(asi->lowpass_filter != 0)
+            else if(spatial_source->lowpass_filter != 0)
             {
                 if(alSourcei)
-                    alSourcei(asi->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
+                    alSourcei(spatial_source->source->GetIndex(), AL_DIRECT_FILTER, AL_FILTER_NULL);
 
                 if(alDeleteFilters)
-                    alDeleteFilters(1, &asi->lowpass_filter);
+                    alDeleteFilters(1, &spatial_source->lowpass_filter);
 
-                asi->lowpass_filter = 0;
-                asi->last_filter_gain = -1.0f;
-                asi->last_filter_gainhf = -1.0f;
+                spatial_source->lowpass_filter = 0;
+                spatial_source->last_filter_gain = -1.0f;
+                spatial_source->last_filter_gain_hf = -1.0f;
             }
         }
 
@@ -731,9 +731,9 @@ namespace hgl::audio
         }
 
         if(ct!=0)
-            cur_time=ct;
+            current_time=ct;
         else
-            cur_time=GetTimeSec();
+            current_time=GetTimeSec();
 
         // 递增帧计数器（用于分层更新）
         update_frame_counter++;
@@ -747,7 +747,7 @@ namespace hgl::audio
         {
             SpatialAudioSource *ptr = source;  // 为了保持代码兼容性
 
-            if(!ptr->is_play)
+            if(!ptr->should_play)
             {
                 if(ptr->source)          // 还有绑定的音源
                     ToMute(ptr);
@@ -1032,7 +1032,7 @@ namespace hgl::audio
                 if(source)
                 {
                     source->last_filter_gain = -1.0f;
-                    source->last_filter_gainhf = -1.0f;
+                    source->last_filter_gain_hf = -1.0f;
                 }
             }
         }
@@ -1074,7 +1074,7 @@ namespace hgl::audio
                     if(source)
                     {
                         source->last_filter_gain = -1.0f;
-                        source->last_filter_gainhf = -1.0f;
+                        source->last_filter_gain_hf = -1.0f;
                     }
                 }
             }
@@ -1112,7 +1112,7 @@ namespace hgl::audio
             if(source)
             {
                 source->last_filter_gain = -1.0f;
-                source->last_filter_gainhf = -1.0f;
+                source->last_filter_gain_hf = -1.0f;
             }
         }
 
@@ -1153,7 +1153,7 @@ namespace hgl::audio
                     if(source)
                     {
                         source->last_filter_gain = -1.0f;
-                        source->last_filter_gainhf = -1.0f;
+                        source->last_filter_gain_hf = -1.0f;
                     }
                 }
             }
@@ -1178,7 +1178,7 @@ namespace hgl::audio
         scene_mutex.Lock();
 
         scene_lowpass_gain = std::clamp(gain, 0.0f, 1.0f);
-        scene_lowpass_gainhf = std::clamp(gain_hf, 0.0f, 1.0f);
+        scene_lowpass_gain_hf = std::clamp(gain_hf, 0.0f, 1.0f);
         scene_lowpass_enabled = true;
 
         for(auto source : source_list)
@@ -1186,7 +1186,7 @@ namespace hgl::audio
             if(source)
             {
                 source->last_filter_gain = -1.0f;
-                source->last_filter_gainhf = -1.0f;
+                source->last_filter_gain_hf = -1.0f;
             }
         }
 
@@ -1219,26 +1219,26 @@ namespace hgl::audio
     /**
      * 设置音源的方向性增益图
      */
-    void SpatialAudioWorld::SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type)
+    void SpatialAudioWorld::SetDirectionalPattern(SpatialAudioSource *spatial_source, GainPatternType pattern_type)
     {
-        if (!asi)
+        if (!spatial_source)
             return;
 
         scene_mutex.Lock();
-        asi->directional_pattern.SetPattern(pattern_type);
+        spatial_source->directional_pattern.SetPattern(pattern_type);
         scene_mutex.Unlock();
     }
 
     /**
      * 设置音源的自定义方向性增益图
      */
-    void SpatialAudioWorld::SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count)
+    void SpatialAudioWorld::SetCustomDirectionalPattern(SpatialAudioSource *spatial_source, const PolarGainSample *samples, int count)
     {
-        if (!asi || !samples || count <= 0)
+        if (!spatial_source || !samples || count <= 0)
             return;
 
         scene_mutex.Lock();
-        asi->directional_pattern.SetCustomPattern(samples, count);
+        spatial_source->directional_pattern.SetCustomPattern(samples, count);
         scene_mutex.Unlock();
     }
 }//namespace hgl::audio

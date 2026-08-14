@@ -15,18 +15,18 @@ namespace hgl::audio
         AudioDataInfo info;         ///< 音频数据信息（声道数、位深、是否浮点、采样率、数据大小）
 
         // 生成控制参数
-        uint minCount;              ///< 最小生成数量(每类音源生成的实例下限)
-        uint maxCount;              ///< 最大生成数量(每类音源生成的实例上限)
-        float minInterval;          ///< 最小出现间隔(秒)
-        float maxInterval;          ///< 最大出现间隔(秒)
+        uint min_count;              ///< 最小生成数量(每类音源生成的实例下限)
+        uint max_count;              ///< 最大生成数量(每类音源生成的实例上限)
+        float min_interval;          ///< 最小出现间隔(秒)
+        float max_interval;          ///< 最大出现间隔(秒)
 
         // 变化范围参数
-        float minVolume;            ///< 最小音量(0.0-1.0，按实例随机)
-        float maxVolume;            ///< 最大音量(0.0-1.0，按实例随机)
-        float minPitch;             ///< 最小音调(0.5-2.0，按实例随机)
-        float maxPitch;             ///< 最大音调(0.5-2.0，按实例随机)
+        float min_volume;            ///< 最小音量(0.0-1.0，按实例随机)
+        float max_volume;            ///< 最大音量(0.0-1.0，按实例随机)
+        float min_pitch;             ///< 最小音调(0.5-2.0，按实例随机)
+        float max_pitch;             ///< 最大音调(0.5-2.0，按实例随机)
 
-        AudioFilterConfig filterConfig; ///< 滤波参数(基准值，后续可叠加随机扰动)
+        AudioFilterConfig filter_config; ///< 滤波参数(基准值，后续可叠加随机扰动)
 
         struct FilterRandomRange
         {
@@ -83,7 +83,7 @@ namespace hgl::audio
             }
         };
 
-        FilterRandomRange filterRandom;    ///< 滤波参数随机范围
+        FilterRandomRange filter_random;    ///< 滤波参数随机范围
         SimpleReverbConfig reverb;         ///< 简易混响参数
 
         AudioMixerSourceConfig()
@@ -91,29 +91,29 @@ namespace hgl::audio
             data = nullptr;
             info = AudioDataInfo();
 
-            minCount = 1;
-            maxCount = 1;
-            minInterval = 0.0f;
-            maxInterval = 0.0f;
+            min_count = 1;
+            max_count = 1;
+            min_interval = 0.0f;
+            max_interval = 0.0f;
 
-            minVolume = 0.8f;
-            maxVolume = 1.0f;
-            minPitch = 0.95f;
-            maxPitch = 1.05f;
+            min_volume = 0.8f;
+            max_volume = 1.0f;
+            min_pitch = 0.95f;
+            max_pitch = 1.05f;
 
-            filterConfig = AudioFilterConfig();
+            filter_config = AudioFilterConfig();
         }
 
         const bool operator ==(const AudioMixerSourceConfig& cfg) const
         {
             return (data == cfg.data) &&
                    (info == cfg.info) &&
-                   (minCount == cfg.minCount) && (maxCount == cfg.maxCount) &&
-                   (minInterval == cfg.minInterval) && (maxInterval == cfg.maxInterval) &&
-                   (minVolume == cfg.minVolume) && (maxVolume == cfg.maxVolume) &&
-                   (minPitch == cfg.minPitch) && (maxPitch == cfg.maxPitch) &&
-                   (filterConfig == cfg.filterConfig) &&
-                   (filterRandom == cfg.filterRandom) &&
+                   (min_count == cfg.min_count) && (max_count == cfg.max_count) &&
+                   (min_interval == cfg.min_interval) && (max_interval == cfg.max_interval) &&
+                   (min_volume == cfg.min_volume) && (max_volume == cfg.max_volume) &&
+                   (min_pitch == cfg.min_pitch) && (max_pitch == cfg.max_pitch) &&
+                   (filter_config == cfg.filter_config) &&
+                   (filter_random == cfg.filter_random) &&
                    (reverb == cfg.reverb);
         }
     };//struct AudioMixerSourceConfig

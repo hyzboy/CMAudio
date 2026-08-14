@@ -401,7 +401,7 @@ TinySoundFont 应该总是能编译。如果遇到问题：
 - [快速参考指南](../../QUICK_REFERENCE.md)
 - [TinySoundFont 插件 README](README.md)
 - [FluidSynth 插件文档](../Audio.FluidSynth/README.md)
-- [WildMIDI 插件文档](../Audio.WildMidi/README.md)
+- [WildMIDI 插件文档](../Audio.WildMIDI/README.md)
 - [Libtimidity 插件文档](../Audio.Timidity/README.md)
 
 ## 总结 / Summary

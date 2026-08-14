@@ -21,8 +21,8 @@ namespace hgl::audio
 
     void AudioSource::InitPrivate()
     {
-        index=InvalidIndex;
-        Buffer=nullptr;
+        source_id=InvalidIndex;
+        buffer=nullptr;
         direct_filter=0;
         filter_type=AudioFilterType::None;
         filter_gain=1.0f;
@@ -59,34 +59,34 @@ namespace hgl::audio
         Close();
     }
 
-    double AudioSource::GetCurTime() const
+    double AudioSource::GetPlaybackTime() const
     {
         if(!alGetSourcei)return(0);
-        if(index==InvalidIndex)return(0);
+        if(source_id==InvalidIndex)return(0);
 
         float offset;
 
-        alGetSourcef(index,AL_SEC_OFFSET,&offset);
+        alGetSourcef(source_id,AL_SEC_OFFSET,&offset);
 
         return offset;
     }
 
-    void AudioSource::SetCurTime(const double &ct)
+    void AudioSource::SetPlaybackTime(const double &ct)
     {
         if(!alGetSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        alSourcef(index,AL_SEC_OFFSET,ct);
+        alSourcef(source_id,AL_SEC_OFFSET,ct);
     }
 
     int AudioSource::GetState() const
     {
         if(!alGetSourcei)return(0);
-        if(index==InvalidIndex)return(AL_NONE);
+        if(source_id==InvalidIndex)return(AL_NONE);
 
         int state;
 
-        alGetSourcei(index,AL_SOURCE_STATE,&state);
+        alGetSourcei(source_id,AL_SOURCE_STATE,&state);
 
         return(state);
     }
@@ -94,11 +94,11 @@ namespace hgl::audio
     float AudioSource::GetMinGain() const
     {
         if(!alGetSourcef)return(0);
-        if(index==InvalidIndex)return(0);
+        if(source_id==InvalidIndex)return(0);
 
         float min;
 
-        alGetSourcef(index,AL_MIN_GAIN,&min);
+        alGetSourcef(source_id,AL_MIN_GAIN,&min);
 
         return(min);
     }
@@ -106,11 +106,11 @@ namespace hgl::audio
     float AudioSource::GetMaxGain() const
     {
         if(!alGetSourcef)return(0);
-        if(index==InvalidIndex)return(0);
+        if(source_id==InvalidIndex)return(0);
 
         float max;
 
-        alGetSourcef(index,AL_MIN_GAIN,&max);
+        alGetSourcef(source_id,AL_MIN_GAIN,&max);
 
         return(max);
     }
@@ -118,81 +118,81 @@ namespace hgl::audio
     void AudioSource::SetLoop(bool _loop)
     {
         if(!alSourcei)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         loop=_loop;
-        alSourcei(index,AL_LOOPING,loop);
+        alSourcei(source_id,AL_LOOPING,loop);
     }
 
     void AudioSource::SetPitch(float _pitch)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         pitch=_pitch;
-        alSourcef(index,AL_PITCH,pitch);
+        alSourcef(source_id,AL_PITCH,pitch);
     }
 
     void AudioSource::SetGain(float _gain)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         gain=_gain;
-        alSourcef(index,AL_GAIN,gain);
+        alSourcef(source_id,AL_GAIN,gain);
     }
 
     void AudioSource::SetConeGain(float _gain)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         cone_gain=_gain;
-        alSourcef(index,AL_CONE_OUTER_GAIN,cone_gain);
+        alSourcef(source_id,AL_CONE_OUTER_GAIN,cone_gain);
     }
 
     void AudioSource::SetPosition(const Vector3f &pos)
     {
         if(!openal::alSourcefv)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         position=pos;
-        alSourcefv(index,AL_POSITION,position);
+        alSourcefv(source_id,AL_POSITION,position);
     }
 
     void AudioSource::SetVelocity(const Vector3f &vel)
     {
         if(!openal::alSourcefv)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         velocity=vel;
-        alSourcefv(index,AL_VELOCITY,velocity);
+        alSourcefv(source_id,AL_VELOCITY,velocity);
     }
 
     void AudioSource::SetDirection(const Vector3f &dir)
     {
         if(!openal::alSourcefv)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         direction=dir;
-        alSourcefv(index,AL_DIRECTION,direction);
+        alSourcefv(source_id,AL_DIRECTION,direction);
     }
 
     void AudioSource::SetDistance(const float &ref_distance,const float &max_distance)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        ref_dist=ref_distance;
-        max_dist=max_distance;
-        alSourcef(index,AL_REFERENCE_DISTANCE,ref_dist);
-        alSourcef(index,AL_MAX_DISTANCE,max_dist);
+        this->reference_distance=ref_distance;
+        this->max_distance=max_distance;
+        alSourcef(source_id,AL_REFERENCE_DISTANCE,this->reference_distance);
+        alSourcef(source_id,AL_MAX_DISTANCE,this->max_distance);
     }
 
     void AudioSource::SetDistanceModel(uint dm)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
         if(!alDistanceModel)return;
 
 // #define AL_INVERSE_DISTANCE                      0xD001    //倒数距离
@@ -211,26 +211,26 @@ namespace hgl::audio
     void AudioSource::SetRolloffFactor(float rf)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         rolloff_factor=rf;
-        alSourcef(index,AL_ROLLOFF_FACTOR,rolloff_factor);
+        alSourcef(source_id,AL_ROLLOFF_FACTOR,rolloff_factor);
     }
 
     void AudioSource::SetConeAngle(const ConeAngle &ca)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        angle=ca;
-        alSourcef(index,AL_CONE_INNER_ANGLE,ca.inner);
-        alSourcef(index,AL_CONE_OUTER_ANGLE,ca.outer);
+        cone_angle=ca;
+        alSourcef(source_id,AL_CONE_INNER_ANGLE,ca.inner);
+        alSourcef(source_id,AL_CONE_OUTER_ANGLE,ca.outer);
     }
 
     void AudioSource::SetDopplerFactor(const float &factor)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         doppler_factor=factor;
 
@@ -240,7 +240,7 @@ namespace hgl::audio
     void AudioSource::SetDopplerVelocity(const float &velocity)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         doppler_velocity=velocity;
 
@@ -250,21 +250,21 @@ namespace hgl::audio
     void AudioSource::SetAirAbsorptionFactor(const float &factor)
     {
         if(!alSourcef)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         // 空气吸收因子范围: 0.0 (无吸收) 到 10.0 (最大吸收)
         // 默认值为 0.0，高频在远距离会衰减更快
         air_absorption_factor = factor;
 
         // AL_AIR_ABSORPTION_FACTOR 是 EFX 扩展的一部分
-        alSourcef(index, AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
+        alSourcef(source_id, AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
     }
 
     bool AudioSource::SetLowpassFilter(const float gain,const float gain_hf)
     {
         if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
             return(false);
-        if(index==InvalidIndex)return(false);
+        if(source_id==InvalidIndex)return(false);
 
         const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
         const float clamped_gain_hf = std::clamp(gain_hf, 0.0f, 1.0f);
@@ -302,7 +302,7 @@ namespace hgl::audio
             return(false);
         }
 
-        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        alSourcei(source_id, AL_DIRECT_FILTER, filter_id);
         if(alGetError()!=AL_NO_ERROR)
         {
             if(direct_filter==0 && alDeleteFilters)
@@ -322,7 +322,7 @@ namespace hgl::audio
     {
         if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
             return(false);
-        if(index==InvalidIndex)return(false);
+        if(source_id==InvalidIndex)return(false);
 
         const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
         const float clamped_gain_lf = std::clamp(gain_lf, 0.0f, 1.0f);
@@ -360,7 +360,7 @@ namespace hgl::audio
             return(false);
         }
 
-        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        alSourcei(source_id, AL_DIRECT_FILTER, filter_id);
         if(alGetError()!=AL_NO_ERROR)
         {
             if(direct_filter==0 && alDeleteFilters)
@@ -380,7 +380,7 @@ namespace hgl::audio
     {
         if(!alGenFilters || !alFilteri || !alFilterf || !alSourcei)
             return(false);
-        if(index==InvalidIndex)return(false);
+        if(source_id==InvalidIndex)return(false);
 
         const float clamped_gain = std::clamp(gain, 0.0f, 1.0f);
         const float clamped_gain_lf = std::clamp(gain_lf, 0.0f, 1.0f);
@@ -427,7 +427,7 @@ namespace hgl::audio
             return(false);
         }
 
-        alSourcei(index, AL_DIRECT_FILTER, filter_id);
+        alSourcei(source_id, AL_DIRECT_FILTER, filter_id);
         if(alGetError()!=AL_NO_ERROR)
         {
             if(direct_filter==0 && alDeleteFilters)
@@ -445,13 +445,13 @@ namespace hgl::audio
 
     bool AudioSource::SetFilter(const AudioFilterConfig &config)
     {
-        if(!config.enable || config.type==AudioFilterType::None)
+        if(!config.enable || config.filter_type==AudioFilterType::None)
         {
             DisableFilter();
             return(true);
         }
 
-        switch(config.type)
+        switch(config.filter_type)
         {
             case AudioFilterType::Lowpass:
                 return SetLowpassFilter(config.gain, config.gain_hf);
@@ -468,8 +468,8 @@ namespace hgl::audio
 
     void AudioSource::DisableFilter()
     {
-        if(index!=InvalidIndex && alSourcei)
-            alSourcei(index, AL_DIRECT_FILTER, AL_FILTER_NULL);
+        if(source_id!=InvalidIndex && alSourcei)
+            alSourcei(source_id, AL_DIRECT_FILTER, AL_FILTER_NULL);
 
         if(direct_filter!=0 && alDeleteFilters)
             alDeleteFilters(1,&direct_filter);
@@ -487,16 +487,16 @@ namespace hgl::audio
     bool AudioSource::Play()
     {
         if(!alSourcePlay)return(false);
-        if(index==InvalidIndex)return(false);
-        if(!Buffer
-          ||Buffer->GetTime()<=0)return(false);
+        if(source_id==InvalidIndex)return(false);
+        if(!buffer
+          ||buffer->GetTime()<=0)return(false);
 
         if(IsPlaying())
-            alSourceStop(index);
+            alSourceStop(source_id);
 
-        alSourcePlay(index);
+        alSourcePlay(source_id);
 
-        pause=false;
+        paused=false;
 
         return(!alLastError());
     }
@@ -508,17 +508,17 @@ namespace hgl::audio
     bool AudioSource::Play(bool _loop)
     {
         if(!alSourcePlay)return(false);
-        if(index==InvalidIndex)return(false);
-        if(!Buffer
-          ||Buffer->GetTime()<=0)return(false);
+        if(source_id==InvalidIndex)return(false);
+        if(!buffer
+          ||buffer->GetTime()<=0)return(false);
 
         if(IsPlaying())
-            alSourceStop(index);
+            alSourceStop(source_id);
 
-        alSourcePlay(index);
-        alSourcei(index,AL_LOOPING,loop=_loop);
+        alSourcePlay(source_id);
+        alSourcei(source_id,AL_LOOPING,loop=_loop);
 
-        pause=false;
+        paused=false;
 
         return(!alLastError());
     }
@@ -528,12 +528,12 @@ namespace hgl::audio
         if(!alSourcePlay)return;
         if(!alSourcePause)return;
 
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        if(!pause)
+        if(!paused)
         {
-            alSourcePause(index);
-            pause=true;
+            alSourcePause(source_id);
+            paused=true;
         }
     }
 
@@ -542,29 +542,29 @@ namespace hgl::audio
         if(!alSourcePlay)return;
         if(!alSourcePause)return;
 
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        if(pause)
+        if(paused)
         {
-            alSourcePlay(index);
-            pause=false;
+            alSourcePlay(source_id);
+            paused=false;
         }
     }
 
     void AudioSource::Stop()
     {
         if(!alSourceStop)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        alSourceStop(index);
+        alSourceStop(source_id);
     }
 
     void AudioSource::Rewind()
     {
         if(!alSourceRewind)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        alSourceRewind(index);
+        alSourceRewind(source_id);
     }
 
     /**
@@ -579,15 +579,15 @@ namespace hgl::audio
             return(false);
         }
 
-        if(index!=InvalidIndex)Close();
+        if(source_id!=InvalidIndex)Close();
 
         alGetError();        //清空错误
 
-        alGenSources(1,&index);
+        alGenSources(1,&source_id);
 
         if(alLastError())
         {
-            index=InvalidIndex;
+            source_id=InvalidIndex;
 
             LogInfo(OS_TEXT("无法再创建音频播放源了！"));
             return(false);
@@ -595,21 +595,21 @@ namespace hgl::audio
 
         loop=false;
 
-        alGetSourcef    (index,AL_PITCH,                &pitch);
-        alGetSourcef    (index,AL_GAIN,                 &gain);
-        alGetSourcef    (index,AL_CONE_OUTER_GAIN,      &cone_gain);
-        alGetSourcefv   (index,AL_POSITION,             position);
-        alGetSourcefv   (index,AL_VELOCITY,             velocity);
-        alGetSourcefv   (index,AL_DIRECTION,            direction);
-        alGetSourcef    (index,AL_MAX_DISTANCE,         &max_dist);
-        alGetSourcef    (index,AL_REFERENCE_DISTANCE,   &ref_dist);
-        alGetSourcef    (index,AL_ROLLOFF_FACTOR,       &rolloff_factor);
-        alGetSourcef    (index,AL_CONE_INNER_ANGLE,     &angle.inner);
-        alGetSourcef    (index,AL_CONE_OUTER_ANGLE,     &angle.outer);
+        alGetSourcef    (source_id,AL_PITCH,                &pitch);
+        alGetSourcef    (source_id,AL_GAIN,                 &gain);
+        alGetSourcef    (source_id,AL_CONE_OUTER_GAIN,      &cone_gain);
+        alGetSourcefv   (source_id,AL_POSITION,             position);
+        alGetSourcefv   (source_id,AL_VELOCITY,             velocity);
+        alGetSourcefv   (source_id,AL_DIRECTION,            direction);
+        alGetSourcef    (source_id,AL_MAX_DISTANCE,         &max_distance);
+        alGetSourcef    (source_id,AL_REFERENCE_DISTANCE,   &reference_distance);
+        alGetSourcef    (source_id,AL_ROLLOFF_FACTOR,       &rolloff_factor);
+        alGetSourcef    (source_id,AL_CONE_INNER_ANGLE,     &cone_angle.inner);
+        alGetSourcef    (source_id,AL_CONE_OUTER_ANGLE,     &cone_angle.outer);
 
         // 初始化空气吸收因子为默认值 0.0 (无吸收)
         air_absorption_factor = 0.0f;
-        alSourcef       (index,AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
+        alSourcef       (source_id,AL_AIR_ABSORPTION_FACTOR, air_absorption_factor);
 
         return(true);
     }
@@ -620,14 +620,14 @@ namespace hgl::audio
     void AudioSource::Close()
     {
         if(!alDeleteSources)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
         DisableFilter();
-        alSourceStop(index);
-        alSourcei(index,AL_BUFFER,0);
-        alDeleteSources(1,&index);
+        alSourceStop(source_id);
+        alSourcei(source_id,AL_BUFFER,0);
+        alDeleteSources(1,&source_id);
 
-        index=InvalidIndex;
+        source_id=InvalidIndex;
     }
 
     /**
@@ -640,7 +640,7 @@ namespace hgl::audio
         if(!buf)return(false);
         if(!buf->GetTime())return(false);
         if(!alSourcei)return(false);
-        if(index==InvalidIndex)
+        if(source_id==InvalidIndex)
         {
             if(!Create())return(false);
         }
@@ -648,9 +648,9 @@ namespace hgl::audio
             Stop();
 
 
-        alSourcei(index,AL_BUFFER,buf->GetIndex());
+        alSourcei(source_id,AL_BUFFER,buf->GetIndex());
 
-        Buffer=buf;
+        buffer=buf;
 
         return(!alLastError());
     }
@@ -661,10 +661,10 @@ namespace hgl::audio
     void AudioSource::Unlink()
     {
         if(!alSourcei)return;
-        if(index==InvalidIndex)return;
+        if(source_id==InvalidIndex)return;
 
-        Buffer=nullptr;
+        buffer=nullptr;
 
-        alSourcei(index,AL_BUFFER,0);
+        alSourcei(source_id,AL_BUFFER,0);
     }
 }//namespace hgl::audio

@@ -25,13 +25,13 @@ namespace hgl::audio
 
         void InitPrivate();
 
-        AudioBuffer *Buffer;
+        AudioBuffer *buffer;
 
     protected:
 
-        uint            index;                                              ///<音源索引
+        uint            source_id;                                              ///<音源索引
 
-        bool            pause;                                              ///<是否暂停
+        bool            paused;                                              ///<是否暂停
 
         bool            loop;                                               ///<是否循环
         float           pitch;                                              ///<播放速率
@@ -40,10 +40,10 @@ namespace hgl::audio
         Vector3f        position;                                           ///<位置
         Vector3f        velocity;                                           ///<速度
         Vector3f        direction;                                          ///<朝向
-        float           ref_dist,max_dist;                                  ///<参考/最大距离
+        float           reference_distance,max_distance;                                  ///<参考/最大距离
         uint            distance_model;                                     ///<距离衰减模型
         float           rolloff_factor;                                     ///<距离衰减系数
-        ConeAngle       angle;                                              ///<锥形角度
+        ConeAngle       cone_angle;                                              ///<锥形角度
 
         float           doppler_factor;                                     ///<多普勒强度
         float           doppler_velocity;                                   ///<多普勒速度
@@ -58,7 +58,7 @@ namespace hgl::audio
 
     public: //属性
 
-                        uint    GetIndex()const{return index;}                                      ///<获取当前音源索引
+                        uint    GetIndex()const{return source_id;}                                      ///<获取当前音源索引
                         int     GetState()const;                                                    ///<获取当前音源状态
 
                 bool            IsNone      ()const{return GetState()==AL_NONE; }
@@ -66,8 +66,8 @@ namespace hgl::audio
                 bool            IsPaused    ()const{return GetState()==AL_PAUSED;}
                 bool            IsPlaying   ()const{return GetState()==AL_PLAYING;}
 
-                        double  GetCurTime()const;                                                  ///<获取当前播放到的时间
-                        void    SetCurTime(const double &);                                         ///<设置当前播放时间
+                        double  GetPlaybackTime()const;                                                  ///<获取当前播放到的时间
+                        void    SetPlaybackTime(const double &);                                         ///<设置当前播放时间
 
                         float   GetMinGain()const;                                                  ///<获取最小增益
                         float   GetMaxGain()const;                                                  ///<获取最大增益
@@ -113,8 +113,8 @@ namespace hgl::audio
 
                 void            GetDistance(float &rd,float &md)const                               ///<获取音源距离范围
                 {
-                    rd=ref_dist;
-                    md=max_dist;
+                    rd=reference_distance;
+                    md=max_distance;
                 }
                         void    SetDistance(const float &ref_distance,const float &max_distance);   ///<设置音源距离范围
 
@@ -127,7 +127,7 @@ namespace hgl::audio
                 const Vector3f &GetDirection()const{return direction;}                              ///<获取发声方向
                       void      SetDirection(const Vector3f &);                                     ///<设置发声方向
 
-                const ConeAngle &GetAngle()const{return angle;}                                     ///<获取发声锥形角度
+                const ConeAngle &GetAngle()const{return cone_angle;}                                     ///<获取发声锥形角度
                       void      SetConeAngle(const ConeAngle &);                                    ///<设置发声锥形角度
 
     public: //方法

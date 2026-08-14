@@ -30,8 +30,8 @@ int main(int argc, char** argv)
 
     std::cout << "Configuration loaded:" << std::endl;
     std::cout << "  Duration: " << config.duration << " seconds" << std::endl;
-    std::cout << "  Output: " << config.output.info.sampleRate << " Hz, ";
-    std::cout << (config.output.info.bitsPerSample == 16 ? "MONO16" : "MONO8") << std::endl;
+    std::cout << "  Output: " << config.output.info.sample_rate << " Hz, ";
+    std::cout << (config.output.info.bits_per_sample == 16 ? "MONO16" : "MONO8") << std::endl;
     std::cout << "  Sources: " << config.sources.size() << std::endl << std::endl;
 
     // Load all WAV files
@@ -45,11 +45,11 @@ int main(int argc, char** argv)
     {
         openal::ALenum format;
         void* data;
-        uint dataSize;
-        uint sampleRate;
+        uint data_size;
+        uint sample_rate;
 
         std::cout << "  " << source.wavFile << "... ";
-        if (!WavReader::Load(source.wavFile.c_str(), &format, &data, &dataSize, &sampleRate))
+        if (!WavReader::Load(source.wavFile.c_str(), &format, &data, &data_size, &sample_rate))
         {
             std::cerr << "FAILED" << std::endl;
             std::cerr << "Error: Failed to load " << source.wavFile << std::endl;
@@ -62,11 +62,11 @@ int main(int argc, char** argv)
         }
 
         wavData[source.wavFile] = data;
-        wavSize[source.wavFile] = dataSize;
+        wavSize[source.wavFile] = data_size;
         wavFormat[source.wavFile] = format;
-        wavSampleRate[source.wavFile] = sampleRate;
+        wavSampleRate[source.wavFile] = sample_rate;
 
-        std::cout << "OK (" << dataSize << " bytes, " << sampleRate << " Hz)" << std::endl;
+        std::cout << "OK (" << data_size << " bytes, " << sample_rate << " Hz)" << std::endl;
     }
 
     // Create AudioMixerScene
@@ -78,19 +78,19 @@ int main(int argc, char** argv)
     {
         AudioMixerSourceConfig srcConfig;
         srcConfig.data = wavData[source.wavFile];
-        srcConfig.info.dataSize = wavSize[source.wavFile];
+        srcConfig.info.data_size = wavSize[source.wavFile];
         srcConfig.info.channels = (wavFormat[source.wavFile] == AL_FORMAT_STEREO16 || wavFormat[source.wavFile] == AL_FORMAT_STEREO8 || wavFormat[source.wavFile] == AL_FORMAT_STEREO_FLOAT32) ? 2 : 1;
-        srcConfig.info.bitsPerSample = (wavFormat[source.wavFile] == AL_FORMAT_MONO8 || wavFormat[source.wavFile] == AL_FORMAT_STEREO8) ? 8 : 16;
-        srcConfig.info.isFloat = (wavFormat[source.wavFile] == AL_FORMAT_MONO_FLOAT32 || wavFormat[source.wavFile] == AL_FORMAT_STEREO_FLOAT32);
-        srcConfig.info.sampleRate = wavSampleRate[source.wavFile];
-        srcConfig.minCount = source.minCount;
-        srcConfig.maxCount = source.maxCount;
-        srcConfig.minInterval = source.minInterval;
-        srcConfig.maxInterval = source.maxInterval;
-        srcConfig.minVolume = source.minVolume;
-        srcConfig.maxVolume = source.maxVolume;
-        srcConfig.minPitch = source.minPitch;
-        srcConfig.maxPitch = source.maxPitch;
+        srcConfig.info.bits_per_sample = (wavFormat[source.wavFile] == AL_FORMAT_MONO8 || wavFormat[source.wavFile] == AL_FORMAT_STEREO8) ? 8 : 16;
+        srcConfig.info.is_float = (wavFormat[source.wavFile] == AL_FORMAT_MONO_FLOAT32 || wavFormat[source.wavFile] == AL_FORMAT_STEREO_FLOAT32);
+        srcConfig.info.sample_rate = wavSampleRate[source.wavFile];
+        srcConfig.min_count = source.min_count;
+        srcConfig.max_count = source.max_count;
+        srcConfig.min_interval = source.min_interval;
+        srcConfig.max_interval = source.max_interval;
+        srcConfig.min_volume = source.min_volume;
+        srcConfig.max_volume = source.max_volume;
+        srcConfig.min_pitch = source.min_pitch;
+        srcConfig.max_pitch = source.max_pitch;
 
         // Convert name to UTF-16
         std::u16string u16name;
@@ -100,9 +100,9 @@ int main(int argc, char** argv)
         scene.AddSource((const os_char*)u16name.c_str(), srcConfig);
 
         std::cout << "  " << source.name << ": ";
-        std::cout << source.minCount << "-" << source.maxCount << " instances, ";
-        std::cout << "volume " << source.minVolume << "-" << source.maxVolume << ", ";
-        std::cout << "pitch " << source.minPitch << "-" << source.maxPitch << std::endl;
+        std::cout << source.min_count << "-" << source.max_count << " instances, ";
+        std::cout << "volume " << source.min_volume << "-" << source.max_volume << ", ";
+        std::cout << "pitch " << source.min_pitch << "-" << source.max_pitch << std::endl;
     }
 
     // Generate scene
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 
     // Write output WAV file
     WavWriter writer;
-    if (!writer.Open(outputFile, openal::ToOpenALFormat(config.output.info), config.output.info.sampleRate))
+    if (!writer.Open(outputFile, openal::ToOpenALFormat(config.output.info), config.output.info.sample_rate))
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;

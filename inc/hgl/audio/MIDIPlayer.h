@@ -22,7 +22,7 @@ namespace hgl::audio
     struct AudioPlugInInterface;
     struct AudioMidiConfigInterface;
     struct AudioMidiChannelInterface;
-    struct MidiChannelInfo;
+    struct MIDIChannelInfo;
 
     enum class MIDIPlayState        //MIDI播放器状态
     {
@@ -67,7 +67,7 @@ namespace hgl::audio
         int audio_buffer_size;
         uint audio_buffer_count;                                                                    ///<播放数据计数
 
-        AudioPlugInInterface *decode;
+        AudioPlugInInterface *decoder;
         AudioMidiConfigInterface *midi_config;                                                      ///<MIDI配置接口
         AudioMidiChannelInterface *midi_channels;                                                   ///<MIDI通道接口
 
@@ -79,10 +79,10 @@ namespace hgl::audio
         std::string current_soundfont;
         std::string current_bank_file;
 
-        ALenum format;                                                                              ///<音频数据格式
-        ALsizei rate;                                                                               ///<音频数据采样率
+        ALenum al_format;                                                                              ///<音频数据格式
+        ALsizei sample_rate;                                                                               ///<音频数据采样率
 
-        audio::GainRamp auto_gain;                                                                  ///<自动增益(增益过渡斜坡)
+        GainRamp gain_ramp;                                                                  ///<自动增益(增益过渡斜坡)
 
         bool ReadData(ALuint);
         bool UpdateBuffer();
@@ -100,11 +100,11 @@ namespace hgl::audio
     protected:
 
         atom<bool> loop;
-        atom<MIDIPlayState> ps;
+        atom<MIDIPlayState> play_state;
 
         AudioSource audiosource;
-        ALuint source;
-        ALuint buffer[3];
+        ALuint source_id;
+        ALuint al_buffers[3];
         atom<double> total_time;
         PreciseTime wait_time;
 
@@ -121,7 +121,7 @@ namespace hgl::audio
 
                         double          GetTotalTime()const{return total_time.load();}                     ///<获取音频总时长
 
-                        MIDIPlayState   GetPlayState()const{return ps.load();}                             ///<获取播放器状态
+                        MIDIPlayState   GetPlayState()const{return play_state.load();}                             ///<获取播放器状态
 
                         int             GetSourceState()const{return audiosource.GetState();}       ///<获取音源状态
 
@@ -173,10 +173,10 @@ namespace hgl::audio
 
         /**
          * 设置采样率
-         * @param rate 采样率 (如: 44100, 48000)
+         * @param sample_rate 采样率 (如: 44100, 48000)
          * @return 是否设置成功
          */
-        bool SetSampleRate(int rate);
+        bool SetSampleRate(int sample_rate);
 
         /**
          * 获取当前SoundFont路径
@@ -216,7 +216,7 @@ namespace hgl::audio
          * @param info 输出的通道信息结构
          * @return 是否获取成功
          */
-        bool GetChannelInfo(int channel, MidiChannelInfo *info)const;
+        bool GetChannelInfo(int channel, MIDIChannelInfo *info)const;
 
         /**
          * 设置通道乐器

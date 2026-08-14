@@ -19,8 +19,8 @@ namespace hgl
         {
         private:
             FILE* file;
-            uint32_t dataSize;
-            long dataSizePos;
+            uint32_t data_size;
+            long data_size_pos;
 
             struct WavHeader
             {
@@ -34,18 +34,18 @@ namespace hgl
                 uint32_t fmtSize;        // Size of fmt chunk (16 for PCM)
                 uint16_t audioFormat;    // 1 for PCM
                 uint16_t numChannels;    // 1 for mono, 2 for stereo
-                uint32_t sampleRate;     // Sample rate
+                uint32_t sample_rate;     // Sample rate
                 uint32_t byteRate;       // SampleRate * NumChannels * BitsPerSample/8
                 uint16_t blockAlign;     // NumChannels * BitsPerSample/8
-                uint16_t bitsPerSample;  // 8 or 16
+                uint16_t bits_per_sample;  // 8 or 16
 
                 // data chunk
                 char dataID[4];          // "data"
-                uint32_t dataSize;       // Size of data
+                uint32_t data_size;       // Size of data
             };
 
         public:
-            WavWriter() : file(nullptr), dataSize(0), dataSizePos(0) {}
+            WavWriter() : file(nullptr), data_size(0), data_size_pos(0) {}
 
             ~WavWriter()
             {
@@ -56,10 +56,10 @@ namespace hgl
              * Open a WAV file for writing
              * @param filename Output filename
              * @param format AL_FORMAT_MONO8, AL_FORMAT_MONO16, or AL_FORMAT_MONO_FLOAT32
-             * @param sampleRate Sample rate in Hz
+             * @param sample_rate Sample rate in Hz
              * @return true if successful
              */
-            bool Open(const char* filename, openal::ALenum format, uint32_t sampleRate)
+            bool Open(const char* filename, openal::ALenum format, uint32_t sample_rate)
             {
                 if (file) Close();
 
@@ -67,44 +67,44 @@ namespace hgl
                 if (!file) return false;
 
                 // Determine bits per sample and audio format from format
-                uint16_t bitsPerSample = 0;
+                uint16_t bits_per_sample = 0;
                 uint16_t audioFormat = 1;  // 1 = PCM, 3 = IEEE float
                 uint16_t numChannels = 0;
 
                 if (format == AL_FORMAT_MONO8)
                 {
-                    bitsPerSample = 8;
+                    bits_per_sample = 8;
                     audioFormat = 1;
                     numChannels = 1;
                 }
                 else if (format == AL_FORMAT_MONO16)
                 {
-                    bitsPerSample = 16;
+                    bits_per_sample = 16;
                     audioFormat = 1;
                     numChannels = 1;
                 }
                 else if (format == AL_FORMAT_MONO_FLOAT32)
                 {
-                    bitsPerSample = 32;
+                    bits_per_sample = 32;
                     audioFormat = 3;  // IEEE float
                     numChannels = 1;
                 }
                 else if (format == AL_FORMAT_STEREO8)
                 {
-                    bitsPerSample = 8;
+                    bits_per_sample = 8;
                     audioFormat = 1;
                     numChannels = 2;
                 }
                 else if (format == AL_FORMAT_STEREO16)
                 {
-                    bitsPerSample = 16;
+                    bits_per_sample = 16;
                     audioFormat = 1;
                     numChannels = 2;
                 }
 #ifdef AL_FORMAT_STEREO_FLOAT32
                 else if (format == AL_FORMAT_STEREO_FLOAT32)
                 {
-                    bitsPerSample = 32;
+                    bits_per_sample = 32;
                     audioFormat = 3;
                     numChannels = 2;
                 }
@@ -125,18 +125,18 @@ namespace hgl
                 header.fmtSize = 16;
                 header.audioFormat = audioFormat;  // PCM (1) or IEEE float (3)
                 header.numChannels = numChannels;
-                header.sampleRate = sampleRate;
-                header.bitsPerSample = bitsPerSample;
-                header.byteRate = sampleRate * numChannels * bitsPerSample / 8;
-                header.blockAlign = numChannels * bitsPerSample / 8;
+                header.sample_rate = sample_rate;
+                header.bits_per_sample = bits_per_sample;
+                header.byteRate = sample_rate * numChannels * bits_per_sample / 8;
+                header.blockAlign = numChannels * bits_per_sample / 8;
                 memcpy(header.dataID, "data", 4);
-                header.dataSize = 0;  // Will update on close
+                header.data_size = 0;  // Will update on close
 
                 fwrite(&header, sizeof(WavHeader), 1, file);
 
                 // Remember position of data size field
-                dataSizePos = sizeof(WavHeader) - sizeof(uint32_t);
-                dataSize = 0;
+                data_size_pos = sizeof(WavHeader) - sizeof(uint32_t);
+                data_size = 0;
 
                 return true;
             }
@@ -154,7 +154,7 @@ namespace hgl
                 size_t written = fwrite(data, 1, size, file);
                 if (written != size) return false;
 
-                dataSize += size;
+                data_size += size;
                 return true;
             }
 
@@ -166,17 +166,17 @@ namespace hgl
                 if (!file) return;
 
                 // Update data size
-                fseek(file, dataSizePos, SEEK_SET);
-                fwrite(&dataSize, sizeof(uint32_t), 1, file);
+                fseek(file, data_size_pos, SEEK_SET);
+                fwrite(&data_size, sizeof(uint32_t), 1, file);
 
                 // Update file size
-                uint32_t fileSize = dataSize + sizeof(WavHeader) - 8;
+                uint32_t fileSize = data_size + sizeof(WavHeader) - 8;
                 fseek(file, 4, SEEK_SET);
                 fwrite(&fileSize, sizeof(uint32_t), 1, file);
 
                 fclose(file);
                 file = nullptr;
-                dataSize = 0;
+                data_size = 0;
             }
         };
     } // namespace audio

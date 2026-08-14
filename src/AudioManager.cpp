@@ -58,7 +58,7 @@ namespace hgl::audio
 {
     AudioManager::AudioManager(int count)
     {
-        Items.Reserve(count);
+        items.Reserve(count);
     }
 
     AudioManager::~AudioManager()
@@ -67,11 +67,11 @@ namespace hgl::audio
 
     bool AudioManager::Play(const os_char *filename,float gain)
     {
-        int n=Items.GetCount();
+        int n=items.GetCount();
 
         while(n--)
         {
-            AudioItem *item=Items[n];
+            AudioItem *item=items[n];
 
             if(item->Check())
             {

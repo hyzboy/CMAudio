@@ -24,12 +24,12 @@ namespace hgl
              * @param format Output format (AL_FORMAT_*)
              * @param data Output data pointer (caller must free with free())
              * @param size Output data size in bytes
-             * @param sampleRate Output sample rate
+             * @param sample_rate Output sample rate
              * @return true if successful
              */
-            static bool Load(const char* filename, openal::ALenum* format, void** data, uint32_t* size, uint32_t* sampleRate)
+            static bool Load(const char* filename, openal::ALenum* format, void** data, uint32_t* size, uint32_t* sample_rate)
             {
-                if(!filename || !format || !data || !size || !sampleRate)
+                if(!filename || !format || !data || !size || !sample_rate)
                     return false;
 
                 FILE* file = fopen(filename, "rb");
@@ -73,8 +73,8 @@ namespace hgl
                 p += 12;
 
                 uint16_t channels = 0;
-                uint32_t sampleRateValue = 0;
-                uint16_t bitsPerSample = 0;
+                uint32_t sample_rate_value = 0;
+                uint16_t bits_per_sample = 0;
                 uint16_t audioFormat = 0;
                 const unsigned char* pcmData = nullptr;
                 uint32_t pcmSize = 0;
@@ -93,8 +93,8 @@ namespace hgl
                         const unsigned char* fmt = p + 8;
                         audioFormat   = fmt[0] | (fmt[1]<<8);          // 1=PCM, 3=IEEE float
                         channels      = fmt[2] | (fmt[3]<<8);
-                        sampleRateValue = fmt[4] | (fmt[5]<<8) | (fmt[6]<<16) | (fmt[7]<<24);
-                        bitsPerSample = fmt[14] | (fmt[15]<<8);
+                        sample_rate_value = fmt[4] | (fmt[5]<<8) | (fmt[6]<<16) | (fmt[7]<<24);
+                        bits_per_sample = fmt[14] | (fmt[15]<<8);
                     }
                     else if(memcmp(chunkId, "data", 4) == 0)
                     {
@@ -106,7 +106,7 @@ namespace hgl
                     p += 8 + chunkSize + (chunkSize & 1);   // chunks are word-aligned
                 }
 
-                if(!pcmData || pcmSize == 0 || channels == 0 || sampleRateValue == 0 || bitsPerSample == 0)
+                if(!pcmData || pcmSize == 0 || channels == 0 || sample_rate_value == 0 || bits_per_sample == 0)
                 {
                     free(fileData);
                     return false;
@@ -115,19 +115,19 @@ namespace hgl
                 // Build AL format
                 openal::ALenum fmt = 0;
 
-                if(audioFormat == 3 && bitsPerSample == 32)     // IEEE float
+                if(audioFormat == 3 && bits_per_sample == 32)     // IEEE float
                 {
                     if(channels == 1)       fmt = AL_FORMAT_MONO_FLOAT32;
                     else if(channels == 2)  fmt = AL_FORMAT_STEREO_FLOAT32;
                 }
                 else if(audioFormat == 1)                       // PCM
                 {
-                    if(bitsPerSample == 8)
+                    if(bits_per_sample == 8)
                     {
                         if(channels == 1)       fmt = AL_FORMAT_MONO8;
                         else if(channels == 2)  fmt = AL_FORMAT_STEREO8;
                     }
-                    else if(bitsPerSample == 16)
+                    else if(bits_per_sample == 16)
                     {
                         if(channels == 1)       fmt = AL_FORMAT_MONO16;
                         else if(channels == 2)  fmt = AL_FORMAT_STEREO16;
@@ -154,7 +154,7 @@ namespace hgl
                 *format = fmt;
                 *data = out;
                 *size = pcmSize;
-                *sampleRate = sampleRateValue;
+                *sample_rate = sample_rate_value;
 
                 return true;
             }

@@ -12,7 +12,7 @@ CMAudio 的后端与 DSP 底子扎实，远超一般引擎库：
 
 | 能力 | 实现 | 说明 |
 |---|---|---|
-| **解码插件体系** | `Plug-Ins/` 11 个 DLL | WAV / Vorbis / Opus + 5 个 MIDI 合成器（FluidSynth / WildMidi / Timidity / ADLMIDI / OPNMIDI），扩展名→插件动态映射（`AudioDecode.cpp`） |
+| **解码插件体系** | `Plug-Ins/` 11 个 DLL | WAV / Vorbis / Opus + 5 个 MIDI 合成器（FluidSynth / WildMIDI / Timidity / ADLMIDI / OPNMIDI），扩展名→插件动态映射（`AudioDecode.cpp`） |
 | **3D 空间音频** | `SpatialAudioWorld` | 对象池、优先级调度（CalculateImportance）、5 种距离衰减模型、多普勒、空气吸收、方向性增益图、HRTF、场景级低通、113 种混响预设 |
 | **流式播放** | `AudioPlayer` | 三缓冲环形 + 独立线程 + 淡入淡出 + 自动增益 |
 | **离线混音** | `AudioMixer` / `AudioMixerScene` | 变调（线性插值重采样）、软削波（tanh）、TPDF 抖动、内存池；Scene 支持程序化环境音生成（城市/蜂群示例） |

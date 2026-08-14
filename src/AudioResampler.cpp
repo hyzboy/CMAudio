@@ -13,13 +13,13 @@ namespace hgl::audio
     {
         void ConvertToFloat(const void* input, uint inputSize, float* output, uint sampleCount, const AudioDataInfo& info)
         {
-            if(info.isFloat && info.bitsPerSample == 32)
+            if(info.is_float && info.bits_per_sample == 32)
             {
                 memcpy(output, input, sampleCount * sizeof(float));
                 return;
             }
 
-            if(info.bitsPerSample == 32)
+            if(info.bits_per_sample == 32)
             {
                 const int32_t* samples = static_cast<const int32_t*>(input);
                 for(uint i = 0; i < sampleCount; i++)
@@ -29,7 +29,7 @@ namespace hgl::audio
                 return;
             }
 
-            if(info.bitsPerSample == 16)
+            if(info.bits_per_sample == 16)
             {
                 const int16_t* samples = static_cast<const int16_t*>(input);
                 for(uint i = 0; i < sampleCount; i++)
@@ -39,7 +39,7 @@ namespace hgl::audio
                 return;
             }
 
-            if(info.bitsPerSample == 8)
+            if(info.bits_per_sample == 8)
             {
                 const int8_t* samples = static_cast<const int8_t*>(input);
                 for(uint i = 0; i < sampleCount; i++)
@@ -51,18 +51,18 @@ namespace hgl::audio
 
         void ConvertFromFloat(const float* input, uint sampleCount, const AudioDataInfo& info, void** output, uint* outputSize)
         {
-            const uint bytesPerSample = info.bitsPerSample / 8;
+            const uint bytesPerSample = info.bits_per_sample / 8;
             *outputSize = sampleCount * bytesPerSample;
             uint8_t* data = new uint8_t[*outputSize];
 
-            if(info.isFloat && info.bitsPerSample == 32)
+            if(info.is_float && info.bits_per_sample == 32)
             {
                 memcpy(data, input, *outputSize);
                 *output = data;
                 return;
             }
 
-            if(info.bitsPerSample == 32)
+            if(info.bits_per_sample == 32)
             {
                 int32_t* dst = reinterpret_cast<int32_t*>(data);
                 for(uint i = 0; i < sampleCount; i++)
@@ -76,7 +76,7 @@ namespace hgl::audio
                 return;
             }
 
-            if(info.bitsPerSample == 16)
+            if(info.bits_per_sample == 16)
             {
                 int16_t* dst = reinterpret_cast<int16_t*>(data);
                 for(uint i = 0; i < sampleCount; i++)
@@ -90,7 +90,7 @@ namespace hgl::audio
                 return;
             }
 
-            if(info.bitsPerSample == 8)
+            if(info.bits_per_sample == 8)
             {
                 int8_t* dst = reinterpret_cast<int8_t*>(data);
                 for(uint i = 0; i < sampleCount; i++)
@@ -130,7 +130,7 @@ namespace hgl::audio
                   void** outputData,
                   uint* outputSize)
     {
-        if(!inputData || inputSize == 0 || inputInfo.sampleRate == 0 || outputSampleRate == 0)
+        if(!inputData || inputSize == 0 || inputInfo.sample_rate == 0 || outputSampleRate == 0)
             return false;
 
         if(!outputData || !outputSize)
@@ -139,11 +139,11 @@ namespace hgl::audio
         const AudioDataInfo &inputInfoRef = inputInfo;
 
         AudioDataInfo outInfo = outputInfo;
-        if(outInfo.channels == 0 || outInfo.bitsPerSample == 0)
+        if(outInfo.channels == 0 || outInfo.bits_per_sample == 0)
         {
             outInfo.channels = inputInfoRef.channels;
-            outInfo.bitsPerSample = inputInfoRef.bitsPerSample;
-            outInfo.isFloat = inputInfoRef.isFloat;
+            outInfo.bits_per_sample = inputInfoRef.bits_per_sample;
+            outInfo.is_float = inputInfoRef.is_float;
         }
 
         if(inputInfoRef.channels != outInfo.channels)
@@ -153,7 +153,7 @@ namespace hgl::audio
         }
 
         const uint channels = inputInfoRef.channels;
-        const uint bytesPerSample = inputInfoRef.bitsPerSample / 8;
+        const uint bytesPerSample = inputInfoRef.bits_per_sample / 8;
         const uint inputSampleCount = inputSize / bytesPerSample;
         if(inputSampleCount == 0)
             return false;
@@ -166,7 +166,7 @@ namespace hgl::audio
 
         const uint inputFrameCount = inputSampleCount / channels;
 
-        const double ratio = static_cast<double>(outputSampleRate) / static_cast<double>(inputInfoRef.sampleRate);
+        const double ratio = static_cast<double>(outputSampleRate) / static_cast<double>(inputInfoRef.sample_rate);
         const uint outputFrameCount = static_cast<uint>(std::ceil(inputFrameCount * ratio));
         if(outputFrameCount == 0)
             return false;

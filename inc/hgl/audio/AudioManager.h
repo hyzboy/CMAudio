@@ -24,7 +24,7 @@ namespace hgl::audio
             void Play(const os_char *,float);
         };//struct AudioItem
 
-        ManagedArray<AudioItem> Items;
+        ManagedArray<AudioItem> items;
 
     public:
 
@@ -42,4 +42,4 @@ namespace hgl::audio
         */
         bool Play(const os_char *filename,float gain=1);
     };//class AudioManager
-}//namespace hgl::audio::audio
+}//namespace hgl::audio

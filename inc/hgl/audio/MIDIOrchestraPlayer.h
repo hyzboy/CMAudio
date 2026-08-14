@@ -20,7 +20,7 @@ namespace hgl::audio
     struct AudioPlugInInterface;
     struct AudioMidiConfigInterface;
     struct AudioMidiChannelInterface;
-    struct MidiChannelInfo;
+    struct MIDIChannelInfo;
 
     class AudioManager;
 
@@ -106,7 +106,7 @@ namespace hgl::audio
         int audio_buffer_size;
         uint audio_buffer_count;                                                               ///<播放数据计数
 
-        AudioPlugInInterface *decode;
+        AudioPlugInInterface *decoder;
         AudioMidiConfigInterface *midi_config;                                                  ///<MIDI配置接口
         AudioMidiChannelInterface *midi_channels;                                              ///<MIDI通道接口
 
@@ -115,8 +115,8 @@ namespace hgl::audio
 
         AudioManager *audio_manager;                                                            ///<音频管理器
 
-        ALenum format;                                                                          ///<音频数据格式
-        ALsizei rate;                                                                           ///<音频数据采样率
+        ALenum al_format;                                                                          ///<音频数据格式
+        ALsizei sample_rate;                                                                           ///<音频数据采样率
 
         AudioSource *sources[MAX_MIDI_CHANNELS];                                               ///<每个通道的AudioSource
         ALuint buffers[MAX_MIDI_CHANNELS][3];                                                  ///<每个通道3个缓冲区（三缓冲）
@@ -126,7 +126,7 @@ namespace hgl::audio
         Vector3f orchestra_center;                                                              ///<乐队中心位置
         float orchestra_scale;                                                                  ///<乐队缩放比例
 
-        audio::GainRamp auto_gain;                                                              ///<自动增益(增益过渡斜坡)
+        GainRamp gain_ramp;                                                              ///<自动增益(增益过渡斜坡)
 
         bool ReadChannelData(int channel, ALuint buffer_id);
         bool UpdateAllChannelBuffers();
@@ -159,7 +159,7 @@ namespace hgl::audio
 
                 int         GetChannelCount();                                                  ///<获取MIDI通道数量 / Get MIDI channel count
 
-                MidiChannelInfo GetChannelInfo(int channel);                              ///<获取通道信息 / Get channel info
+                MIDIChannelInfo GetChannelInfo(int channel);                              ///<获取通道信息 / Get channel info
 
     public: //方法 / Methods
 
@@ -223,9 +223,9 @@ namespace hgl::audio
 
         /**
          * 设置采样率 / Set sample rate
-         * @param rate 采样率 / Sample rate
+         * @param sample_rate 采样率 / Sample rate
          */
-        void SetSampleRate(int rate);
+        void SetSampleRate(int sample_rate);
 
     public: //3D空间布局 / 3D Spatial Layout
 

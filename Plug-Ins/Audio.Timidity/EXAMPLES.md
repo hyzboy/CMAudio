@@ -254,7 +254,7 @@ music.PlayTrack("battle.mid");
 - [AudioPlayer 分析文档](../../AudioPlayer_Analysis.md)
 - [快速参考指南](../../QUICK_REFERENCE.md)
 - [Libtimidity 插件 README](README.md)
-- [WildMIDI 插件文档](../Audio.WildMidi/README.md)
+- [WildMIDI 插件文档](../Audio.WildMIDI/README.md)
 
 ## 注意事项 / Notes
 

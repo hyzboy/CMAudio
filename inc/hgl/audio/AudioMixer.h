@@ -29,16 +29,16 @@ namespace hgl::audio
         {
             AudioDataInfo info;
             const void* data;
-            uint dataSize;
+            uint data_size;
 
             bool operator==(const SourceAudio& other) const
             {
                 return data == other.data &&
-                       dataSize == other.dataSize &&
-                       info.sampleRate == other.info.sampleRate &&
+                       data_size == other.data_size &&
+                       info.sample_rate == other.info.sample_rate &&
                        info.channels == other.info.channels &&
-                       info.bitsPerSample == other.info.bitsPerSample &&
-                       info.isFloat == other.info.isFloat;
+                       info.bits_per_sample == other.info.bits_per_sample &&
+                       info.is_float == other.info.is_float;
             }
         };
 
@@ -46,13 +46,13 @@ namespace hgl::audio
         ValueArray<MixingTrack> tracks;         ///< 混音轨道列表
         MixerConfig config;                     ///< 混音器配置
 
-        AudioDataInfo commonInfo;               ///< 统一音频格式信息
-        bool hasCommonInfo;                     ///< 是否已设置统一格式
-        AudioDataInfo outputFormat;             ///< 输出格式
+        AudioDataInfo common_info;               ///< 统一音频格式信息
+        bool has_common_info;                     ///< 是否已设置统一格式
+        AudioDataInfo output_format;             ///< 输出格式
 
         // 内存池 - 避免频繁分配/释放
-        AudioMemoryPool<float> poolBuffer;      ///< 主混音缓冲池
-        AudioMemoryPool<float> tempBuffer;      ///< 临时格式转换缓冲池
+        AudioMemoryPool<float> pool_buffer;      ///< 主混音缓冲池
+        AudioMemoryPool<float> temp_buffer;      ///< 临时格式转换缓冲池
 
         /**
             * 将整数采样转换为浮点 (-1.0 到 1.0)
@@ -111,10 +111,10 @@ namespace hgl::audio
          * @param data 音频数据指针
          * @param size 数据大小
          * @param format 音频格式 (AL_FORMAT_*)
-         * @param sampleRate 采样率
+         * @param sample_rate 采样率
          * @return 音源索引，失败返回 -1
          */
-        int AddSourceAudio(const void *data,uint size,uint format,uint sampleRate);
+        int AddSourceAudio(const void *data,uint size,uint format,uint sample_rate);
 
         /**
             * 清除所有音源
@@ -134,12 +134,12 @@ namespace hgl::audio
 
         /**
             * 添加混音轨道(便捷方法)
-            * @param sourceIndex 音源索引
-            * @param timeOffset 时间偏移(秒)
+            * @param source_index 音源索引
+            * @param time_offset 时间偏移(秒)
             * @param volume 音量(0.0-1.0)
             * @param pitch 音调(0.5-2.0)
             */
-        void AddTrack(uint sourceIndex, float timeOffset, float volume, float pitch);
+        void AddTrack(uint source_index, float time_offset, float volume, float pitch);
 
         /**
             * 清除所有轨道
@@ -166,7 +166,7 @@ namespace hgl::audio
          * @param info 输出格式信息（声道数、位深、是否浮点）
          * @return 是否成功
          */
-        bool SetOutputFormat(const AudioDataInfo &info) { outputFormat=info; return true; }
+        bool SetOutputFormat(const AudioDataInfo &info) { output_format=info; return true; }
 
         /**
          * 设置输出格式(便捷方法)
@@ -178,14 +178,14 @@ namespace hgl::audio
             AudioDataInfo info;
             if(!openal::FromOpenALFormat(format,info))
                 return false;
-            outputFormat=info;
+            output_format=info;
             return true;
         }
 
         /**
          * 获取输出格式
          */
-        const AudioDataInfo &GetOutputFormat() const { return outputFormat; }
+        const AudioDataInfo &GetOutputFormat() const { return output_format; }
 
         /**
             * 执行混音
@@ -199,6 +199,6 @@ namespace hgl::audio
         /**
             * 获取输出音频信息
             */
-        const AudioDataInfo& GetOutputInfo() const { return commonInfo; }
+        const AudioDataInfo& GetOutputInfo() const { return common_info; }
     };
 }//namespace hgl::audio

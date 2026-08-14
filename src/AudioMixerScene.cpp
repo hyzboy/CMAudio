@@ -10,17 +10,17 @@ namespace hgl::audio
 {
         void ApplyAudioFilterPreset(AudioMixerSourceConfig &config, AudioFilterPreset preset)
         {
-            config.filterConfig = GetAudioFilterPresetConfig(preset);
+            config.filter_config = GetAudioFilterPresetConfig(preset);
         }
 
-        AudioMixerScene::AudioMixerScene() : rng(rd()),
-            poolBuffer(OS_TEXT("AudioMixerScene::poolBuffer")),
-            tempBuffer(OS_TEXT("AudioMixerScene::tempBuffer"))
+        AudioMixerScene::AudioMixerScene() : rng(random_device()),
+            pool_buffer(OS_TEXT("AudioMixerScene::pool_buffer")),
+            temp_buffer(OS_TEXT("AudioMixerScene::temp_buffer"))
         {
-            outputFormat.channels = 1;      // 默认16位单声道
-            outputFormat.bitsPerSample = 16;
-            outputFormat.isFloat = false;
-            outputFormat.sampleRate = 44100; // 默认44.1kHz
+            output_format.channels = 1;      // 默认16位单声道
+            output_format.bits_per_sample = 16;
+            output_format.is_float = false;
+            output_format.sample_rate = 44100; // 默认44.1kHz
         }
 
         AudioMixerScene::~AudioMixerScene()
@@ -51,7 +51,7 @@ namespace hgl::audio
         {
             for(auto& [sourceName, srcConfig] : sources)
             {
-                if((srcConfig.filterConfig.enable && srcConfig.filterConfig.type != AudioFilterType::None) || srcConfig.reverb.enable)
+                if((srcConfig.filter_config.enable && srcConfig.filter_config.filter_type != AudioFilterType::None) || srcConfig.reverb.enable)
                     return true;
             }
 
@@ -60,8 +60,8 @@ namespace hgl::audio
 
         AudioFilterConfig AudioMixerScene::BuildRandomFilterConfig(const AudioMixerSourceConfig& config)
         {
-            AudioFilterConfig filter = config.filterConfig;
-            if(!filter.enable || filter.type == AudioFilterType::None)
+            AudioFilterConfig filter = config.filter_config;
+            if(!filter.enable || filter.filter_type == AudioFilterType::None)
                 return filter;
 
             auto jitter = [this](float base, float range) -> float
@@ -72,9 +72,9 @@ namespace hgl::audio
                 return std::clamp(base + RandomFloat(-range, range), 0.0f, 1.0f);
             };
 
-            filter.gain = jitter(filter.gain, config.filterRandom.gain);
-            filter.gain_lf = jitter(filter.gain_lf, config.filterRandom.gain_lf);
-            filter.gain_hf = jitter(filter.gain_hf, config.filterRandom.gain_hf);
+            filter.gain = jitter(filter.gain, config.filter_random.gain);
+            filter.gain_lf = jitter(filter.gain_lf, config.filter_random.gain_lf);
+            filter.gain_hf = jitter(filter.gain_hf, config.filter_random.gain_hf);
 
             return filter;
         }
@@ -123,13 +123,13 @@ namespace hgl::audio
 
         void AudioMixerScene::ApplyFilter(float* samples, uint count, uint channels, const AudioFilterConfig& config)
         {
-            if(!config.enable || config.type == AudioFilterType::None)
+            if(!config.enable || config.filter_type == AudioFilterType::None)
                 return;
 
             float alpha_lp = std::clamp(config.gain_hf, 0.01f, 1.0f);
             float alpha_hp = std::clamp(1.0f - config.gain_lf, 0.01f, 1.0f);
 
-            switch(config.type)
+            switch(config.filter_type)
             {
                 case AudioFilterType::Lowpass:
                     ApplyLowpass(samples, count, channels, alpha_lp);
@@ -154,9 +154,9 @@ namespace hgl::audio
             }
         }
 
-        void AudioMixerScene::ApplySimpleReverb(float* samples, uint count, uint channels, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config)
+        void AudioMixerScene::ApplySimpleReverb(float* samples, uint count, uint channels, uint sample_rate, const AudioMixerSourceConfig::SimpleReverbConfig& config)
         {
-            if(!config.enable || count == 0 || sampleRate == 0)
+            if(!config.enable || count == 0 || sample_rate == 0)
                 return;
 
             if(channels == 0)
@@ -166,7 +166,7 @@ namespace hgl::audio
             float feedback = std::clamp(config.feedback, 0.0f, 0.95f);
             float mix = std::clamp(config.mix, 0.0f, 1.0f);
 
-            uint delay_samples = (uint)(delay_ms * (float)sampleRate / 1000.0f);
+            uint delay_samples = (uint)(delay_ms * (float)sample_rate / 1000.0f);
             if(delay_samples < 1)
                 return;
 
@@ -200,20 +200,20 @@ namespace hgl::audio
             if(!input || !outputData || !outputSize)
                 return(false);
 
-            const AudioDataInfo &outInfo = outputFormat;
+            const AudioDataInfo &outInfo = output_format;
 
-            if(outInfo.isFloat && outInfo.bitsPerSample == 32)
+            if(outInfo.is_float && outInfo.bits_per_sample == 32)
             {
                 *outputData = (void*)input;
                 *outputSize = sampleCount * sizeof(float);
                 return(true);
             }
 
-            if(outInfo.bitsPerSample == 32)
+            if(outInfo.bits_per_sample == 32)
             {
                 uint totalSize = sampleCount * sizeof(int32_t);
-                tempBuffer.Ensure(totalSize);
-                int32_t* output = (int32_t*)tempBuffer.Get();
+                temp_buffer.Ensure(totalSize);
+                int32_t* output = (int32_t*)temp_buffer.Get();
 
                 for(uint i = 0; i < sampleCount; i++)
                 {
@@ -226,11 +226,11 @@ namespace hgl::audio
                 return(true);
             }
 
-            if(outInfo.bitsPerSample == 16)
+            if(outInfo.bits_per_sample == 16)
             {
                 uint totalSize = sampleCount * sizeof(int16_t);
-                tempBuffer.Ensure(totalSize);
-                int16_t* output = (int16_t*)tempBuffer.Get();
+                temp_buffer.Ensure(totalSize);
+                int16_t* output = (int16_t*)temp_buffer.Get();
 
                 for(uint i = 0; i < sampleCount; i++)
                 {
@@ -243,11 +243,11 @@ namespace hgl::audio
                 return(true);
             }
 
-            if(outInfo.bitsPerSample == 8)
+            if(outInfo.bits_per_sample == 8)
             {
                 uint totalSize = sampleCount * sizeof(int8_t);
-                tempBuffer.Ensure(totalSize);
-                int8_t* output = (int8_t*)tempBuffer.Get();
+                temp_buffer.Ensure(totalSize);
+                int8_t* output = (int8_t*)temp_buffer.Get();
 
                 for(uint i = 0; i < sampleCount; i++)
                 {
@@ -268,13 +268,13 @@ namespace hgl::audio
          */
         void AudioMixerScene::AddSource(const OSString& name, const AudioMixerSourceConfig& config)
         {
-            if(!config.data || config.info.dataSize == 0)
+            if(!config.data || config.info.data_size == 0)
             {
                 LogError(OS_TEXT("Invalid audio source data for: ") + name);
                 return;
             }
 
-            if(config.info.sampleRate == 0 || config.info.channels == 0 || config.info.bitsPerSample == 0)
+            if(config.info.sample_rate == 0 || config.info.channels == 0 || config.info.bits_per_sample == 0)
             {
                 LogError(OS_TEXT("Invalid format or sample rate for: ") + name);
                 return;
@@ -283,21 +283,21 @@ namespace hgl::audio
             // 如果是第一个音源，设置格式标准
             if(sources.GetCount() == 0)
             {
-                sourceFormat = config.info;
-                LogInfo(OS_TEXT("Set source format standard: sampleRate=") + OSString::numberOf((int)sourceFormat.sampleRate) +
-                       OS_TEXT(", channels=") + OSString::numberOf((int)sourceFormat.channels));
+                source_format = config.info;
+                LogInfo(OS_TEXT("Set source format standard: sample_rate=") + OSString::numberOf((int)source_format.sample_rate) +
+                       OS_TEXT(", channels=") + OSString::numberOf((int)source_format.channels));
             }
             else
             {
                 // 验证格式一致性
-                if(config.info.sampleRate != sourceFormat.sampleRate ||
-                   config.info.channels != sourceFormat.channels ||
-                   config.info.bitsPerSample != sourceFormat.bitsPerSample ||
-                   config.info.isFloat != sourceFormat.isFloat)
+                if(config.info.sample_rate != source_format.sample_rate ||
+                   config.info.channels != source_format.channels ||
+                   config.info.bits_per_sample != source_format.bits_per_sample ||
+                   config.info.is_float != source_format.is_float)
                 {
                     LogError(OS_TEXT("Format mismatch for: ") + name +
-                            OS_TEXT(". All sources must have sampleRate=") + OSString::numberOf((int)sourceFormat.sampleRate) +
-                            OS_TEXT(", channels=") + OSString::numberOf((int)sourceFormat.channels));
+                            OS_TEXT(". All sources must have sample_rate=") + OSString::numberOf((int)source_format.sample_rate) +
+                            OS_TEXT(", channels=") + OSString::numberOf((int)source_format.channels));
                     return;
                 }
             }
@@ -323,7 +323,7 @@ namespace hgl::audio
             sources.Clear();
 
             // 重置格式标准
-            sourceFormat = AudioDataInfo();
+            source_format = AudioDataInfo();
         }
 
         /**
@@ -344,14 +344,14 @@ namespace hgl::audio
             }
 
             LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration,3) +
-                   OS_TEXT(" seconds, output channels=") + OSString::numberOf((int)outputFormat.channels) +
-                   OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputFormat.sampleRate));
+                   OS_TEXT(" seconds, output channels=") + OSString::numberOf((int)output_format.channels) +
+                   OS_TEXT(", output sample_rate=") + OSString::numberOf((int)output_format.sample_rate));
 
-            const AudioDataInfo &sourceInfo = sourceFormat;
+            const AudioDataInfo &sourceInfo = source_format;
 
             const uint channels = sourceInfo.channels ? sourceInfo.channels : 1;
 
-            const AudioDataInfo &outInfo = outputFormat;
+            const AudioDataInfo &outInfo = output_format;
 
             if(outInfo.channels != channels)
             {
@@ -359,34 +359,34 @@ namespace hgl::audio
                 RETURN_FALSE;
             }
 
-            if(outputFormat.sampleRate != sourceInfo.sampleRate)
+            if(output_format.sample_rate != sourceInfo.sample_rate)
             {
                 LogError(OS_TEXT("Output sample rate must match source sample rate for AudioMixer"));
                 RETURN_FALSE;
             }
 
-            bool mix_in_float = outInfo.isFloat || HasAnyEffects();
+            bool mix_in_float = outInfo.is_float || HasAnyEffects();
 
-            uint bytesPerSample = mix_in_float ? sizeof(float) : (outInfo.bitsPerSample / 8);
+            uint bytesPerSample = mix_in_float ? sizeof(float) : (outInfo.bits_per_sample / 8);
             uint bytesPerFrame = bytesPerSample * channels;
-            uint totalFrames = (uint)(duration * outputFormat.sampleRate);
+            uint totalFrames = (uint)(duration * output_format.sample_rate);
             uint totalSamples = totalFrames * channels;
             uint totalSize = totalFrames * bytesPerFrame;
 
             // 使用内存池分配输出缓冲区
-            poolBuffer.Ensure(totalSize);
+            pool_buffer.Ensure(totalSize);
 
-            char* outputBuffer = poolBuffer.Get();
+            char* outputBuffer = pool_buffer.Get();
             memset(outputBuffer, 0, totalSize);
 
-            LogInfo(OS_TEXT("Using pool buffer: size=") + OSString::numberOf((int)poolBuffer.GetSize()) +
+            LogInfo(OS_TEXT("Using pool buffer: size=") + OSString::numberOf((int)pool_buffer.GetSize()) +
                    OS_TEXT(" bytes, required=") + OSString::numberOf((int)totalSize) + OS_TEXT(" bytes"));
 
             // 为每个音源生成实例并混音
             for(auto& [sourceName, srcConfig] : sources)
             {
                 // 确定生成数量
-                uint count = RandomUInt(srcConfig.minCount, srcConfig.maxCount);
+                uint count = RandomUInt(srcConfig.min_count, srcConfig.max_count);
 
                 LogInfo(OS_TEXT("Processing source: ") + sourceName +
                        OS_TEXT(", generating ") + OSString::numberOf((int)count) +
@@ -398,20 +398,20 @@ namespace hgl::audio
                 for(uint i = 0; i < count; i++)
                 {
                     AudioMixer instanceMixer;
-                    int sourceIndex = instanceMixer.AddSourceAudio(srcConfig.info, srcConfig.data);
-                    if(sourceIndex < 0)
+                    int source_index = instanceMixer.AddSourceAudio(srcConfig.info, srcConfig.data);
+                    if(source_index < 0)
                     {
                         LogError(OS_TEXT("Failed to add source audio for mixer instance"));
                         RETURN_FALSE;
                     }
                     // 浮点混音时，AudioMixer::Mix 会直接透传按源声道数交织的 float 缓冲，
                     // 输出格式声明的声道数被忽略，因此 float32 仅作为占位符。
-                    AudioDataInfo instanceOutputFormat = outputFormat;
+                    AudioDataInfo instanceOutputFormat = output_format;
                     if(mix_in_float)
                     {
                         instanceOutputFormat.channels = srcConfig.info.channels;
-                        instanceOutputFormat.bitsPerSample = 32;
-                        instanceOutputFormat.isFloat = true;
+                        instanceOutputFormat.bits_per_sample = 32;
+                        instanceOutputFormat.is_float = true;
                     }
                     instanceMixer.SetOutputFormat(instanceOutputFormat);
 
@@ -419,12 +419,12 @@ namespace hgl::audio
                     if(i == 0)
                     {
                         // 第一个实例可以在开始时或稍后出现
-                        currentTimeOffset = RandomFloat(0.0f, srcConfig.minInterval);
+                        currentTimeOffset = RandomFloat(0.0f, srcConfig.min_interval);
                     }
                     else
                     {
                         // 后续实例基于前一个实例累加间隔
-                        float interval = RandomFloat(srcConfig.minInterval, srcConfig.maxInterval);
+                        float interval = RandomFloat(srcConfig.min_interval, srcConfig.max_interval);
                         currentTimeOffset += interval;
                     }
 
@@ -433,11 +433,11 @@ namespace hgl::audio
                         break;
 
                     // 生成随机音量和音调
-                    float volume = RandomFloat(srcConfig.minVolume, srcConfig.maxVolume);
-                    float pitch = RandomFloat(srcConfig.minPitch, srcConfig.maxPitch);
+                    float volume = RandomFloat(srcConfig.min_volume, srcConfig.max_volume);
+                    float pitch = RandomFloat(srcConfig.min_pitch, srcConfig.max_pitch);
 
                     // 添加单个轨道
-                    instanceMixer.AddTrack((uint)sourceIndex, currentTimeOffset, volume, pitch);
+                    instanceMixer.AddTrack((uint)source_index, currentTimeOffset, volume, pitch);
 
                     // 混音到临时缓冲区(使用temp buffer避免频繁分配)
                     void* instanceData = nullptr;
@@ -446,19 +446,19 @@ namespace hgl::audio
                     if(instanceMixer.Mix(&instanceData, &instanceSize, duration))
                     {
                         // 确保临时缓冲区足够大以容纳实例数据
-                        tempBuffer.Ensure(instanceSize);
+                        temp_buffer.Ensure(instanceSize);
 
                         // 复制到临时缓冲区(这样可以让AudioMixer内部复用它的池)
-                        memcpy(tempBuffer.Get(), instanceData, instanceSize);
+                        memcpy(temp_buffer.Get(), instanceData, instanceSize);
 
                         if(mix_in_float)
                         {
-                            float* instanceSamples = (float*)tempBuffer.Get();
+                            float* instanceSamples = (float*)temp_buffer.Get();
                             uint instanceSampleCount = instanceSize / sizeof(float);
                             uint outputSampleCount = totalSize / sizeof(float);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
 
-                            if((srcConfig.filterConfig.enable && srcConfig.filterConfig.type != AudioFilterType::None) || srcConfig.reverb.enable)
+                            if((srcConfig.filter_config.enable && srcConfig.filter_config.filter_type != AudioFilterType::None) || srcConfig.reverb.enable)
                             {
                                 AudioFilterConfig filter = BuildRandomFilterConfig(srcConfig);
 
@@ -474,7 +474,7 @@ namespace hgl::audio
                                 }
 
                                 ApplyFilter(instanceSamples, sampleCount, channels, filter);
-                                ApplySimpleReverb(instanceSamples, sampleCount, channels, outputFormat.sampleRate, reverb);
+                                ApplySimpleReverb(instanceSamples, sampleCount, channels, output_format.sample_rate, reverb);
                             }
 
                             float* outputSamples = (float*)outputBuffer;
@@ -483,10 +483,10 @@ namespace hgl::audio
                                 outputSamples[s] += instanceSamples[s];
                             }
                         }
-                        else if(outInfo.bitsPerSample == 16)
+                        else if(outInfo.bits_per_sample == 16)
                         {
                             int16_t* outputSamples = (int16_t*)outputBuffer;
-                            const int16_t* instanceSamples = (const int16_t*)tempBuffer.Get();
+                            const int16_t* instanceSamples = (const int16_t*)temp_buffer.Get();
                             uint outputSampleCount = totalSize / sizeof(int16_t);
                             uint instanceSampleCount = instanceSize / sizeof(int16_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -502,10 +502,10 @@ namespace hgl::audio
                                 outputSamples[s] = (int16_t)mixed;
                             }
                         }
-                        else if(outInfo.bitsPerSample == 8)
+                        else if(outInfo.bits_per_sample == 8)
                         {
                             int8_t* outputSamples = (int8_t*)outputBuffer;
-                            const int8_t* instanceSamples = (const int8_t*)tempBuffer.Get();
+                            const int8_t* instanceSamples = (const int8_t*)temp_buffer.Get();
                             uint outputSampleCount = totalSize / sizeof(int8_t);
                             uint instanceSampleCount = instanceSize / sizeof(int8_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);
@@ -521,10 +521,10 @@ namespace hgl::audio
                                 outputSamples[s] = (int8_t)mixed;
                             }
                         }
-                        else if(outInfo.bitsPerSample == 32)
+                        else if(outInfo.bits_per_sample == 32)
                         {
                             int32_t* outputSamples = (int32_t*)outputBuffer;
-                            const int32_t* instanceSamples = (const int32_t*)tempBuffer.Get();
+                            const int32_t* instanceSamples = (const int32_t*)temp_buffer.Get();
                             uint outputSampleCount = totalSize / sizeof(int32_t);
                             uint instanceSampleCount = instanceSize / sizeof(int32_t);
                             uint sampleCount = std::min(instanceSampleCount, outputSampleCount);

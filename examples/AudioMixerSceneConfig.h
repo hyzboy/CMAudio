@@ -21,13 +21,13 @@ namespace hgl
         {
             struct OutputConfig
             {
-                AudioDataInfo info;   // channels/bitsPerSample/isFloat/sampleRate
+                AudioDataInfo info;   // channels/bits_per_sample/is_float/sample_rate
                 OutputConfig()
                 {
                     info.channels = 1;
-                    info.bitsPerSample = 16;
-                    info.isFloat = false;
-                    info.sampleRate = 44100;
+                    info.bits_per_sample = 16;
+                    info.is_float = false;
+                    info.sample_rate = 44100;
                 }
             } output;
 
@@ -35,14 +35,14 @@ namespace hgl
             {
                 std::string name;
                 std::string wavFile;
-                uint minCount = 1;
-                uint maxCount = 1;
-                float minInterval = 0.0f;
-                float maxInterval = 0.0f;
-                float minVolume = 1.0f;
-                float maxVolume = 1.0f;
-                float minPitch = 1.0f;
-                float maxPitch = 1.0f;
+                uint min_count = 1;
+                uint max_count = 1;
+                float min_interval = 0.0f;
+                float max_interval = 0.0f;
+                float min_volume = 1.0f;
+                float max_volume = 1.0f;
+                float min_pitch = 1.0f;
+                float max_pitch = 1.0f;
             };
 
             std::vector<SourceConfig> sources;
@@ -143,21 +143,21 @@ namespace hgl
                     if (currentSection == "output")
                     {
                         if (key == "sample_rate")
-                            config.output.info.sampleRate = ParseInt(value);
+                            config.output.info.sample_rate = ParseInt(value);
                         else if (key == "format")
                         {
                             std::string fmt = UnquoteString(value);
                             if (fmt == "MONO16")
                             {
                                 config.output.info.channels = 1;
-                                config.output.info.bitsPerSample = 16;
-                                config.output.info.isFloat = false;
+                                config.output.info.bits_per_sample = 16;
+                                config.output.info.is_float = false;
                             }
                             else if (fmt == "MONO8")
                             {
                                 config.output.info.channels = 1;
-                                config.output.info.bitsPerSample = 8;
-                                config.output.info.isFloat = false;
+                                config.output.info.bits_per_sample = 8;
+                                config.output.info.is_float = false;
                             }
                         }
                     }
@@ -171,21 +171,21 @@ namespace hgl
                         if (key == "wav_file")
                             currentSource.wavFile = UnquoteString(value);
                         else if (key == "min_count")
-                            currentSource.minCount = ParseInt(value);
+                            currentSource.min_count = ParseInt(value);
                         else if (key == "max_count")
-                            currentSource.maxCount = ParseInt(value);
+                            currentSource.max_count = ParseInt(value);
                         else if (key == "min_interval")
-                            currentSource.minInterval = ParseFloat(value);
+                            currentSource.min_interval = ParseFloat(value);
                         else if (key == "max_interval")
-                            currentSource.maxInterval = ParseFloat(value);
+                            currentSource.max_interval = ParseFloat(value);
                         else if (key == "min_volume")
-                            currentSource.minVolume = ParseFloat(value);
+                            currentSource.min_volume = ParseFloat(value);
                         else if (key == "max_volume")
-                            currentSource.maxVolume = ParseFloat(value);
+                            currentSource.max_volume = ParseFloat(value);
                         else if (key == "min_pitch")
-                            currentSource.minPitch = ParseFloat(value);
+                            currentSource.min_pitch = ParseFloat(value);
                         else if (key == "max_pitch")
-                            currentSource.maxPitch = ParseFloat(value);
+                            currentSource.max_pitch = ParseFloat(value);
                     }
                 }
 

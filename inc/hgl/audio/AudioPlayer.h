@@ -48,12 +48,12 @@ namespace hgl::audio
         int audio_buffer_size;
         uint audio_buffer_count;                                                                        ///<播放数据计数
 
-        AudioPlugInInterface *decode;
+        AudioPlugInInterface *decoder;
 
-        ALenum format;                                                                                  ///<音频数据格式
-        ALsizei rate;                                                                                   ///<音频数据采样率
+        ALenum al_format;                                                                                  ///<音频数据格式
+        ALsizei sample_rate;                                                                                   ///<音频数据采样率
 
-        audio::GainRamp auto_gain;                                                                      ///<自动增益(增益过渡斜坡)
+        GainRamp gain_ramp;                                                                      ///<自动增益(增益过渡斜坡)
 
         bool ReadData(ALuint);
         bool UpdateBuffer();
@@ -70,11 +70,11 @@ namespace hgl::audio
     protected:
 
         atom<bool> loop;
-        atom<PlayState> ps;
+        atom<PlayState> play_state;
 
         AudioSource audiosource;
-        ALuint source;
-        ALuint buffer[3];
+        ALuint source_id;
+        ALuint al_buffers[3];
         atom<double> total_time;
         PreciseTime wait_time;
 
@@ -91,7 +91,7 @@ namespace hgl::audio
 
                             double      GetTotalTime()const{return total_time.load();}                         ///<获取音频总时长
 
-                            PlayState   GetPlayState()const{return ps.load();}                                 ///<获取播放器状态
+                            PlayState   GetPlayState()const{return play_state.load();}                                 ///<获取播放器状态
 
                             int         GetSourceState()const{return audiosource.GetState();}           ///<获取音源索引
 

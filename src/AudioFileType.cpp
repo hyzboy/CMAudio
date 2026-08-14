@@ -58,7 +58,7 @@ namespace hgl::audio
         OS_TEXT("Wav"),
         OS_TEXT("Vorbis"),
         OS_TEXT("Opus"),
-        OS_TEXT("MIDI")
+        OS_TEXT("Timidity")
     };
 
     const os_char *GetAudioDecodeName(const AudioFileType aft)

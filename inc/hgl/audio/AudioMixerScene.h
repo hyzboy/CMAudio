@@ -21,17 +21,17 @@ namespace hgl::audio
     private:
 
         UnorderedMap<OSString,AudioMixerSourceConfig> sources;    ///< 音频源字典
-        MixerConfig globalConfig;               ///< 全局混音配置
+        MixerConfig global_config;               ///< 全局混音配置
 
-        AudioDataInfo sourceFormat;             ///< 所有音源的统一格式(首个添加的音源决定)
-        AudioDataInfo outputFormat;             ///< 输出音频格式
+        AudioDataInfo source_format;             ///< 所有音源的统一格式(首个添加的音源决定)
+        AudioDataInfo output_format;             ///< 输出音频格式
 
-        std::random_device rd;
+        std::random_device random_device;
         std::mt19937 rng;
 
         // 内存池 - 避免频繁分配/释放
-        AudioMemoryPool<char> poolBuffer;       ///< 输出场景缓冲池
-        AudioMemoryPool<char> tempBuffer;       ///< 临时实例混音缓冲池
+        AudioMemoryPool<char> pool_buffer;       ///< 输出场景缓冲池
+        AudioMemoryPool<char> temp_buffer;       ///< 临时实例混音缓冲池
 
         /**
             * 生成随机浮点数
@@ -48,7 +48,7 @@ namespace hgl::audio
         void ApplyLowpass(float* samples, uint count, uint channels, float alpha);
         void ApplyHighpass(float* samples, uint count, uint channels, float alpha);
         void ApplyFilter(float* samples, uint count, uint channels, const AudioFilterConfig& config);
-        void ApplySimpleReverb(float* samples, uint count, uint channels, uint sampleRate, const AudioMixerSourceConfig::SimpleReverbConfig& config);
+        void ApplySimpleReverb(float* samples, uint count, uint channels, uint sample_rate, const AudioMixerSourceConfig::SimpleReverbConfig& config);
         bool ConvertFloatToOutput(const float* input, uint sampleCount, void** outputData, uint* outputSize);
 
     public:
@@ -81,43 +81,43 @@ namespace hgl::audio
         /**
             * 设置全局混音配置
             */
-        void SetGlobalConfig(const MixerConfig& cfg) { globalConfig = cfg; }
+        void SetGlobalConfig(const MixerConfig& cfg) { global_config = cfg; }
 
         /**
             * 获取全局混音配置
             */
-        const MixerConfig& GetGlobalConfig() const { return globalConfig; }
+        const MixerConfig& GetGlobalConfig() const { return global_config; }
 
         /**
          * 设置输出格式
          * @param info 输出音频格式（声道数须与音源一致）
          */
-        void SetOutputFormat(const AudioDataInfo &info) { outputFormat=info; }
+        void SetOutputFormat(const AudioDataInfo &info) { output_format=info; }
 
         /**
          * 设置输出格式(便捷方法)
          * @param format 输出音频格式 (AL_FORMAT_*，声道数须与音源一致)
-         * @param sampleRate 输出采样率 (如44100, 48000)
+         * @param sample_rate 输出采样率 (如44100, 48000)
          */
-        void SetOutputFormat(uint format,uint sampleRate)
+        void SetOutputFormat(uint format,uint sample_rate)
         {
             AudioDataInfo info;
             if(openal::FromOpenALFormat(format,info))
             {
-                info.sampleRate = sampleRate;
-                outputFormat = info;
+                info.sample_rate = sample_rate;
+                output_format = info;
             }
         }
 
         /**
          * 获取输出格式
          */
-        const AudioDataInfo &GetOutputFormat() const { return outputFormat; }
+        const AudioDataInfo &GetOutputFormat() const { return output_format; }
 
         /**
          * 获取输出采样率
          */
-        uint GetOutputSampleRate() const { return outputFormat.sampleRate; }
+        uint GetOutputSampleRate() const { return output_format.sample_rate; }
 
         /**
             * 生成混音场景

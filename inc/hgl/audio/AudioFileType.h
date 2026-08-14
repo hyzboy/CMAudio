@@ -22,4 +22,4 @@ namespace hgl::audio
 
     AudioFileType CheckAudioExtName(const os_char *ext_name);
     AudioFileType CheckAudioFileType(const os_char *filename);
-}//namespace hgl::audio::audio
+}//namespace hgl::audio

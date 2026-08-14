@@ -20,7 +20,7 @@ namespace hgl::audio
      */
     struct AudioFilterConfig
     {
-        AudioFilterType type = AudioFilterType::None;
+        AudioFilterType filter_type = AudioFilterType::None;
         float gain = 1.0f;       ///< 整体增益
         float gain_lf = 1.0f;    ///< 低频增益
         float gain_hf = 1.0f;    ///< 高频增益
@@ -28,7 +28,7 @@ namespace hgl::audio
 
         bool operator==(const AudioFilterConfig& other) const
         {
-            return type == other.type &&
+            return filter_type == other.filter_type &&
                    gain == other.gain &&
                    gain_lf == other.gain_lf &&
                    gain_hf == other.gain_hf &&

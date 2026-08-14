@@ -105,20 +105,20 @@ HGL_PLUGIN_FUNC void ClearAudioBufferData(AudioBuffer *audio_buffer)
     audio_buffer->Clear();
 }
 
-HGL_PLUGIN_FUNC double      AudioBufferTime         (AudioBuffer *buf){return buf?buf->Time:0;}
-HGL_PLUGIN_FUNC uint        AudioBufferBytes        (AudioBuffer *buf){return buf?buf->Size:0;}
-HGL_PLUGIN_FUNC uint        AudioBufferFreq         (AudioBuffer *buf){return buf?buf->Freq:0;}
+HGL_PLUGIN_FUNC double      AudioBufferTime         (AudioBuffer *buf){return buf?buf->GetTime():0;}
+HGL_PLUGIN_FUNC uint        AudioBufferBytes        (AudioBuffer *buf){return buf?buf->GetSize():0;}
+HGL_PLUGIN_FUNC uint        AudioBufferFreq         (AudioBuffer *buf){return buf?buf->GetFreq():0;}
 
 HGL_PLUGIN_FUNC uint        SourceGetIndex          (AudioSource *source){return source?source->GetIndex():0;}
 
-HGL_PLUGIN_FUNC double      SourceGetCurTime        (AudioSource *source){return source?source->GetCurTime():0;}
-HGL_PLUGIN_FUNC void        SourceSetCurTime        (AudioSource *source,const double &t){if(source)source->SetCurTime(t);}
+HGL_PLUGIN_FUNC double      SourceGetPlaybackTime   (AudioSource *source){return source?source->GetPlaybackTime():0;}
+HGL_PLUGIN_FUNC void        SourceSetPlaybackTime   (AudioSource *source,const double &t){if(source)source->SetPlaybackTime(t);}
 
 HGL_PLUGIN_FUNC int         SourceGetState          (AudioSource *source){return source?source->GetState():-1;}
 HGL_PLUGIN_FUNC float       SourceGetMinGain        (AudioSource *source){return source?source->GetMinGain():0;}
 HGL_PLUGIN_FUNC float       SourceGetMaxGain        (AudioSource *source){return source?source->GetMaxGain():0;}
 
-HGL_PLUGIN_FUNC const bool  SourceGetLoop           (AudioSource *source){return source?source->GetLoop():false;}
+HGL_PLUGIN_FUNC const bool  SourceGetLoop           (AudioSource *source){return source?source->IsLoop():false;}
 
 HGL_PLUGIN_FUNC const float SourceGetPitch          (AudioSource *source){return source?source->GetPitch():0;}
 HGL_PLUGIN_FUNC const float SourceGetGain           (AudioSource *source){return source?source->GetGain():0;}
@@ -169,8 +169,8 @@ HGL_PLUGIN_FUNC void SourceUnlink   (AudioSource *source){if(source)source->Unli
 
 
 HGL_PLUGIN_FUNC uint                    PlayerGetSource     (AudioPlayer *ap){return ap?ap->GetIndex():0;}
-HGL_PLUGIN_FUNC double                  PlayerGetTime       (AudioPlayer *ap){return ap?ap->GetTime():0;}
-HGL_PLUGIN_FUNC AudioPlayer::PlayState  PlayerGetPlayState  (AudioPlayer *ap){return ap?ap->GetPlayState():(AudioPlayer::psNone);}
+HGL_PLUGIN_FUNC double                  PlayerGetTotalTime  (AudioPlayer *ap){return ap?ap->GetTotalTime():0;}
+HGL_PLUGIN_FUNC AudioPlayer::PlayState  PlayerGetPlayState  (AudioPlayer *ap){return ap?ap->GetPlayState():(AudioPlayer::PlayState::None);}
 HGL_PLUGIN_FUNC int                     PlayerGetSourceState(AudioPlayer *ap){return ap?ap->GetSourceState():0;}
 HGL_PLUGIN_FUNC float                   PlayerGetMinGain    (AudioPlayer *ap){return ap?ap->GetMinGain():0;}
 HGL_PLUGIN_FUNC float                   PlayerGetMaxGain    (AudioPlayer *ap){return ap?ap->GetMaxGain():0;}
@@ -217,4 +217,4 @@ HGL_PLUGIN_FUNC void    PlayerClear (AudioPlayer *ap){if(ap)ap->Clear();}
 HGL_PLUGIN_FUNC double  PlayerGetPlayTime(AudioPlayer *ap){return ap?ap->GetPlayTime():0;}
 HGL_PLUGIN_FUNC void    PlayerSetFadeTime(AudioPlayer *ap,double in,double out){if(ap)ap->SetFadeTime(in,out);}
 
-HGL_PLUGIN_FUNC void    PlayerSetAutoGain(AudioPlayer *ap,float target_gain,double adjust_time){if(ap)ap->AutoGain(target_gain,adjust_time);}
+HGL_PLUGIN_FUNC void    PlayerSetAutoGain(AudioPlayer *ap,float target_gain,double adjust_time){if(ap)ap->AutoGain(target_gain,adjust_time,ap->GetPlayTime());}

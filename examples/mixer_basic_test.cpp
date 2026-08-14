@@ -21,24 +21,24 @@ int main(int argc, char** argv)
     // Load input WAV file
     openal::ALenum format;
     void* data;
-    uint dataSize;
-    uint sampleRate;
+    uint data_size;
+    uint sample_rate;
 
-    if (!WavReader::Load(inputFile, &format, &data, &dataSize, &sampleRate))
+    if (!WavReader::Load(inputFile, &format, &data, &data_size, &sample_rate))
     {
         std::cerr << "Error: Failed to load " << inputFile << std::endl;
         std::cerr << "Please ensure wav_samples directory contains the required files." << std::endl;
         return 1;
     }
 
-    std::cout << "Loaded: " << dataSize << " bytes, ";
-    std::cout << sampleRate << " Hz, ";
+    std::cout << "Loaded: " << data_size << " bytes, ";
+    std::cout << sample_rate << " Hz, ";
     std::cout << (format == AL_FORMAT_MONO8 ? "MONO8" : "MONO16") << std::endl;
 
     // Create mixer and add source
     AudioMixer mixer;
-    int sourceIndex = mixer.AddSourceAudio(data, dataSize, format, sampleRate);
-    if(sourceIndex < 0)
+    int source_index = mixer.AddSourceAudio(data, data_size, format, sample_rate);
+    if(source_index < 0)
     {
         std::cerr << "Error: Failed to add source audio" << std::endl;
         free(data);
@@ -47,27 +47,27 @@ int main(int argc, char** argv)
 
     // Optional: Configure mixer settings
     // MixerConfig config;
-    // config.useSoftClipper = true;  // Use tanh-based soft clipping instead of hard clipping
-    // config.useDither = true;       // Use TPDF dither when converting float32->int16 (reduces quantization noise)
+    // config.use_soft_clipper = true;  // Use tanh-based soft clipping instead of hard clipping
+    // config.use_dither = true;       // Use TPDF dither when converting float32->int16 (reduces quantization noise)
     // mixer.SetConfig(config);
 
     // Add multiple tracks with different parameters
     std::cout << std::endl << "Adding tracks:" << std::endl;
 
     // Track 1: Original
-    mixer.AddTrack(sourceIndex, 0.0f, 1.0f, 1.0f);
+    mixer.AddTrack(source_index, 0.0f, 1.0f, 1.0f);
     std::cout << "  Track 1: offset=0.0s,  volume=1.0,  pitch=1.0   (original)" << std::endl;
 
     // Track 2: Slightly delayed, quieter, lower pitch
-    mixer.AddTrack(sourceIndex, 0.5f, 0.7f, 0.95f);
+    mixer.AddTrack(source_index, 0.5f, 0.7f, 0.95f);
     std::cout << "  Track 2: offset=0.5s,  volume=0.7,  pitch=0.95  (delayed, quieter)" << std::endl;
 
     // Track 3: More delay, medium volume, higher pitch
-    mixer.AddTrack(sourceIndex, 1.2f, 0.6f, 1.05f);
+    mixer.AddTrack(source_index, 1.2f, 0.6f, 1.05f);
     std::cout << "  Track 3: offset=1.2s,  volume=0.6,  pitch=1.05  (more delay)" << std::endl;
 
     // Track 4: Far away, very quiet, lower pitch
-    mixer.AddTrack(sourceIndex, 2.0f, 0.4f, 0.9f);
+    mixer.AddTrack(source_index, 2.0f, 0.4f, 0.9f);
     std::cout << "  Track 4: offset=2.0s,  volume=0.4,  pitch=0.9   (distant)" << std::endl;
 
     // Mix audio (5 seconds)
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
     // Write output WAV file
     WavWriter writer;
-    if (!writer.Open(outputFile, AL_FORMAT_MONO16, sampleRate))
+    if (!writer.Open(outputFile, AL_FORMAT_MONO16, sample_rate))
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;

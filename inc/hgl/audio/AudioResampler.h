@@ -20,7 +20,7 @@ namespace hgl::audio
      *   integer and float32 samples).
      * - Input and output channel counts must match (resampling does not
      *   remap channel layouts).
-     * - If outputInfo.sampleRate is 0, the input sample rate is preserved;
+     * - If outputInfo.sample_rate is 0, the input sample rate is preserved;
      *   if outputInfo.channels is 0, the input format is preserved.
      * - Caller owns outputData and must delete[] it.
      */

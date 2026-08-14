@@ -81,15 +81,15 @@ namespace hgl::audio
     private:
 
         double start_play_time;                             ///< 开始播放时间
-        bool is_play;                                       ///< 是否需要播放
+        bool should_play;                                       ///< 是否需要播放
 
-        Vector3f last_pos;
-        double last_time;
+        Vector3f last_position;
+        double last_position_time;
 
-        Vector3f cur_pos;
-        double cur_time;
+        Vector3f current_position;
+        double current_position_time;
 
-        double move_speed;
+        double movement_speed;
 
         // 多普勒平滑状态
         Vector3f smoothed_velocity;                         ///< 平滑后的速度（用于多普勒效果）
@@ -100,7 +100,7 @@ namespace hgl::audio
         // 频率相关衰减状态
         uint lowpass_filter;                                ///< 低通滤波器ID（每个音源独立的OpenAL滤波器句柄）
         float last_filter_gain;                             ///< 上次应用的低频增益（避免重复更新）
-        float last_filter_gainhf;                           ///< 上次应用的高频增益（避免重复更新）
+        float last_filter_gain_hf;                           ///< 上次应用的高频增益（避免重复更新）
 
         double last_gain;                                   ///< 上一次的音量
 
@@ -131,15 +131,15 @@ namespace hgl::audio
             , ref_distance(config.ref_distance)
             , max_distance(config.max_distance)
             , start_play_time(0)
-            , is_play(false)
-            , last_time(0)
-            , cur_time(0)
-            , move_speed(0)
+            , should_play(false)
+            , last_position_time(0)
+            , current_position_time(0)
+            , movement_speed(0)
             , last_gain(0)
             , last_update_frame(0)
             , lowpass_filter(0)
             , last_filter_gain(-1.0f)
-            , last_filter_gainhf(-1.0f)
+            , last_filter_gain_hf(-1.0f)
             , is_fading(false)
             , fade_start_time(0)
             , fade_duration(0)
@@ -150,8 +150,8 @@ namespace hgl::audio
             velocity = Vector3f(0, 0, 0);
             direction = Vector3f(0, 0, 0);
             smoothed_velocity = Vector3f(0, 0, 0);
-            last_pos = config.position;
-            cur_pos = config.position;
+            last_position = config.position;
+            current_position = config.position;
         }
 
         /**
@@ -161,8 +161,8 @@ namespace hgl::audio
         void Play(const double play_time=0)
         {
             start_play_time=play_time;
-            is_play=true;
-            // 不重置 last_time，避免破坏 MoveTo() 的逻辑
+            should_play=true;
+            // 不重置 last_position_time，避免破坏 MoveTo() 的逻辑
         }
 
         /**
@@ -170,7 +170,7 @@ namespace hgl::audio
          */
         void Stop()
         {
-            is_play=false;
+            should_play=false;
         }
 
         /**
@@ -180,11 +180,11 @@ namespace hgl::audio
          */
         void MoveTo(const Vector3f &pos,const double &ct)
         {
-            last_pos=cur_pos;
-            last_time=cur_time;
+            last_position=current_position;
+            last_position_time=current_position_time;
 
-            cur_pos=pos;
-            cur_time=ct;
+            current_position=pos;
+            current_position_time=ct;
         }
 
         /**
@@ -196,8 +196,8 @@ namespace hgl::audio
 
     public: //属性
 
-        bool            IsPlaying()const{return is_play;}                                            ///<是否在播放
-        const Vector3f &GetPosition()const{return cur_pos;}                                          ///<获取当前位置
+        bool            IsPlaying()const{return should_play;}                                            ///<是否在播放
+        const Vector3f &GetPosition()const{return current_position;}                                          ///<获取当前位置
         double          GetStartPlayTime()const{return start_play_time;}                             ///<获取开始播放时间
     };//struct SpatialAudioSource
 
@@ -224,7 +224,7 @@ namespace hgl::audio
     {
     protected:
 
-        double cur_time;                                                                            ///< 当前时间
+        double current_time;                                                                            ///< 当前时间
         uint64 update_frame_counter;                                                                ///< 更新帧计数器（用于分层更新）
 
         float ref_distance;                                                                         ///< 默认参考距离
@@ -248,13 +248,13 @@ namespace hgl::audio
         // 场景级低通滤波
         bool scene_lowpass_enabled;                                                                  ///< 是否启用场景级低通
         float scene_lowpass_gain;                                                                    ///< 场景级低通整体增益
-        float scene_lowpass_gainhf;                                                                  ///< 场景级低通高频增益
+        float scene_lowpass_gain_hf;                                                                  ///< 场景级低通高频增益
 
         // 淡入淡出插值类型
         InterpolationType fade_interpolation_type;                                           ///< 淡入淡出插值算法类型
 
         // 计算音源重要性（作为类的静态成员以便访问私有字段）
-        static double CalculateImportance(const SpatialAudioSource *asi, double audible_gain, const Vector3f &listener_pos);
+        static double CalculateImportance(const SpatialAudioSource *spatial_source, double audible_gain, const Vector3f &listener_pos);
 
     protected:
 
@@ -267,9 +267,9 @@ namespace hgl::audio
 
     public:     // 事件
 
-        virtual float   OnCheckGain(SpatialAudioSource *asi)                                        ///< 检测音量事件
+        virtual float   OnCheckGain(SpatialAudioSource *spatial_source)                                        ///< 检测音量事件
         {
-            return asi?float(asi->GetGain(listener)*asi->gain):0;
+            return spatial_source?float(spatial_source->GetGain(listener)*spatial_source->gain):0;
         }
 
         virtual void    OnToMute(SpatialAudioSource *){/* 无任何处理，请自行重载处理 */}           ///< 从有声变为听不到声音
@@ -328,19 +328,19 @@ namespace hgl::audio
                 /**
                  * 设置音源的方向性增益图
                  * Set directional gain pattern for an audio source
-                 * @param asi 音源指针
+                 * @param spatial_source 音源指针
                  * @param pattern_type 预定义模式类型
                  */
-                void                SetDirectionalPattern(SpatialAudioSource *asi, GainPatternType pattern_type);
+                void                SetDirectionalPattern(SpatialAudioSource *spatial_source, GainPatternType pattern_type);
 
                 /**
                  * 设置音源的自定义方向性增益图
                  * Set custom directional gain pattern for an audio source
-                 * @param asi 音源指针
+                 * @param spatial_source 音源指针
                  * @param samples 极坐标样本点数组
                  * @param count 样本点数量
                  */
-                void                SetCustomDirectionalPattern(SpatialAudioSource *asi, const PolarGainSample *samples, int count);
+                void                SetCustomDirectionalPattern(SpatialAudioSource *spatial_source, const PolarGainSample *samples, int count);
 
                 /**
                  * 设置淡入淡出插值算法类型

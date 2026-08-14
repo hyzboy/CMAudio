@@ -10,13 +10,13 @@ using namespace openal;
 namespace hgl::audio
 {
         AudioMixer::AudioMixer()
-            : poolBuffer(OS_TEXT("AudioMixer::poolBuffer")),
-              tempBuffer(OS_TEXT("AudioMixer::tempBuffer"))
+            : pool_buffer(OS_TEXT("AudioMixer::pool_buffer")),
+              temp_buffer(OS_TEXT("AudioMixer::temp_buffer"))
         {
-            hasCommonInfo = false;
-            outputFormat.channels = 1;      // 默认单声道
-            outputFormat.bitsPerSample = 16; // 默认输出int16
-            outputFormat.isFloat = false;
+            has_common_info = false;
+            output_format.channels = 1;      // 默认单声道
+            output_format.bits_per_sample = 16; // 默认输出int16
+            output_format.is_float = false;
         }
 
         AudioMixer::~AudioMixer()
@@ -31,20 +31,20 @@ namespace hgl::audio
          */
         void AudioMixer::ConvertToFloat(const void* input, uint inputSize, float** output, uint* outputCount, const AudioDataInfo& info)
         {
-            uint bytesPerSample = info.bitsPerSample / 8;
+            uint bytesPerSample = info.bits_per_sample / 8;
             *outputCount = inputSize / bytesPerSample;
 
             // 使用临时缓冲区
-            tempBuffer.Ensure(*outputCount);
-            *output = tempBuffer.Get();
+            temp_buffer.Ensure(*outputCount);
+            *output = temp_buffer.Get();
 
-            if(info.isFloat && info.bitsPerSample == 32)
+            if(info.is_float && info.bits_per_sample == 32)
             {
                 // 已经是float，直接复制
                 const float* samples = (const float*)input;
                 memcpy(*output, samples, (*outputCount) * sizeof(float));
             }
-            else if(info.bitsPerSample == 32)
+            else if(info.bits_per_sample == 32)
             {
                 const int32_t* samples = (const int32_t*)input;
                 for(uint i = 0; i < *outputCount; i++)
@@ -53,7 +53,7 @@ namespace hgl::audio
                     (*output)[i] = samples[i] / 2147483648.0f;
                 }
             }
-            else if(info.bitsPerSample == 16)
+            else if(info.bits_per_sample == 16)
             {
                 const int16_t* samples = (const int16_t*)input;
                 for(uint i = 0; i < *outputCount; i++)
@@ -62,7 +62,7 @@ namespace hgl::audio
                     (*output)[i] = samples[i] / 32768.0f;
                 }
             }
-            else if(info.bitsPerSample == 8)
+            else if(info.bits_per_sample == 8)
             {
                 const int8_t* samples = (const int8_t*)input;
                 for(uint i = 0; i < *outputCount; i++)
@@ -96,14 +96,14 @@ namespace hgl::audio
          */
         void AudioMixer::ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, const AudioDataInfo& outputInfo)
         {
-            if(outputInfo.isFloat && outputInfo.bitsPerSample == 32)
+            if(outputInfo.is_float && outputInfo.bits_per_sample == 32)
             {
                 // 输出float32
                 *outputSize = sampleCount * sizeof(float);
                 *output = new float[sampleCount];
                 memcpy(*output, input, *outputSize);
             }
-            else if(outputInfo.bitsPerSample == 32)
+            else if(outputInfo.bits_per_sample == 32)
             {
                 // 输出int32
                 *outputSize = sampleCount * sizeof(int32_t);
@@ -120,14 +120,14 @@ namespace hgl::audio
                     samples[i] = (int32_t)((double)sample * 2147483647.0);
                 }
             }
-            else if(outputInfo.bitsPerSample == 16)
+            else if(outputInfo.bits_per_sample == 16)
             {
                 // 输出int16
                 *outputSize = sampleCount * sizeof(int16_t);
                 int16_t* samples = new int16_t[sampleCount];
                 *output = samples;
 
-                if(config.useDither)
+                if(config.use_dither)
                 {
                     // 使用TPDF抖动
                     LogInfo(OS_TEXT("Applying TPDF dither for float32->int16 conversion"));
@@ -162,7 +162,7 @@ namespace hgl::audio
                     }
                 }
             }
-            else if(outputInfo.bitsPerSample == 8)
+            else if(outputInfo.bits_per_sample == 8)
             {
                 // 输出int8
                 *outputSize = sampleCount * sizeof(int8_t);
@@ -187,29 +187,29 @@ namespace hgl::audio
          */
         int AudioMixer::AddSourceAudio(const AudioDataInfo &info,const void *data)
         {
-            if(!data || info.dataSize == 0 || info.sampleRate == 0)
+            if(!data || info.data_size == 0 || info.sample_rate == 0)
             {
                 LogError(OS_TEXT("Invalid audio data parameters"));
                 return -1;
             }
 
-            if(info.channels==0||info.bitsPerSample==0)
+            if(info.channels==0||info.bits_per_sample==0)
             {
-                LogError(OS_TEXT("Invalid audio format (channels/bitsPerSample)"));
+                LogError(OS_TEXT("Invalid audio format (channels/bits_per_sample)"));
                 return -1;
             }
 
-            if(!hasCommonInfo)
+            if(!has_common_info)
             {
-                commonInfo = info;
-                hasCommonInfo = true;
+                common_info = info;
+                has_common_info = true;
             }
             else
             {
-                if(commonInfo.sampleRate != info.sampleRate ||
-                   commonInfo.channels != info.channels ||
-                   commonInfo.bitsPerSample != info.bitsPerSample ||
-                   commonInfo.isFloat != info.isFloat)
+                if(common_info.sample_rate != info.sample_rate ||
+                   common_info.channels != info.channels ||
+                   common_info.bits_per_sample != info.bits_per_sample ||
+                   common_info.is_float != info.is_float)
                 {
                     LogError(OS_TEXT("Source audio format/sample rate mismatch; unify before mixing"));
                     return -1;
@@ -219,13 +219,13 @@ namespace hgl::audio
             SourceAudio source;
             source.info = info;
             source.data = data;
-            source.dataSize = info.dataSize;
+            source.data_size = info.data_size;
 
             sources.Add(source);
             return sources.GetCount() - 1;
         }
 
-        int AudioMixer::AddSourceAudio(const void *data,uint size,uint format,uint sampleRate)
+        int AudioMixer::AddSourceAudio(const void *data,uint size,uint format,uint sample_rate)
         {
             AudioDataInfo info;
 
@@ -235,8 +235,8 @@ namespace hgl::audio
                 return -1;
             }
 
-            info.sampleRate = sampleRate;
-            info.dataSize = size;
+            info.sample_rate = sample_rate;
+            info.data_size = size;
 
             return AddSourceAudio(info,data);
         }
@@ -247,7 +247,7 @@ namespace hgl::audio
         void AudioMixer::ClearSources()
         {
             sources.Clear();
-            hasCommonInfo = false;
+            has_common_info = false;
         }
 
         /**
@@ -261,9 +261,9 @@ namespace hgl::audio
         /**
          * 添加混音轨道(便捷方法)
          */
-        void AudioMixer::AddTrack(uint sourceIndex, float timeOffset, float volume, float pitch)
+        void AudioMixer::AddTrack(uint source_index, float time_offset, float volume, float pitch)
         {
-            AddTrack(MixingTrack(sourceIndex, timeOffset, volume, pitch));
+            AddTrack(MixingTrack(source_index, time_offset, volume, pitch));
         }
 
         /**
@@ -374,7 +374,7 @@ namespace hgl::audio
                 RETURN_FALSE;
             }
 
-            if(!hasCommonInfo)
+            if(!has_common_info)
             {
                 LogError(OS_TEXT("No common audio format info"));
                 RETURN_FALSE;
@@ -386,61 +386,61 @@ namespace hgl::audio
                 loopLength = 0.0f;
                 for(auto track:tracks)
                 {
-                    if(track.sourceIndex >= (uint)sources.GetCount())
+                    if(track.source_index >= (uint)sources.GetCount())
                     {
                         LogError(OS_TEXT("Track source index out of range"));
                         RETURN_FALSE;
                     }
 
-                    const SourceAudio& source = sources[track.sourceIndex];
+                    const SourceAudio& source = sources[track.source_index];
                     uint channels = source.info.channels;
                     if(channels == 0) channels = 1;
 
-                    uint bytesPerSample = source.info.bitsPerSample / 8;
-                    uint sourceFrameCount = (source.dataSize / bytesPerSample) / channels;
-                    float sourceDuration = (float)sourceFrameCount / source.info.sampleRate;
-                    float trackEnd = track.timeOffset + sourceDuration / track.pitch;
+                    uint bytesPerSample = source.info.bits_per_sample / 8;
+                    uint sourceFrameCount = (source.data_size / bytesPerSample) / channels;
+                    float sourceDuration = (float)sourceFrameCount / source.info.sample_rate;
+                    float trackEnd = track.time_offset + sourceDuration / track.pitch;
 
                     if(trackEnd > loopLength)
                         loopLength = trackEnd;
                 }
             }
 
-            const uint channels = commonInfo.channels ? commonInfo.channels : 1;
+            const uint channels = common_info.channels ? common_info.channels : 1;
 
             // 计算输出帧数与采样数
-            uint outputFrameCount = (uint)(loopLength * commonInfo.sampleRate);
+            uint outputFrameCount = (uint)(loopLength * common_info.sample_rate);
             uint outputSampleCount = outputFrameCount * channels;
 
             // 确保缓冲区足够大
-            poolBuffer.Ensure(outputSampleCount);
+            pool_buffer.Ensure(outputSampleCount);
 
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) +
                     OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength,3) +
-                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)commonInfo.sampleRate) +
+                    OS_TEXT(" seconds, output sample rate: ") + OSString::numberOf((int)common_info.sample_rate) +
                     OS_TEXT(", output channels: ") + OSString::numberOf((int)channels) +
-                    OS_TEXT(", output format: ") + (commonInfo.isFloat ? OS_TEXT("float32") : OS_TEXT("int")) +
-                    OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)poolBuffer.GetSize()) + OS_TEXT(" samples"));
+                    OS_TEXT(", output format: ") + (common_info.is_float ? OS_TEXT("float32") : OS_TEXT("int")) +
+                    OS_TEXT(", pool buffer size: ") + OSString::numberOf((int)pool_buffer.GetSize()) + OS_TEXT(" samples"));
 
             // 使用池缓冲区进行混音
-            float* mixBuffer = poolBuffer.Get();
+            float* mixBuffer = pool_buffer.Get();
             memset(mixBuffer, 0, outputSampleCount * sizeof(float));
 
             // 为每个轨道应用变换并混音
             for(auto track:tracks)
             {
-                if(track.sourceIndex >= (uint)sources.GetCount())
+                if(track.source_index >= (uint)sources.GetCount())
                 {
                     LogError(OS_TEXT("Track source index out of range"));
                     RETURN_FALSE;
                 }
 
-                const SourceAudio& source = sources[track.sourceIndex];
+                const SourceAudio& source = sources[track.source_index];
 
                 // 将源数据转换为float（使用临时缓冲区）
                 float* sourceFloat = nullptr;
                 uint sourceFloatCount = 0;
-                ConvertToFloat(source.data, source.dataSize, &sourceFloat, &sourceFloatCount, source.info);
+                ConvertToFloat(source.data, source.data_size, &sourceFloat, &sourceFloatCount, source.info);
 
                 // 应用音调变化（按帧处理）
                 uint sourceFrameCount = sourceFloatCount / channels;
@@ -452,21 +452,21 @@ namespace hgl::audio
                 uint pitchShiftedSampleCount = pitchShiftedFrameCount * channels;
 
                 // 计算起始采样位置
-                uint startFrame = (uint)(track.timeOffset * commonInfo.sampleRate);
+                uint startFrame = (uint)(track.time_offset * common_info.sample_rate);
                 uint startSample = startFrame * channels;
 
                 // 混合到输出 (float混音，无需担心溢出)
                 for(uint i = 0; i < pitchShiftedSampleCount && (startSample + i) < outputSampleCount; i++)
                 {
                     // 应用音量并混合 - float混音非常简单
-                    mixBuffer[startSample + i] += pitchShiftedData[i] * track.volume * config.masterVolume;
+                    mixBuffer[startSample + i] += pitchShiftedData[i] * track.volume * config.master_volume;
                 }
 
                 delete[] pitchShiftedData;
             }
 
             // 应用软削波或归一化
-            if(config.useSoftClipper)
+            if(config.use_soft_clipper)
             {
                 // 使用软削波处理越界数据
                 LogInfo(OS_TEXT("Applying soft clipping (tanh)"));
@@ -500,9 +500,9 @@ namespace hgl::audio
             // 如果都不启用，则可能存在超出[-1.0, 1.0]的数据，在转换时会被硬削波
 
             // 转换为目标格式（注意：不再使用mixBuffer，因为ConvertFromFloat会分配新内存）
-            const AudioDataInfo &outputInfo = outputFormat;
+            const AudioDataInfo &outputInfo = output_format;
 
-            if(!outputInfo.isFloat && outputInfo.channels != channels)
+            if(!outputInfo.is_float && outputInfo.channels != channels)
             {
                 LogError(OS_TEXT("Output format channel count must match source channel count"));
                 RETURN_FALSE;

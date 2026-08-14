@@ -29,8 +29,8 @@ int main(int argc, char** argv)
 
     std::cout << "Configuration loaded:" << std::endl;
     std::cout << "  Duration: " << config.duration << " seconds" << std::endl;
-    std::cout << "  Output: " << config.output.info.sampleRate << " Hz, ";
-    std::cout << (config.output.info.bitsPerSample == 16 ? "MONO16" : "MONO8") << std::endl;
+    std::cout << "  Output: " << config.output.info.sample_rate << " Hz, ";
+    std::cout << (config.output.info.bits_per_sample == 16 ? "MONO16" : "MONO8") << std::endl;
     std::cout << "  Sources: " << config.sources.size() << std::endl << std::endl;
 
     // For swarm, we should only have one source type
@@ -45,17 +45,17 @@ int main(int argc, char** argv)
     // Load WAV file
     openal::ALenum format;
     void* data;
-    uint dataSize;
-    uint sampleRate;
+    uint data_size;
+    uint sample_rate;
 
     std::cout << "Loading: " << source.wavFile << "... ";
-    if (!WavReader::Load(source.wavFile.c_str(), &format, &data, &dataSize, &sampleRate))
+    if (!WavReader::Load(source.wavFile.c_str(), &format, &data, &data_size, &sample_rate))
     {
         std::cerr << "FAILED" << std::endl;
         std::cerr << "Error: Failed to load " << source.wavFile << std::endl;
         return 1;
     }
-    std::cout << "OK (" << dataSize << " bytes, " << sampleRate << " Hz)" << std::endl;
+    std::cout << "OK (" << data_size << " bytes, " << sample_rate << " Hz)" << std::endl;
 
     // Create AudioMixerScene
     AudioMixerScene scene;
@@ -63,19 +63,19 @@ int main(int argc, char** argv)
 
     AudioMixerSourceConfig srcConfig;
     srcConfig.data = data;
-    srcConfig.info.dataSize = dataSize;
+    srcConfig.info.data_size = data_size;
     srcConfig.info.channels = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO_FLOAT32) ? 2 : 1;
-    srcConfig.info.bitsPerSample = (format == AL_FORMAT_MONO8 || format == AL_FORMAT_STEREO8) ? 8 : 16;
-    srcConfig.info.isFloat = (format == AL_FORMAT_MONO_FLOAT32 || format == AL_FORMAT_STEREO_FLOAT32);
-    srcConfig.info.sampleRate = sampleRate;
-    srcConfig.minCount = source.minCount;
-    srcConfig.maxCount = source.maxCount;
-    srcConfig.minInterval = source.minInterval;
-    srcConfig.maxInterval = source.maxInterval;
-    srcConfig.minVolume = source.minVolume;
-    srcConfig.maxVolume = source.maxVolume;
-    srcConfig.minPitch = source.minPitch;
-    srcConfig.maxPitch = source.maxPitch;
+    srcConfig.info.bits_per_sample = (format == AL_FORMAT_MONO8 || format == AL_FORMAT_STEREO8) ? 8 : 16;
+    srcConfig.info.is_float = (format == AL_FORMAT_MONO_FLOAT32 || format == AL_FORMAT_STEREO_FLOAT32);
+    srcConfig.info.sample_rate = sample_rate;
+    srcConfig.min_count = source.min_count;
+    srcConfig.max_count = source.max_count;
+    srcConfig.min_interval = source.min_interval;
+    srcConfig.max_interval = source.max_interval;
+    srcConfig.min_volume = source.min_volume;
+    srcConfig.max_volume = source.max_volume;
+    srcConfig.min_pitch = source.min_pitch;
+    srcConfig.max_pitch = source.max_pitch;
 
     // Convert name to UTF-16
     std::u16string u16name;
@@ -86,10 +86,10 @@ int main(int argc, char** argv)
 
     std::cout << std::endl << "Swarm configuration:" << std::endl;
     std::cout << "  Name: " << source.name << std::endl;
-    std::cout << "  Instances: " << source.minCount << "-" << source.maxCount << std::endl;
-    std::cout << "  Volume: " << source.minVolume << "-" << source.maxVolume << std::endl;
-    std::cout << "  Pitch: " << source.minPitch << "-" << source.maxPitch << std::endl;
-    std::cout << "  (Simulates high-density swarm with " << source.minCount << "-" << source.maxCount << " mixed instances)" << std::endl;
+    std::cout << "  Instances: " << source.min_count << "-" << source.max_count << std::endl;
+    std::cout << "  Volume: " << source.min_volume << "-" << source.max_volume << std::endl;
+    std::cout << "  Pitch: " << source.min_pitch << "-" << source.max_pitch << std::endl;
+    std::cout << "  (Simulates high-density swarm with " << source.min_count << "-" << source.max_count << " mixed instances)" << std::endl;
 
     // Generate scene
     void* outputData;
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 
     // Write output WAV file
     WavWriter writer;
-    if (!writer.Open(outputFile, openal::ToOpenALFormat(config.output.info), config.output.info.sampleRate))
+    if (!writer.Open(outputFile, openal::ToOpenALFormat(config.output.info), config.output.info.sample_rate))
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;
