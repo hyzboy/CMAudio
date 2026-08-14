@@ -130,7 +130,9 @@ namespace hgl::audio
 
         Freq=freq;
 
-        return(true);
+        Size=size;
+
+        return(ok=true);
     }
 
     bool AudioBuffer::SetData(const AudioDataInfo &info,const void *data)

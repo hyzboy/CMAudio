@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include<cstring>
 #include<hgl/log/Log.h>
 #include<hgl/type/String.h>
 
@@ -8,6 +9,10 @@ namespace hgl::audio
     /**
         * 音频内存池模板
         * 用于减少频繁的内存分配/释放操作
+        *
+        * 说明: 音频混音/重采样场景中缓冲区是"整体重写"的（先清零再填充），
+        * 因此扩容时不保留旧数据（不做 memcpy），避免无意义的拷贝开销。
+        *
         * @tparam T 元素类型 (如 float, char等)
         */
     template<typename T>
@@ -34,11 +39,7 @@ namespace hgl::audio
             */
         ~AudioMemoryPool()
         {
-            if(buffer)
-            {
-                delete[] buffer;
-                buffer = nullptr;
-            }
+            Release();
         }
 
         /**
@@ -48,89 +49,29 @@ namespace hgl::audio
         AudioMemoryPool& operator=(const AudioMemoryPool&) = delete;
 
         /**
-            * 确保缓冲区有足够大小
-            * @param requiredSize 需要的大小(元素数量)
-            * @param growthFactor 增长因子 (默认1.5倍)
+            * 确保缓冲区有足够大小(元素数量)
+            * 不足时按 1.5 倍增长策略扩容（不保留旧数据）
+            * @param requiredSize 需要的元素数量
             */
-        void Ensure(uint requiredSize, float growthFactor = 1.5f)
+        void Ensure(uint requiredSize)
         {
             if(requiredSize <= bufferSize)
                 return;  // 当前缓冲区足够大
 
-            // 计算新大小 (使用增长因子)
-            uint newSize = requiredSize + static_cast<uint>(requiredSize * (growthFactor - 1.0f));
+            // 1.5 倍增长，且至少满足 requiredSize
+            uint newSize = bufferSize + (bufferSize >> 1);   // bufferSize * 1.5
+            if(newSize < requiredSize)
+                newSize = requiredSize;
 
             GLogInfo(poolName + OS_TEXT(" expanding from ") +
                     OSString::numberOf(bufferSize) +
                     OS_TEXT(" to ") + OSString::numberOf(newSize) +
                     OS_TEXT(" elements"));
 
-            // 分配新缓冲区
-            T* newBuffer = new T[newSize];
+            delete[] buffer;
 
-            // 如果有旧数据，复制过来
-            if(buffer && bufferSize > 0)
-            {
-                memcpy(newBuffer, buffer, bufferSize * sizeof(T));
-                delete[] buffer;
-            }
-
-            buffer = newBuffer;
+            buffer = new T[newSize];
             bufferSize = newSize;
-        }
-
-        /**
-            * 预分配缓冲区(基于估算大小的倍数)
-            * @param estimatedSize 估算大小(元素数量)
-            * @param multiplier 倍数 (默认2倍)
-            */
-        void Preallocate(uint estimatedSize, float multiplier = 2.0f)
-        {
-            uint targetSize = static_cast<uint>(estimatedSize * multiplier);
-
-            if(targetSize > bufferSize)
-            {
-                GLogInfo(poolName + OS_TEXT(" preallocating ") +
-                        OSString::numberOf(targetSize) +
-                        OS_TEXT(" elements (") +
-                        OSString::floatOf(multiplier,2) +
-                        OS_TEXT("x estimated)"));
-
-                if(buffer)
-                    delete[] buffer;
-
-                buffer = new T[targetSize];
-                bufferSize = targetSize;
-            }
-        }
-
-        /**
-            * 确保缓冲区大小(可选预估大小用于预分配)
-            * @param requiredSize 需要的大小(元素数量)
-            * @param estimatedSize 预估大小(元素数量),如果提供则预分配2倍大小
-            */
-        void EnsureWithEstimate(uint requiredSize, uint estimatedSize = 0)
-        {
-            // 如果提供了预估大小，使用2倍预估大小
-            uint targetSize = estimatedSize > 0 ? (estimatedSize * 2) : requiredSize;
-
-            // 如果targetSize还是小于requiredSize，使用1.5倍requiredSize
-            if(targetSize < requiredSize)
-                targetSize = requiredSize + (requiredSize >> 1);
-
-            if(targetSize <= bufferSize)
-                return;  // 当前缓冲区足够大
-
-            GLogInfo(poolName + OS_TEXT(" expanding from ") +
-                    OSString::numberOf((int)bufferSize) +
-                    OS_TEXT(" to ") + OSString::numberOf((int)targetSize) +
-                    OS_TEXT(" elements"));
-
-            if(buffer)
-                delete[] buffer;
-
-            buffer = new T[targetSize];
-            bufferSize = targetSize;
         }
 
         /**
@@ -152,16 +93,12 @@ namespace hgl::audio
         uint GetSize() const { return bufferSize; }
 
         /**
-            * 重置缓冲区(清零但不释放内存)
-            * @param count 要清零的元素数量(默认全部)
+            * 清零缓冲区(不释放内存)
             */
-        void Clear(uint count = 0)
+        void Clear()
         {
             if(buffer && bufferSize > 0)
-            {
-                uint clearCount = (count == 0 || count > bufferSize) ? bufferSize : count;
-                memset(buffer, 0, clearCount * sizeof(T));
-            }
+                memset(buffer, 0, bufferSize * sizeof(T));
         }
 
         /**

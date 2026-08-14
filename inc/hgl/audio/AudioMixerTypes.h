@@ -79,5 +79,14 @@ namespace hgl::audio
             isFloat = false;
             dataSize = 0;
         }
+
+        bool operator==(const AudioDataInfo& other) const
+        {
+            return sampleRate == other.sampleRate &&
+                   channels == other.channels &&
+                   bitsPerSample == other.bitsPerSample &&
+                   isFloat == other.isFloat &&
+                   dataSize == other.dataSize;
+        }
     };
 }//namespace hgl::audio

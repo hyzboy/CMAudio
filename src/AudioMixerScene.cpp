@@ -373,8 +373,8 @@ namespace hgl::audio
             uint totalSamples = totalFrames * channels;
             uint totalSize = totalFrames * bytesPerFrame;
 
-            // 使用内存池分配输出缓冲区（预分配2倍大小以减少重新分配）
-            poolBuffer.EnsureWithEstimate(totalSize, totalSize);
+            // 使用内存池分配输出缓冲区
+            poolBuffer.Ensure(totalSize);
 
             char* outputBuffer = poolBuffer.Get();
             memset(outputBuffer, 0, totalSize);

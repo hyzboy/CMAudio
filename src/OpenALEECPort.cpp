@@ -1,5 +1,5 @@
 ﻿#include<hgl/audio/OpenAL.h>
-#include<hgl/audio/Listener.h>
+#include<hgl/audio/AudioListener.h>
 #include<hgl/audio/AudioBuffer.h>
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/AudioPlayer.h>

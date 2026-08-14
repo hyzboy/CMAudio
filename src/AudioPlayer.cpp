@@ -40,7 +40,7 @@ namespace hgl::audio
 
         audiosource.SetLoop(false);
 
-        source=audiosource.index;
+        source=audiosource.GetIndex();
 
         alGenBuffers(3,buffer);
     }

@@ -2,6 +2,7 @@
 
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/AudioBuffer.h>
+#include<hgl/audio/AudioFilter.h>
 #include<hgl/audio/Gain.h>
 #include<hgl/al/al.h>
 #include<hgl/math/Vector.h>
@@ -13,31 +14,12 @@ namespace hgl::audio
 
     class AudioListener;
 
-    enum class AudioFilterType
-    {
-        None=0,
-        Lowpass,
-        Highpass,
-        Bandpass
-    };
-
-    struct AudioFilterConfig
-    {
-        AudioFilterType type = AudioFilterType::None;
-        float gain = 1.0f;
-        float gain_lf = 1.0f;
-        float gain_hf = 1.0f;
-        bool enable = true;
-    };
-
     /**
     * 音频源，指的是一个发声源，要发声必须创建至少一个发声源。而这个类就是管理发声源所用的。
     */
     class AudioSource                                                                       ///音频源类
     {
         OBJECT_LOGGER
-
-        friend class AudioPlayer;
 
     private:
 

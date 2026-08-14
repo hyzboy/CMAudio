@@ -106,22 +106,15 @@ namespace hgl::audio
 
         const bool operator ==(const AudioMixerSourceConfig& cfg) const
         {
-            return (data == cfg.data) && (info.dataSize == cfg.info.dataSize) &&
-                   (info.sampleRate == cfg.info.sampleRate) &&
-                   (info.channels == cfg.info.channels) &&
-                   (info.bitsPerSample == cfg.info.bitsPerSample) &&
-                   (info.isFloat == cfg.info.isFloat) &&
+            return (data == cfg.data) &&
+                   (info == cfg.info) &&
                    (minCount == cfg.minCount) && (maxCount == cfg.maxCount) &&
                    (minInterval == cfg.minInterval) && (maxInterval == cfg.maxInterval) &&
                    (minVolume == cfg.minVolume) && (maxVolume == cfg.maxVolume) &&
-                     (minPitch == cfg.minPitch) && (maxPitch == cfg.maxPitch) &&
-                                         (filterConfig.type == cfg.filterConfig.type) &&
-                                         (filterConfig.gain == cfg.filterConfig.gain) &&
-                                         (filterConfig.gain_lf == cfg.filterConfig.gain_lf) &&
-                                         (filterConfig.gain_hf == cfg.filterConfig.gain_hf) &&
-                                         (filterConfig.enable == cfg.filterConfig.enable) &&
-                                         (filterRandom == cfg.filterRandom) &&
-                                         (reverb == cfg.reverb);
+                   (minPitch == cfg.minPitch) && (maxPitch == cfg.maxPitch) &&
+                   (filterConfig == cfg.filterConfig) &&
+                   (filterRandom == cfg.filterRandom) &&
+                   (reverb == cfg.reverb);
         }
     };//struct AudioMixerSourceConfig
 

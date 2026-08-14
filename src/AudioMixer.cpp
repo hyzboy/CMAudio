@@ -412,8 +412,8 @@ namespace hgl::audio
             uint outputFrameCount = (uint)(loopLength * commonInfo.sampleRate);
             uint outputSampleCount = outputFrameCount * channels;
 
-            // 预分配2倍大小的缓冲区以减少动态分配（基于用户要求）
-            poolBuffer.Preallocate(outputSampleCount, 2.0f);
+            // 确保缓冲区足够大
+            poolBuffer.Ensure(outputSampleCount);
 
             LogInfo(OS_TEXT("Mixing ") + OSString::numberOf(tracks.GetCount()) +
                     OS_TEXT(" tracks, output duration: ") + OSString::floatOf(loopLength,3) +

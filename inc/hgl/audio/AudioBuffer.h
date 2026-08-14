@@ -33,6 +33,7 @@ namespace hgl::audio
         double          GetTime()const{return Time;}
         uint            GetSize()const{return Size;}
         uint            GetFreq()const{return Freq;}
+        bool            IsValid()const{return ok;}                                                  ///<缓冲区是否已成功加载数据
 
     public:
 
