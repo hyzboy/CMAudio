@@ -18,6 +18,7 @@ namespace hgl::audio
     class AudioBuffer;
     class AudioSource;
     class AudioListener;
+    class AudioBus;
 
     struct SceneLowpassConfig
     {
@@ -236,6 +237,8 @@ namespace hgl::audio
         PointerObjectPool<SpatialAudioSource> spatial_source_pool;                                  ///< 空间音源对象池（动态，non-trivial 类型）
         UnorderedSet<SpatialAudioSource *> source_list;                                             ///< 音源列表
 
+        AudioBus *world_bus;                                                                        ///< 世界总线（所有空间音源统一挂载）
+
         ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
 
         uint aux_effect_slot;                                                                       ///< 辅助效果槽
@@ -284,6 +287,8 @@ namespace hgl::audio
 
         SpatialAudioWorld(int max_source,AudioListener *al);                                        ///< 构造函数(指定最大音源数)
         virtual ~SpatialAudioWorld();                                                               ///< 析构函数
+
+                void                SetBus(AudioBus *b);                                            ///< 将世界内所有空间音源挂载到指定总线
 
                 void                SetListener(AudioListener *al)                                  ///< 设置监听者
                 {

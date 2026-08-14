@@ -6,6 +6,7 @@ namespace hgl::audio
 {
     class AudioSource;
     class AudioBuffer;
+    class AudioBus;
 
     /**
     * 简单的音频播放管理，为一般应用的简单操作工具
@@ -16,6 +17,7 @@ namespace hgl::audio
         {
             AudioSource *source;
             AudioBuffer *buffer;
+            AudioBus    *bus;
 
             AudioItem();
             ~AudioItem();
@@ -41,5 +43,11 @@ namespace hgl::audio
         * @param gain 音量，默认为1
         */
         bool Play(const os_char *filename,float gain=1);
+
+        /**
+        * 将池中所有音源挂载到指定总线
+        * @param b 总线（nullptr 表示解除挂载）
+        */
+        void SetBus(AudioBus *b);
     };//class AudioManager
 }//namespace hgl::audio

@@ -32,6 +32,9 @@ cm_audio_example("AudioMixerScene" scene_swarm_test scene_swarm_test.cpp)
 # ---- 重采样工具 ----
 cm_audio_example("Resample" wav_resample wav_resample.cpp)
 
+# ---- 音频总线 ----
+cm_audio_example("AudioBus" bus_tree_test bus_tree_test.cpp)
+
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

@@ -13,6 +13,7 @@ namespace hgl::audio
     using math::Vector3f;
 
     class AudioListener;
+    class AudioBus;
 
     /**
     * 音频源，指的是一个发声源，要发声必须创建至少一个发声源。而这个类就是管理发声源所用的。
@@ -25,7 +26,12 @@ namespace hgl::audio
 
         void InitPrivate();
 
+        void ApplyGain();                       ///< 唯一写 AL_GAIN 的出口（源增益 × 总线增益）
+
         AudioBuffer *buffer;
+
+        AudioBus  *bus;                         ///< 所属总线（nullptr = 未挂载）
+        float      bus_gain;                    ///< 缓存的总线有效增益（默认 1.0）
 
     protected:
 
@@ -130,9 +136,17 @@ namespace hgl::audio
                 const ConeAngle &GetAngle()const{return cone_angle;}                                     ///<获取发声锥形角度
                       void      SetConeAngle(const ConeAngle &);                                    ///<设置发声锥形角度
 
+    public: //总线
+
+        void        SetBus(AudioBus *);                     ///< 挂载/切换总线
+        AudioBus *  GetBus()const{return bus;}              ///< 取得所属总线
+
+        void        OnBusGainChanged(float effective_gain); ///< 总线增益变更回调（AudioBus 调用）
+        void        OnBusDestroyed();                       ///< 总线析构回调（AudioBus 调用，解除关联）
+
     public: //方法
 
-        AudioSource(bool=false);                                                                    ///<本类构造函数
+        AudioSource(bool=false);                                                                    ///< 本类构造函数
         AudioSource(AudioBuffer *);                                                                 ///<本类构造函数
         virtual ~AudioSource();                                                                     ///<本类析构函数
 

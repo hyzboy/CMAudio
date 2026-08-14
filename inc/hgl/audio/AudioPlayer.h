@@ -129,6 +129,11 @@ namespace hgl::audio
         const ConeAngle &       GetConeAngle()const{return audiosource.GetAngle();}
         void                    SetConeAngle(const ConeAngle &ca){audiosource.SetConeAngle(ca);}
 
+    public: //总线
+
+        void        SetBus(AudioBus *b){audiosource.SetBus(b);}          ///< 挂载/切换总线
+        AudioBus *  GetBus()const{return audiosource.GetBus();}          ///< 取得所属总线
+
     public: //方法
 
         AudioPlayer();

@@ -9,6 +9,7 @@ namespace hgl::audio
     {
         source=new AudioSource;
         buffer=nullptr;
+        bus=nullptr;
     }
 
     AudioManager::AudioItem::~AudioItem()
@@ -31,6 +32,8 @@ namespace hgl::audio
 
         delete source;                //这么做的原因是有些声卡上一个音源上播放的数据格式必须一致，否则新格式的数据会发不出来
         source=new AudioSource;
+
+        if(bus)source->SetBus(bus);   // 重建后重挂总线
 
         delete buffer;
         buffer=nullptr;
@@ -81,5 +84,16 @@ namespace hgl::audio
         }
 
         return(false);
+    }
+
+    void AudioManager::SetBus(AudioBus *b)
+    {
+        int n=items.GetCount();
+
+        while(n--)
+        {
+            items[n]->bus=b;
+            items[n]->source->SetBus(b);
+        }
     }
 }//namespace hgl::audio

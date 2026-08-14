@@ -721,7 +721,7 @@ namespace openal
         return AudioFloat32;
     }
     //--------------------------------------------------------------------------------------------------
-    const u8char *alGetErrorInfo(const os_char *filename,const int line)
+    const u8char *alGetErrorInfo(const char *filename,const int line)
     {
         if(!alGetError)return(U8_TEXT("OpenALEE/OpenAL 未初始化!"));
 
@@ -748,7 +748,7 @@ namespace openal
 
         if(result)
         {
-            GLogError(OS_TEXT("OpenAL error,source file:\"")+OSString(filename)+OS_TEXT("\",line:")+OSString::numberOf(line));
+            GLogError(OS_TEXT("OpenAL error,source file:\"")+ToOSString(filename)+OS_TEXT("\",line:")+OSString::numberOf(line));
             GLogError(U8_TEXT("OpenAL ErrorNo:")+U8String(result));
         }
 

@@ -119,6 +119,7 @@ namespace hgl::audio
         ALsizei sample_rate;                                                                           ///<音频数据采样率
 
         AudioSource *sources[MAX_MIDI_CHANNELS];                                               ///<每个通道的AudioSource
+        AudioBus    *orchestra_bus;                                                            ///<所属总线（16 通道统一挂载）
         ALuint buffers[MAX_MIDI_CHANNELS][3];                                                  ///<每个通道3个缓冲区（三缓冲）
         OrchestraChannelPosition channel_positions[MAX_MIDI_CHANNELS];                         ///<每个通道的位置配置
 
@@ -160,6 +161,10 @@ namespace hgl::audio
                 int         GetChannelCount();                                                  ///<获取MIDI通道数量 / Get MIDI channel count
 
                 MIDIChannelInfo GetChannelInfo(int channel);                              ///<获取通道信息 / Get channel info
+
+    public: //总线 / Bus
+
+        void        SetBus(AudioBus *b);                                 ///< 挂载/切换总线（16 通道统一挂载）
 
     public: //方法 / Methods
 

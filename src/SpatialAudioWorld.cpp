@@ -176,6 +176,8 @@ namespace hgl::audio
 
         listener=al;
 
+        world_bus=nullptr;
+
         update_frame_counter=0;
 
         ref_distance=DEFAULT_REF_DISTANCE;
@@ -197,6 +199,19 @@ namespace hgl::audio
 
         // 初始化淡入淡出插值类型（默认使用余弦插值，更适合音频）
         fade_interpolation_type=InterpolationType::Cosine;
+    }
+
+    void SpatialAudioWorld::SetBus(AudioBus *b)
+    {
+        scene_mutex.Lock();
+
+        world_bus=b;
+
+        for(SpatialAudioSource *spatial_source : source_list)
+            if(spatial_source && spatial_source->source)
+                spatial_source->source->SetBus(b);
+
+        scene_mutex.Unlock();
     }
 
     /**
@@ -414,6 +429,8 @@ namespace hgl::audio
                 }
             }
         }
+
+        if(world_bus)spatial_source->source->SetBus(world_bus);   // 补挂总线（含对象池复用/偷取转移的源）
 
         spatial_source->source->Link(spatial_source->buffer);
 

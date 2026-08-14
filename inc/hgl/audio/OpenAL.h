@@ -57,7 +57,7 @@ namespace openal                                                                
 
     void alcSetDefaultContext();                                                                    ///<设置缺省上下文
 
-    const char *alGetErrorInfo(const char *,const int);                                             ///<取得最近的错误
+    const hgl::u8char *alGetErrorInfo(const char *,const int);                                       ///<取得最近的错误
 
     /**
      * 初始化OpenAL驱动

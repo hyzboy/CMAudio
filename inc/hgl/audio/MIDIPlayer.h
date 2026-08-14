@@ -299,6 +299,11 @@ namespace hgl::audio
          */
         int DecodeAllChannels(int16_t **buffers, int samples);
 
+    public: //总线
+
+        void        SetBus(AudioBus *b){audiosource.SetBus(b);}          ///< 挂载/切换总线
+        AudioBus *  GetBus()const{return audiosource.GetBus();}          ///< 取得所属总线
+
     public: //播放控制方法
 
         MIDIPlayer();

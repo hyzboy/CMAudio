@@ -1,4 +1,5 @@
 ﻿#include<hgl/audio/AudioSource.h>
+#include<hgl/audio/AudioBus.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/log/Log.h>
 
@@ -23,6 +24,8 @@ namespace hgl::audio
     {
         source_id=InvalidIndex;
         buffer=nullptr;
+        bus=nullptr;
+        bus_gain=1.0f;
         direct_filter=0;
         filter_type=AudioFilterType::None;
         filter_gain=1.0f;
@@ -56,6 +59,8 @@ namespace hgl::audio
 
     AudioSource::~AudioSource()
     {
+        if(bus)bus->DetachSource(this);        // 解除总线关联，避免总线悬空引用
+
         Close();
     }
 
@@ -133,13 +138,45 @@ namespace hgl::audio
         alSourcef(source_id,AL_PITCH,pitch);
     }
 
-    void AudioSource::SetGain(float _gain)
+    void AudioSource::ApplyGain()
     {
         if(!alSourcef)return;
         if(source_id==InvalidIndex)return;
 
+        alSourcef(source_id,AL_GAIN,gain*bus_gain);
+    }
+
+    void AudioSource::SetGain(float _gain)
+    {
         gain=_gain;
-        alSourcef(source_id,AL_GAIN,gain);
+        ApplyGain();
+    }
+
+    void AudioSource::SetBus(AudioBus *b)
+    {
+        if(bus==b)return;
+
+        if(bus)bus->DetachSource(this);
+
+        bus=b;
+        bus_gain=bus?bus->GetEffectiveGain():1.0f;
+
+        if(bus)bus->AttachSource(this);
+
+        ApplyGain();
+    }
+
+    void AudioSource::OnBusGainChanged(float effective_gain)
+    {
+        bus_gain=effective_gain;
+        ApplyGain();
+    }
+
+    void AudioSource::OnBusDestroyed()
+    {
+        bus=nullptr;
+        bus_gain=1.0f;
+        ApplyGain();
     }
 
     void AudioSource::SetConeGain(float _gain)

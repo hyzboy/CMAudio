@@ -118,6 +118,8 @@ namespace hgl::audio
         
         audio_manager=nullptr;
 
+        orchestra_bus=nullptr;
+
         state=MIDIOrchestraState::None;
 
         orchestra_center=math::ZeroVector3f;
@@ -133,6 +135,14 @@ namespace hgl::audio
 
         play=false;
         pause_state=false;
+    }
+
+    void MIDIOrchestraPlayer::SetBus(AudioBus *b)
+    {
+        orchestra_bus=b;
+
+        for(int i=0;i<MAX_MIDI_CHANNELS;i++)
+            if(sources[i])sources[i]->SetBus(b);
     }
 
     void MIDIOrchestraPlayer::InitializeChannelSources()
@@ -157,6 +167,9 @@ namespace hgl::audio
             // Set reasonable 3D audio parameters
             sources[i]->SetDistance(1.0f,50.0f);   // Maximum distance
             sources[i]->SetRolloffFactor(1.0f);    // Rolloff factor
+
+            // 若已挂载总线，则补挂
+            if(orchestra_bus)sources[i]->SetBus(orchestra_bus);
         }
     }
 
