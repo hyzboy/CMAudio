@@ -2,9 +2,7 @@
 
 > 复盘范围：2026-08-14 以来 CMAudio 模块（`D:\ULRE\CMAudio`，ULRE 子模块）的系列重构
 > 目的：对齐"已完成 vs 待做"，把剩余引擎化工作补全为可执行路线图
-> 关联文档：`GameAudioModule_Analysis.md`（差距分析）、`AudioBus_Design_Analysis.md`（Bus 设计）、
-> `AllClasses_Structure_Analysis.md`（全类结构）、`Naming_Audit_And_Rename_Plan.md`（命名方案）、
-> `.hermes/plans/2026-08-14_143000-cmaudio-arch-refactor.md`（架构整改）
+> 关联文档：`.hermes/plans/2026-08-14_143000-cmaudio-arch-refactor.md`（架构整改）
 
 ---
 
@@ -61,7 +59,7 @@
 
 ## 三、引擎化补全计划（剩余待做）
 
-> 依据 `GameAudioModule_Analysis.md`：CMAudio 后端/DSP 底子扎实（解码、空间化、混音、MIDI 均引擎级），
+> 依据整改复盘：CMAudio 后端/DSP 底子扎实（解码、空间化、混音、MIDI 均引擎级），
 > 缺的是"游戏音频引擎骨架"——总线、资源管理、统一更新循环、事件层。
 
 ```
@@ -152,4 +150,4 @@
 
 **关键依赖**：效果链（Effect Chain）挂在 Bus 节点上 → Bus 树先于效果链；`AudioEngine::update()` 建立在 Bus 树 + 资源管理之上。
 
-*本复盘基于 2026-08-14 以来全部重构记录与四份分析文档生成。*
+*本复盘基于 2026-08-14 以来全部重构记录生成。*
