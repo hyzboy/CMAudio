@@ -29,6 +29,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioListener.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioSessionPolicy.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/LoudnessNormalizer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ParametricEQ.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
@@ -60,6 +61,7 @@ set(CM_AUDIO_SOURCE
     SpatialAudioWorld.cpp
     DirectionalGainPattern.cpp
     LoudnessNormalizer.cpp
+    ParametricEQ.cpp
     SoundEvent.cpp
     SoundEventManager.cpp
     ReverbPreset.cpp
