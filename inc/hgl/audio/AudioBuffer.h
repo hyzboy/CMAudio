@@ -3,6 +3,7 @@
 #include<hgl/io/InputStream.h>
 #include<hgl/audio/AudioFileType.h>
 #include<hgl/audio/AudioMixerTypes.h>
+#include<hgl/thread/Atomic.h>
 #include<hgl/log/Log.h>
 
 namespace hgl::audio
@@ -27,6 +28,8 @@ namespace hgl::audio
         uint      data_size;                                                                             ///<缓冲区中音频数据的总字节数
         uint      sample_rate;                                                                             ///<音频数量采样率
 
+        atom<uint> ref_count;                                                                           ///<引用计数（由 AudioAssetManager 管理）
+
     public:
 
         uint            GetIndex()const{return buffer_id;}
@@ -34,6 +37,10 @@ namespace hgl::audio
         uint            GetSize()const{return data_size;}
         uint            GetFreq()const{return sample_rate;}
         bool            IsLoaded()const{return loaded;}                                                  ///<缓冲区是否已成功加载数据
+
+        uint            GetRefCount()const{return ref_count.load();}                                      ///<获取当前引用计数
+        uint            IncRef();                                                                         ///<引用计数+1，返回新值
+        uint            DecRef();                                                                         ///<引用计数-1，返回新值
 
     public:
 

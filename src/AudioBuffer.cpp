@@ -15,58 +15,79 @@ namespace hgl::audio
 
     const os_char *GetAudioDecodeName(const AudioFileType file_type);
 
-    double LoadAudioData(int buffer_id,AudioFileType file_type,void *memory,int memory_size,uint &sample_rate)
+    DecodedAudio *DecodeAudio(AudioFileType file_type,void *memory,int memory_size)
     {
-        ALenum format;
-        ALvoid *data;
-        ALsizei size;
-        ALsizei freq;
-        ALboolean loop;
-
         const os_char *plugin_name=GetAudioDecodeName(file_type);
 
-        if(!plugin_name)RETURN_ERROR(0);
+        if(!plugin_name)return nullptr;
 
-        AudioPlugInInterface decode{};
-        AudioFloatPlugInInterface decode_float{};
+        DecodedAudio *result=new DecodedAudio;
 
-        if(!GetAudioInterface(plugin_name,&decode,&decode_float))
-            RETURN_ERROR(0);
+        if(!GetAudioInterface(plugin_name,&result->decode,&result->decode_float))
+        {
+            delete result;
+            return nullptr;
+        }
 
-        const bool use_float_data=(IsSupportFloatAudioData()&&decode_float.Load);
+        const bool use_float_data=(IsSupportFloatAudioData()&&result->decode_float.Load);
 
-        bool use_float=use_float_data;
+        result->use_float=use_float_data;
+
+        ALboolean loop;
 
         if(use_float_data)
         {
-            decode_float.Load((ALbyte *)memory, memory_size, &format,(float **)&data, &size, &freq, &loop);
+            result->decode_float.Load((ALbyte *)memory,memory_size,&result->format,(float **)&result->data,&result->size,&result->freq,&loop);
 
             // 浮点解码失败(例如多声道浮点格式不受OpenAL支持)时，回退到16位解码
-            if(format==0||data==nullptr||size<=0)
+            if(result->format==0||result->data==nullptr||result->size<=0)
             {
-                use_float=false;
-                decode.Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
+                result->use_float=false;
+                result->decode.Load((ALbyte *)memory,memory_size,&result->format,&result->data,&result->size,&result->freq,&loop);
             }
         }
         else
         {
-            decode.Load((ALbyte *)memory, memory_size, &format, &data, &size, &freq, &loop);
+            result->decode.Load((ALbyte *)memory,memory_size,&result->format,&result->data,&result->size,&result->freq,&loop);
         }
+
+        if(result->format==0||result->data==nullptr||result->size<=0)
+        {
+            result->Release();
+            delete result;
+            return nullptr;
+        }
+
+        result->duration=AudioDataTime(result->size,result->format,result->freq);
+
+        return result;
+    }
+
+    void DecodedAudio::Release()
+    {
+        if(!data)return;
+
+        if(use_float)
+            decode_float.Clear(format,data,size,freq);
+        else
+            decode.Clear(format,data,size,freq);
+
+        data=nullptr;
+    }
+
+    bool UploadDecoded(uint buffer_id,DecodedAudio *decoded)
+    {
+        if(!decoded)return false;
 
         alLastError();
 
-        alBufferData(buffer_id, format, data, size, freq);
+        alBufferData(buffer_id,decoded->format,decoded->data,decoded->size,decoded->freq);
 
-        if(use_float)
-            decode_float.Clear(format, data, size, freq);
-        else
-            decode.Clear(format, data, size, freq);
+        decoded->Release();
 
-        if(alLastError())RETURN_ERROR(0);
+        delete decoded;
 
-        sample_rate=freq;
-
-        return AudioDataTime(size,format,freq);
+        return !alLastError();
     }
 
     void AudioBuffer::InitPrivate()
@@ -74,6 +95,17 @@ namespace hgl::audio
         loaded=false;
         duration=0;
         data_size=0;
+        ref_count=0;
+    }
+
+    uint AudioBuffer::IncRef()
+    {
+        return ref_count.fetch_add(1)+1;
+    }
+
+    uint AudioBuffer::DecRef()
+    {
+        return ref_count.fetch_sub(1)-1;
     }
 
     AudioBuffer::AudioBuffer(void *data,int size,AudioFileType file_type)
@@ -167,7 +199,25 @@ namespace hgl::audio
         }
         else
         {
-            duration=LoadAudioData(buffer_id,file_type,memory,size,sample_rate);
+            DecodedAudio *decoded=DecodeAudio(file_type,memory,size);
+
+            if(!decoded)
+            {
+                alDeleteBuffers(1,&buffer_id);
+                RETURN_FALSE;
+            }
+
+            const uint dec_sample_rate=decoded->freq;
+            const double dec_duration=decoded->duration;
+
+            if(!UploadDecoded(buffer_id,decoded))
+            {
+                alDeleteBuffers(1,&buffer_id);
+                RETURN_FALSE;
+            }
+
+            sample_rate=dec_sample_rate;
+            duration=dec_duration;
             data_size=size;
         }
 

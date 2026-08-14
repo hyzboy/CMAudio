@@ -35,6 +35,10 @@ cm_audio_example("Resample" wav_resample wav_resample.cpp)
 # ---- 音频总线 ----
 cm_audio_example("AudioBus" bus_tree_test bus_tree_test.cpp)
 
+# ---- 音频资源管理 ----
+cm_audio_example("AudioAsset" asset_manager_test asset_manager_test.cpp)
+cm_audio_example("AudioAsset" async_load_test async_load_test.cpp)
+
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

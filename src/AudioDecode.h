@@ -2,6 +2,7 @@
 #define HGL_AUDIO_DECODE_INCLUDE
 
 #include<hgl/audio/OpenAL.h>
+#include<hgl/audio/AudioFileType.h>
 #include<hgl/type/String.h>
 
 using namespace openal;
@@ -79,5 +80,41 @@ namespace hgl::audio
     bool GetAudioMidiChannelInterface(const OSString &,AudioMidiChannelInterface *);
 
     const OSString *GetAudioPluginNameByExtension(const char *ext_name);   ///<动态：按文件扩展名查找音频解码插件(基于插件 FileExtensions 能力)
+
+    /**
+    * 解码结果（后台线程产出，主线程上传）
+    * 持有插件解码得到的 PCM 数据与插件接口（用于释放）
+    */
+    struct DecodedAudio
+    {
+        AudioPlugInInterface decode{};          ///< 整型解码插件接口（用于 Release）
+        AudioFloatPlugInInterface decode_float{};///< 浮点解码插件接口（用于 Release）
+        bool use_float=false;                   ///< 用哪个接口释放
+        ALenum format=0;                        ///< OpenAL 格式
+        void *data=nullptr;                     ///< 解码得到的 PCM 数据（插件分配）
+        ALsizei size=0;                         ///< 数据字节数
+        ALsizei freq=0;                         ///< 采样率
+        double duration=0;                      ///< 可播放时长(秒)
+
+        void Release();                         ///< 释放插件解码数据
+    };//struct DecodedAudio
+
+    /**
+    * 纯解码：从内存中的音频文件数据解码为 PCM（不碰 OpenAL，线程安全）
+    * @param file_type 音频文件类型
+    * @param memory 文件数据内存
+    * @param memory_size 文件数据字节数
+    * @return 解码结果（new 分配），失败返回 nullptr；调用方负责 Release+delete，或交给 UploadDecoded
+    */
+    DecodedAudio *DecodeAudio(AudioFileType file_type, void *memory, int memory_size);
+
+    /**
+    * 上传解码结果到 OpenAL buffer（需 current OpenAL context，应在主线程调用）
+    * 上传成功后接管并释放 decoded（Release + delete）
+    * @param buffer_id OpenAL buffer id
+    * @param decoded 解码结果（非空）
+    * @return 是否上传成功
+    */
+    bool UploadDecoded(uint buffer_id, DecodedAudio *decoded);
 }//namespace hgl::audio
 #endif//HGL_AUDIO_DECODE_INCLUDE

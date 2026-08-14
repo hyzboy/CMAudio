@@ -5,6 +5,7 @@
                         ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/xram.h)
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAssetManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBus.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEngine.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
@@ -37,6 +38,7 @@ set(CM_AUDIO_SOURCE
     OpenAL.cpp
     AudioFileType.cpp
     AudioBuffer.cpp
+    AudioAssetManager.cpp
     AudioBus.cpp
     AudioFilterPreset.cpp
     AudioDecode.cpp
