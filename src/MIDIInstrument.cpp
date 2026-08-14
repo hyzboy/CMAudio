@@ -1,6 +1,6 @@
 #include <hgl/audio/MIDIInstrument.h>
 
-namespace hgl
+namespace hgl::audio
 {
     static const char* MIDI_INSTRUMENT_NAMES_EN[128] = {
         // Piano (0-7)

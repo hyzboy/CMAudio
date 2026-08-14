@@ -1,7 +1,7 @@
 ﻿#include<hgl/audio/ReverbPreset.h>
 #include<hgl/al/efx-presets.h>
 
-namespace hgl
+namespace hgl::audio
 {
     // 混响预设数据表 - 所有 113 个 OpenAL Soft 官方预设
     static const AudioReverbPresetProperties reverb_presets[] =
@@ -698,4 +698,4 @@ namespace hgl
     {
         return sizeof(reverb_presets) / sizeof(reverb_presets[0]);
     }
-}//namespace hgl
+}//namespace hgl::audio

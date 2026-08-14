@@ -5,7 +5,7 @@
 #include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
 
-namespace hgl
+namespace hgl::audio
 {
     void MIDIPlayer::InitPrivate()
     {
@@ -165,7 +165,7 @@ namespace hgl
         if(!alGenBuffers)return(false);
         if(!filename||!(*filename))return(false);
 
-        OpenFileInputStream fis(filename);
+        io::OpenFileInputStream fis(filename);
 
         if(!fis)
         {
@@ -458,7 +458,7 @@ namespace hgl
                 {
                     const double cur_pos=GetPlayTime();
 
-                    audiosource.SetGain(float(audio::FadeFactor(cur_pos,fade_in_time,fade_out_time,total_time.load())*gain));
+                    audiosource.SetGain(float(FadeFactor(cur_pos,fade_in_time,fade_out_time,total_time.load())*gain));
                 }
             }
 
@@ -718,4 +718,4 @@ namespace hgl
         return (int)(bytes_read / sizeof(int16_t));
     }
 
-}//namespace hgl
+}//namespace hgl::audio

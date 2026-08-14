@@ -2,10 +2,8 @@
 
 #include<hgl/CoreType.h>
 
-namespace hgl
+namespace hgl::audio
 {
-    namespace audio
-    {
         /**
          * 混音轨道参数
          * 用于定义单个音轨在混音时的变换参数
@@ -82,6 +80,4 @@ namespace hgl
                 dataSize = 0;
             }
         };
-
-    }//namespace audio
-}//namespace hgl
+        }//namespace hgl::audio

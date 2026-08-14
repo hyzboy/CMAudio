@@ -5,7 +5,7 @@
 #include<hgl/type/String.h>
 
 using namespace openal;
-namespace hgl
+namespace hgl::audio
 {
     struct AudioPlugInInterface
     {
@@ -79,5 +79,5 @@ namespace hgl
     bool GetAudioMidiChannelInterface(const OSString &,AudioMidiChannelInterface *);
 
     const OSString *GetAudioPluginNameByExtension(const char *ext_name);   ///<动态：按文件扩展名查找音频解码插件(基于插件 FileExtensions 能力)
-}//namespace hgl
+}//namespace hgl::audio
 #endif//HGL_AUDIO_DECODE_INCLUDE

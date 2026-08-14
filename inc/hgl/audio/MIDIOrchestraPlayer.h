@@ -9,16 +9,13 @@
 #include<hgl/time/Time.h>
 #include"AudioDecode.h"
 
-using namespace openal;
-
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
-
-    namespace io
-    {
-        class InputStream;
-    }//namespace io
+    using openal::ALbyte;
+    using openal::ALenum;
+    using openal::ALsizei;
+    using openal::ALuint;
+    using math::Vector3f;
 
     struct AudioPlugInInterface;
     struct AudioMidiConfigInterface;
@@ -331,4 +328,4 @@ namespace hgl
         void FadeOut(float gap){AutoGain(1,gap,0);}
     };//class MIDIOrchestraPlayer
 
-}//namespace hgl
+}//namespace hgl::audio

@@ -7,10 +7,8 @@
 
 using namespace openal;
 
-namespace hgl
+namespace hgl::audio
 {
-    namespace audio
-    {
         AudioMixer::AudioMixer()
             : poolBuffer(OS_TEXT("AudioMixer::poolBuffer")),
               tempBuffer(OS_TEXT("AudioMixer::tempBuffer"))
@@ -518,5 +516,4 @@ namespace hgl
             return(true);
         }
 
-    }//namespace audio
-}//namespace hgl
+}//namespace hgl::audio

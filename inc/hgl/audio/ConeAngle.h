@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-namespace hgl
+namespace hgl::audio
 {
     class ConeAngle             ///锥形角度数据类
     {
@@ -17,4 +17,4 @@ namespace hgl
             outer=0;
         }
     };
-}//namespace hgl
+}//namespace hgl::audio::audio

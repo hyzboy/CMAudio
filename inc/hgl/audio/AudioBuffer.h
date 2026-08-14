@@ -5,9 +5,9 @@
 #include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/log/Log.h>
 
-namespace hgl
+namespace hgl::audio
 {
-    using namespace io;
+    using io::InputStream;
 
     /**
     * AudioBuffer是一个简单的音频数据管理类
@@ -52,4 +52,4 @@ namespace hgl
     };//class AudioBuffer
 
 //  typedef ObjectBuffer<AudioBuffer>           AudioBufferBuffer;                                  ///<AudioBuffer缓冲管理器
-}//namespace hgl
+}//namespace hgl::audio

@@ -6,9 +6,9 @@
 #include<hgl/math/Vector.h>
 #include<hgl/log/Log.h>
 
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
+    using math::Vector3f;
 
     class AudioListener;
 
@@ -164,4 +164,4 @@ namespace hgl
                 bool Link(AudioBuffer *);                                                           ///<绑定一个音频缓冲区
                 void Unlink();                                                                      ///<解除绑定
     };//class AudioSource
-}//namespace hgl
+}//namespace hgl::audio

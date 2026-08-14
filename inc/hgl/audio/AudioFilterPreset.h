@@ -2,7 +2,7 @@
 
 #include<hgl/audio/AudioSource.h>
 
-namespace hgl
+namespace hgl::audio
 {
     enum class AudioFilterPreset
     {
@@ -30,4 +30,4 @@ namespace hgl
      * @return 对应的滤波参数
      */
     AudioFilterConfig GetAudioFilterPresetConfig(AudioFilterPreset preset);
-}//namespace hgl
+}//namespace hgl::audio

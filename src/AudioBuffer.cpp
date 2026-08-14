@@ -9,7 +9,7 @@
 
 using namespace openal;
 
-namespace hgl
+namespace hgl::audio
 {
     using namespace io;
 
@@ -133,7 +133,7 @@ namespace hgl
         return(true);
     }
 
-    bool AudioBuffer::SetData(const audio::AudioDataInfo &info,const void *data)
+    bool AudioBuffer::SetData(const AudioDataInfo &info,const void *data)
     {
         const ALenum format=openal::ToOpenALFormat(info);
 
@@ -281,4 +281,4 @@ namespace hgl
             Time=0;
         }
     }
-}//namespace hgl
+}//namespace hgl::audio

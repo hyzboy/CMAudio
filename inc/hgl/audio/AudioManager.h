@@ -2,7 +2,7 @@
 
 #include<hgl/type/ManagedArray.h>
 
-namespace hgl
+namespace hgl::audio
 {
     class AudioSource;
     class AudioBuffer;
@@ -42,4 +42,4 @@ namespace hgl
         */
         bool Play(const os_char *filename,float gain=1);
     };//class AudioManager
-}//namespace hgl
+}//namespace hgl::audio::audio

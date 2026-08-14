@@ -9,16 +9,13 @@
 #include<hgl/math/Vector.h>
 #include<hgl/time/Time.h>
 
-using namespace openal;
-
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
-
-    namespace io
-    {
-        class InputStream;
-    }//namespace io
+    using openal::ALbyte;
+    using openal::ALenum;
+    using openal::ALsizei;
+    using openal::ALuint;
+    using math::Vector3f;
 
     struct AudioPlugInInterface;
 
@@ -155,4 +152,4 @@ namespace hgl
 
         virtual void AutoGain(float,PreciseTime,const PreciseTime cur_time);                                  ///<自动音量
     };//class AudioPlayer
-}//namespace hgl
+}//namespace hgl::audio

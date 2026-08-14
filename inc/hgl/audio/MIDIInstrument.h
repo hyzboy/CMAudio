@@ -1,7 +1,7 @@
 #ifndef HGL_MIDI_INSTRUMENT_INCLUDE
 #define HGL_MIDI_INSTRUMENT_INCLUDE
 
-namespace hgl
+namespace hgl::audio
 {
     /**
      * MIDI General MIDI Level 1 乐器编号定义

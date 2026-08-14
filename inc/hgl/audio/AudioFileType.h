@@ -3,7 +3,7 @@
 #include<hgl/platform/Platform.h>
 #include<hgl/type/EnumUtil.h>
 
-namespace hgl
+namespace hgl::audio
 {
     /**
     * 音频文件格式
@@ -22,4 +22,4 @@ namespace hgl
 
     AudioFileType CheckAudioExtName(const os_char *ext_name);
     AudioFileType CheckAudioFileType(const os_char *filename);
-}//namespace hgl
+}//namespace hgl::audio::audio

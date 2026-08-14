@@ -1,6 +1,6 @@
 #include<hgl/audio/AudioFilterPreset.h>
 
-namespace hgl
+namespace hgl::audio
 {
     AudioFilterConfig GetAudioFilterPresetConfig(AudioFilterPreset preset)
     {
@@ -121,4 +121,4 @@ namespace hgl
 
         return config;
     }
-}//namespace hgl
+}//namespace hgl::audio

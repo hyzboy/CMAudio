@@ -5,7 +5,7 @@
 #include <algorithm>
 
 using namespace openal;
-namespace hgl
+namespace hgl::audio
 {
     inline void alSourcefv(openal::ALuint sid, openal::ALenum param, const Vector3f &v3f)
     {
@@ -667,4 +667,4 @@ namespace hgl
 
         alSourcei(index,AL_BUFFER,0);
     }
-}//namespace hgl
+}//namespace hgl::audio

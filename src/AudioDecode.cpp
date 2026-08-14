@@ -5,7 +5,7 @@
 #include<hgl/type/UnorderedMap.h>
 
 using namespace openal;
-namespace hgl
+namespace hgl::audio
 {
     namespace
     {
@@ -104,4 +104,4 @@ namespace hgl
     {
         audio_plug_in.Clear();
     }
-}//namespace hgl
+}//namespace hgl::audio

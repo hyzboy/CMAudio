@@ -5,10 +5,8 @@
 #include <cmath>
 #include <numbers>
 
-namespace hgl
+namespace hgl::audio
 {
-    namespace audio
-    {
     DirectionalGainPattern::DirectionalGainPattern()
     {
         pattern_type = GainPatternType::Omnidirectional;
@@ -275,5 +273,4 @@ namespace hgl
         // 使用插值获取该角度的增益
         return InterpolateGain(angle_degrees);
     }
-    }//namespace audio
-}//namespace hgl
+}//namespace hgl::audio

@@ -6,7 +6,7 @@
 #include<hgl/audio/AudioManager.h>
 #include"AudioDecode.h"
 
-namespace hgl
+namespace hgl::audio
 {
     // 标准交响乐团布局（单位：米）
     // Standard symphony orchestra layout (in meters)
@@ -120,7 +120,7 @@ namespace hgl
 
         state=MIDIOrchestraState::None;
 
-        orchestra_center=ZeroVector3f;
+        orchestra_center=math::ZeroVector3f;
         orchestra_scale=1.0f;
 
         current_layout=OrchestraLayout::Standard;
@@ -793,4 +793,4 @@ namespace hgl
             }
         }
     }
-}//namespace hgl
+}//namespace hgl::audio

@@ -3,7 +3,7 @@
 #include<hgl/log/Log.h>
 
 using namespace openal;
-namespace hgl
+namespace hgl::audio
 {
     inline void alGetListenerfv(ALenum param, Vector3f &v3f)
     {
@@ -66,4 +66,4 @@ namespace hgl
         memcpy(&orientation,&ori,sizeof(ListenerOrientation));
         alListenerfv(AL_ORIENTATION,orientation);
     }
-}//namespace hgl
+}//namespace hgl::audio

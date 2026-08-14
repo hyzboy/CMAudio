@@ -3,9 +3,9 @@
 #include<hgl/math/Vector.h>
 #include<hgl/log/Log.h>
 
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
+    using math::Vector3f;
 
     /**
      * 收听者方向,用值请参考gluLookAt
@@ -48,5 +48,5 @@ namespace hgl
         AudioListener();
         ~AudioListener();
     };//class AudioListener
-}//namespace hgl
+}//namespace hgl::audio
 

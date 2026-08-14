@@ -5,7 +5,7 @@
 #include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
 
-namespace hgl
+namespace hgl::audio
 {
     const os_char *GetAudioDecodeName(const AudioFileType aft);
 
@@ -177,7 +177,7 @@ namespace hgl
             return(false);
         }
 
-        OpenFileInputStream fis(filename);
+        io::OpenFileInputStream fis(filename);
 
         return(Load(fis,fis->Available(),aft));
     }
@@ -362,7 +362,7 @@ namespace hgl
 
         if(fade_in_time>0||fade_out_time>0)
         {
-            const float factor=audio::FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time.load());
+            const float factor=FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time.load());
 
             audiosource.SetGain(float(factor*gain));
         }
@@ -513,4 +513,4 @@ namespace hgl
         fade_in_time=in;
         fade_out_time=out;
     }
-}//namespace hgl
+}//namespace hgl::audio

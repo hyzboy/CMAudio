@@ -3,7 +3,7 @@
 #include<hgl/audio/AudioBuffer.h>
 #include<hgl/audio/OpenAL.h>
 
-namespace hgl
+namespace hgl::audio
 {
     AudioManager::AudioItem::AudioItem()
     {
@@ -52,9 +52,9 @@ namespace hgl
         source->SetGain(gain);
         source->Play(false);
     }
-}//namespace hgl
+}//namespace hgl::audio
 
-namespace hgl
+namespace hgl::audio
 {
     AudioManager::AudioManager(int count)
     {
@@ -82,4 +82,4 @@ namespace hgl
 
         return(false);
     }
-}//namespace hgl
+}//namespace hgl::audio

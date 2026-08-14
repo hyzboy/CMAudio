@@ -2,7 +2,7 @@
 
 #include<hgl/type/EnumUtil.h>
 
-namespace hgl
+namespace hgl::audio
 {
     /**
      * 混响预设枚举 - 包含所有 113 个 OpenAL Soft 官方预设
@@ -173,4 +173,4 @@ namespace hgl
      * 获取混响预设数量
      */
     int GetAudioReverbPresetCount();
-}//namespace hgl
+}//namespace hgl::audio::audio

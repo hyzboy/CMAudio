@@ -11,16 +11,13 @@
 #include"AudioDecode.h"
 #include<string>
 
-using namespace openal;
-
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
-
-    namespace io
-    {
-        class InputStream;
-    }//namespace io
+    using openal::ALbyte;
+    using openal::ALenum;
+    using openal::ALsizei;
+    using openal::ALuint;
+    using math::Vector3f;
 
     struct AudioPlugInInterface;
     struct AudioMidiConfigInterface;
@@ -322,4 +319,4 @@ namespace hgl
 
         virtual void AutoGain(float target_gain,PreciseTime duration,const PreciseTime cur_time);   ///<自动音量过渡
     };//class MIDIPlayer
-}//namespace hgl
+}//namespace hgl::audio

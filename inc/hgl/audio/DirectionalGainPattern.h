@@ -4,14 +4,12 @@
 #include<hgl/type/ValueArray.h>
 #include<hgl/audio/InterpolationType.h>
 
-namespace hgl
+namespace hgl::audio
 {
-    using namespace math;
+    using math::Vector3f;
 
-    namespace audio
-    {
-        /**
-         * 极坐标增益图模式枚举
+    /**
+     * 极坐标增益图模式枚举
          * Polar gain pattern presets
          */
         enum class GainPatternType
@@ -118,5 +116,4 @@ namespace hgl
          */
         bool IsEnabled() const { return pattern_type != GainPatternType::Omnidirectional; }
     };
-    }//namespace audio
-}//namespace hgl
+}//namespace hgl::audio

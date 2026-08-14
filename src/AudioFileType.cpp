@@ -2,7 +2,7 @@
 #include<hgl/type/StrChar.h>
 #include"AudioDecode.h"
 
-namespace hgl
+namespace hgl::audio
 {
     struct AudioFormatExt
     {
@@ -87,4 +87,4 @@ namespace hgl
 
         return audio_decode_name[idx];
     }
-}//namespace hgl
+}//namespace hgl::audio

@@ -6,10 +6,8 @@
 
 using namespace openal;
 
-namespace hgl
+namespace hgl::audio
 {
-    namespace audio
-    {
         void ApplyAudioFilterPreset(AudioMixerSourceConfig &config, AudioFilterPreset preset)
         {
             config.filterConfig = GetAudioFilterPresetConfig(preset);
@@ -561,5 +559,4 @@ namespace hgl
             LogInfo(OS_TEXT("Scene generation completed successfully"));
             return(true);
         }
-    }//namespace audio
-}//namespace hgl
+}//namespace hgl::audio
