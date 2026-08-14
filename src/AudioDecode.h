@@ -24,7 +24,7 @@ namespace hgl::audio
         void    (AL_APIENTRY *Clear     )(ALenum,ALvoid *,ALsizei,ALsizei);
 
         uint    (AL_APIENTRY *Read      )(void *,float *,uint);
-    };//struct AudioPlugInInterface
+    };//struct AudioFloatPlugInInterface
 
     struct AudioMidiConfigInterface
     {

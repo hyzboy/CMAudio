@@ -459,7 +459,7 @@ namespace hgl::audio
                 return(false);
             }
             else
-            if(play_state.load()==PlayState::Exit)      //被要求暂停或退出
+            if(play_state.load()==PlayState::Exit)      //被要求退出
             {
                 alSourceStop(source_id);
                 alSourcei(source_id,AL_BUFFER,0);
