@@ -6,6 +6,7 @@
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAnalysis.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/BiquadFilter.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCapture.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAssetManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBus.h
@@ -46,6 +47,7 @@ set(CM_AUDIO_SOURCE
     AudioFileType.cpp
     AudioBuffer.cpp
     AudioAnalysis.cpp
+    BiquadFilter.cpp
     AudioCapture.cpp
     AudioAssetManager.cpp
     AudioBus.cpp

@@ -1,25 +1,11 @@
 ﻿#pragma once
 
 #include<hgl/CoreType.h>
+#include<hgl/audio/BiquadFilter.h>
 #include<vector>
 
 namespace hgl::audio
 {
-    /**
-    * 双二阶滤波器（Direct Form I）
-    *   y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
-    */
-    struct BiquadFilter
-    {
-        float b0, b1, b2, a1, a2;   ///< 滤波系数（a0 已归一化为 1）
-        float x1, x2, y1, y2;       ///< 状态
-
-        BiquadFilter();
-        void  SetCoeffs(float B0, float B1, float B2, float A1, float A2);
-        void  Reset();
-        float Process(float x);
-    };//struct BiquadFilter
-
     /**
     * EBU R128 K-weighting 滤波器（两级级联）
     *   系数为 48kHz 采样率标准系数（ITU-R BS.1770-4）

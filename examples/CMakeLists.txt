@@ -55,6 +55,9 @@ cm_audio_example("AudioCapture" audio_capture_test audio_capture_test.cpp)
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
 
+# ---- 通用双二阶滤波器（EQ 地基）----
+cm_audio_example("BiquadFilter" biquad_test biquad_test.cpp)
+
 # ---- 响度归一化（LUFS）----
 cm_audio_example("Loudness" loudness_test loudness_test.cpp)
 
