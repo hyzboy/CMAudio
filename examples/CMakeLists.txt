@@ -24,6 +24,7 @@ endmacro()
 
 # ---- 基础混音 ----
 cm_audio_example("AudioMixer" mixer_basic_test mixer_basic_test.cpp)
+cm_audio_example("AudioMixer" pitch_shift_test pitch_shift_test.cpp)
 
 # ---- 场景混音 ----
 cm_audio_example("AudioMixerScene" scene_city_test  scene_city_test.cpp)

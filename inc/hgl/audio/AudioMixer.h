@@ -68,8 +68,8 @@ namespace hgl::audio
         void ConvertFromFloat(const float* input, uint sampleCount, void** output, uint* outputSize, const AudioDataInfo& outputInfo);
 
         /**
-            * 应用简单的音调变化(线性插值重采样) - float版本
-            * 按帧处理，逐声道插值
+            * 应用音调变化(libsamplerate 高质量重采样) - float版本
+            * 按帧处理，pitch>1 升调(变快/变短)，pitch<1 降调(变慢/变长)
             */
         void ApplyPitchShift(const float* input, uint inputFrameCount, uint channels,
                             float** output, uint* outputFrameCount, float pitch);
@@ -92,6 +92,7 @@ namespace hgl::audio
         /**
             * 生成TPDF抖动噪声 (Triangular Probability Density Function)
             * TPDF抖动是音频处理中最常用的抖动类型，提供平滑自然的量化噪声掩蔽
+            * 使用 Mersenne Twister 高质量随机源（替代低质量 C rand()）
             * @return 范围在[-1.0, 1.0]的随机噪声值
             */
         static float GenerateTPDFDither();

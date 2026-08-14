@@ -4,6 +4,9 @@
 #include<math.h>
 #include<string.h>
 #include<cstdint>
+#include<cmath>
+#include<samplerate.h>
+#include<random>
 
 using namespace openal;
 
@@ -83,10 +86,14 @@ namespace hgl::audio
          */
         float AudioMixer::GenerateTPDFDither()
         {
-            // 生成两个[-1.0, 1.0]范围的随机数
-            float r1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-            float r2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-            // 相加得到三角形分布
+            // 高质量随机源（Mersenne Twister），替代低质量 C rand()
+            // 注：rand() 在 MSVC 上 RAND_MAX=32767，仅 15bit 精度且 LCG 有相关性
+            static thread_local std::mt19937 rng(std::random_device{}());
+            static thread_local std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+            // 两个独立均匀分布相加得到三角形分布 (TPDF)
+            const float r1 = dist(rng);
+            const float r2 = dist(rng);
             return (r1 + r2) * 0.5f;
         }
 
@@ -296,40 +303,36 @@ namespace hgl::audio
                 return;
             }
 
-            // 计算输出帧数
-            *outputFrameCount = (uint)(inputFrameCount / pitch);
+            // libsamplerate 重采样比率 = 输出帧数 / 输入帧数 = 1/pitch
+            // pitch>1 升调(变快/变短)，pitch<1 降调(变慢/变长)
+            const double ratio = 1.0 / static_cast<double>(pitch);
+
+            // 输出帧数向上取整，确保缓冲充足
+            *outputFrameCount = static_cast<uint>(std::ceil(static_cast<double>(inputFrameCount) * ratio));
             *output = new float[*outputFrameCount * channels];
 
-            const uint inputSampleCount = inputFrameCount * channels;
+            SRC_DATA data;
+            data.data_in = input;
+            data.data_out = *output;
+            data.input_frames = static_cast<long>(inputFrameCount);
+            data.output_frames = static_cast<long>(*outputFrameCount);
+            data.end_of_input = 1;
+            data.src_ratio = ratio;
 
-            // 逐声道线性插值重采样
-            for(uint ch = 0; ch < channels; ch++)
+            // SINC_MEDIUM 在精度与速度间取平衡
+            const int result = src_simple(&data, SRC_SINC_MEDIUM_QUALITY, static_cast<int>(channels));
+            if(result != 0)
             {
-                for(uint i = 0; i < *outputFrameCount; i++)
-                {
-                    float sourcePos = i * pitch;
-                    uint sourceFrame = (uint)sourcePos;
-                    float fraction = sourcePos - sourceFrame;
-
-                    // 确保不会越界
-                    if(sourceFrame >= inputFrameCount)
-                        sourceFrame = inputFrameCount - 1;
-
-                    uint idx0 = sourceFrame * channels + ch;
-                    uint idx1 = idx0 + channels;
-
-                    // 线性插值
-                    float sample1 = input[idx0];
-                    float sample2;
-
-                    if(idx1 < inputSampleCount)
-                        sample2 = input[idx1];
-                    else
-                        sample2 = sample1; // 最后一个采样，使用相同的值
-
-                    (*output)[i * channels + ch] = sample1 * (1.0f - fraction) + sample2 * fraction;
-                }
+                // 理论上对合法输入不会失败，回退为原样复制保证安全
+                LogError(OS_TEXT("libsamplerate pitch shift failed"));
+                delete[] *output;
+                *outputFrameCount = inputFrameCount;
+                *output = new float[inputFrameCount * channels];
+                memcpy(*output, input, inputFrameCount * channels * sizeof(float));
+                return;
             }
+
+            *outputFrameCount = static_cast<uint>(data.output_frames_gen);
         }
 
         /**
