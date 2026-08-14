@@ -113,12 +113,16 @@ namespace hgl::audio
         }
 
         /**
-         * 等功率插值
-         * Equal Power interpolation
-         * 用于音频交叉淡化，保持总功率恒定：gain₁² + gain₂² = 1
-         * Used for audio crossfading, maintains constant total power: gain₁² + gain₂² = 1
-         * 适用于两个音频信号的平滑过渡
-         * Ideal for smooth transitions between two audio signals
+         * 等功率插值（单点过渡）
+         * Equal-power interpolation (single-value transition)
+         *
+         * 用于单个增益值在 v0→v1 间的等功率过渡：在中间点 t=0.5 时增益为
+         * sqrt(0.5)≈0.707（即 -3dB），使感知音量保持平滑（而非线性插值的 0.5）。
+         * Uses cos/sin to keep perceived loudness smooth (0.707 at midpoint, not 0.5).
+         *
+         * 注意: 此函数是"单点"等功率插值，不适用于两个音频信号的交叉淡化。
+         * 双信号 crossfade 请使用 CrossfadeGain()。
+         *
          * @param v0 起始值
          * @param v1 结束值
          * @param t 插值参数 [0, 1]
@@ -126,13 +130,31 @@ namespace hgl::audio
          */
         static inline float EqualPower(float v0, float v1, float t)
         {
-            // 使用余弦函数确保功率守恒
-            // Use cosine function to ensure power conservation
-            // fade_out: cos(t * π/2), fade_in: sin(t * π/2)
-            float angle = t * std::numbers::pi_v<float> * 0.5f;  // 0 to π/2
-            float fade_out = std::cos(angle);
-            float fade_in = std::sin(angle);
-            return v0 * fade_out + v1 * fade_in;
+            // 等功率：fade_out=cos(θ), fade_in=sin(θ)，θ∈[0,π/2]
+            // 在 t=0.5 时 cos=sin=√0.5≈0.707，加权和满足感知音量连续
+            const float angle = t * std::numbers::pi_v<float> * 0.5f;
+            return v0 * std::cos(angle) + v1 * std::sin(angle);
+        }
+
+        /**
+         * 等功率交叉淡化增益对（双信号 crossfade）
+         * Equal-power crossfade gain pair
+         *
+         * 用于两个音频信号 A、B 的交叉淡化：输出 = A*gain_a + B*gain_b。
+         * 保持总功率恒定：gain_a² + gain_b² = 1（对不相关信号）。
+         *
+         * 与单点 EqualPower() 的区别：本函数返回两个增益，分别应用到
+         * 两个信号上再叠加，是真正的 crossfade。
+         *
+         * @param t 交叉淡化位置 [0, 1]（0=全A, 1=全B）
+         * @param gain_a 输出：信号 A 的增益（cos 曲线，1→0）
+         * @param gain_b 输出：信号 B 的增益（sin 曲线，0→1）
+         */
+        static inline void CrossfadeGain(float t, float &gain_a, float &gain_b)
+        {
+            const float angle = std::clamp(t, 0.0f, 1.0f) * std::numbers::pi_v<float> * 0.5f;
+            gain_a = std::cos(angle);
+            gain_b = std::sin(angle);
         }
 
         /**

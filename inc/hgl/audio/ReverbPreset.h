@@ -127,6 +127,40 @@ namespace hgl::audio
     };
 
     /**
+     * 混响预设的 EFX 参数（与 OpenAL EFXEAXREVERBPROPERTIES 布局一致）
+     * Reverb EFX parameters (layout-identical to OpenAL EFXEAXREVERBPROPERTIES)
+     *
+     * 字段顺序与 <hgl/al/efx-presets.h> 的 EFX_REVERB_PRESET_* 宏逐一对应，
+     * 供聚合初始化使用；也是未来混响参数序列化/配置的独立类型。
+     */
+    struct AudioReverbParams
+    {
+        float Density;               ///< 密度
+        float Diffusion;             ///< 扩散
+        float Gain;                  ///< 增益
+        float GainHF;                ///< 高频增益
+        float GainLF;                ///< 低频增益
+        float DecayTime;             ///< 衰减时间（秒）
+        float DecayHFRatio;          ///< 高频衰减比
+        float DecayLFRatio;          ///< 低频衰减比
+        float ReflectionsGain;       ///< 初期反射增益
+        float ReflectionsDelay;      ///< 初期反射延迟（秒）
+        float ReflectionsPan[3];     ///< 初期反射声相（XYZ）
+        float LateReverbGain;        ///< 后期混响增益
+        float LateReverbDelay;       ///< 后期混响延迟（秒）
+        float LateReverbPan[3];      ///< 后期混响声相（XYZ）
+        float EchoTime;              ///< 回声时间（秒）
+        float EchoDepth;             ///< 回声深度
+        float ModulationTime;        ///< 调制时间（秒）
+        float ModulationDepth;       ///< 调制深度
+        float AirAbsorptionGainHF;   ///< 高频空气吸收增益
+        float HFReference;           ///< 高频参考值
+        float LFReference;           ///< 低频参考值
+        float RoomRolloffFactor;     ///< 房间滚降因子
+        int   DecayHFLimit;          ///< 高频衰减限制（布尔表示为0/1）
+    };
+
+    /**
      * 混响预设属性
      */
     struct AudioReverbPresetProperties
@@ -134,32 +168,7 @@ namespace hgl::audio
         u8char name_cn[32];          ///< 中文名称
         u8char name_en[32];          ///< 英文名称
 
-        struct
-        {
-            float Density;               ///< 密度
-            float Diffusion;             ///< 扩散
-            float Gain;                  ///< 增益
-            float GainHF;                ///< 高频增益
-            float GainLF;                ///< 低频增益
-            float DecayTime;             ///< 衰减时间（秒）
-            float DecayHFRatio;          ///< 高频衰减比
-            float DecayLFRatio;          ///< 低频衰减比
-            float ReflectionsGain;       ///< 初期反射增益
-            float ReflectionsDelay;      ///< 初期反射延迟（秒）
-            float ReflectionsPan[3];     ///< 初期反射声相（XYZ）
-            float LateReverbGain;        ///< 后期混响增益
-            float LateReverbDelay;       ///< 后期混响延迟（秒）
-            float LateReverbPan[3];      ///< 后期混响声相（XYZ）
-            float EchoTime;              ///< 回声时间（秒）
-            float EchoDepth;             ///< 回声深度
-            float ModulationTime;        ///< 调制时间（秒）
-            float ModulationDepth;       ///< 调制深度
-            float AirAbsorptionGainHF;   ///< 高频空气吸收增益
-            float HFReference;           ///< 高频参考值
-            float LFReference;           ///< 低频参考值
-            float RoomRolloffFactor;     ///< 房间滚降因子
-            int   DecayHFLimit;          ///< 高频衰减限制（布尔表示为0/1）
-        };
+        AudioReverbParams params;    ///< EFX 混响参数
     };
 
     /**

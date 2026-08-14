@@ -897,19 +897,19 @@ namespace hgl::audio
         if(!alEffectf || reverb_effect == 0)
             return;
 
-        alEffectf(reverb_effect, AL_REVERB_DENSITY, preset.Density);
-        alEffectf(reverb_effect, AL_REVERB_DIFFUSION, preset.Diffusion);
-        alEffectf(reverb_effect, AL_REVERB_GAIN, preset.Gain);
-        alEffectf(reverb_effect, AL_REVERB_GAINHF, preset.GainHF);
-        alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, preset.DecayTime);
-        alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, preset.DecayHFRatio);
-        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_GAIN, preset.ReflectionsGain);
-        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_DELAY, preset.ReflectionsDelay);
-        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_GAIN, preset.LateReverbGain);
-        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_DELAY, preset.LateReverbDelay);
-        alEffectf(reverb_effect, AL_REVERB_AIR_ABSORPTION_GAINHF, preset.AirAbsorptionGainHF);
-        alEffectf(reverb_effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, preset.RoomRolloffFactor);
-        alEffecti(reverb_effect, AL_REVERB_DECAY_HFLIMIT, preset.DecayHFLimit);
+        alEffectf(reverb_effect, AL_REVERB_DENSITY, preset.params.Density);
+        alEffectf(reverb_effect, AL_REVERB_DIFFUSION, preset.params.Diffusion);
+        alEffectf(reverb_effect, AL_REVERB_GAIN, preset.params.Gain);
+        alEffectf(reverb_effect, AL_REVERB_GAINHF, preset.params.GainHF);
+        alEffectf(reverb_effect, AL_REVERB_DECAY_TIME, preset.params.DecayTime);
+        alEffectf(reverb_effect, AL_REVERB_DECAY_HFRATIO, preset.params.DecayHFRatio);
+        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_GAIN, preset.params.ReflectionsGain);
+        alEffectf(reverb_effect, AL_REVERB_REFLECTIONS_DELAY, preset.params.ReflectionsDelay);
+        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_GAIN, preset.params.LateReverbGain);
+        alEffectf(reverb_effect, AL_REVERB_LATE_REVERB_DELAY, preset.params.LateReverbDelay);
+        alEffectf(reverb_effect, AL_REVERB_AIR_ABSORPTION_GAINHF, preset.params.AirAbsorptionGainHF);
+        alEffectf(reverb_effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, preset.params.RoomRolloffFactor);
+        alEffecti(reverb_effect, AL_REVERB_DECAY_HFLIMIT, preset.params.DecayHFLimit);
     }
 
     /**

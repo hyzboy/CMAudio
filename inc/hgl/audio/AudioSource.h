@@ -2,6 +2,7 @@
 
 #include<hgl/audio/ConeAngle.h>
 #include<hgl/audio/AudioBuffer.h>
+#include<hgl/audio/Gain.h>
 #include<hgl/al/al.h>
 #include<hgl/math/Vector.h>
 #include<hgl/log/Log.h>
@@ -97,6 +98,8 @@ namespace hgl::audio
 
                 float           GetGain()const{return gain;}                                        ///<获取音量增益幅度
                         void    SetGain(float);                                                     ///<设置音量增益幅度
+                float           GetGainDB()const{return GainToDB(gain);}                            ///<获取音量增益(dB)
+                        void    SetGainDB(const float db){SetGain(DBToGain(db));}                   ///<设置音量增益(dB)
                 float           GetConeGain()const{return cone_gain;}                               ///<获取锥形音量增益幅度
                         void    SetConeGain(float);                                                 ///<设置锥形音量增益幅度
 

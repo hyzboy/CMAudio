@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include<hgl/math/Vector.h>
+#include<hgl/audio/Gain.h>
 #include<hgl/log/Log.h>
 
 namespace hgl::audio
@@ -39,6 +40,8 @@ namespace hgl::audio
         const ListenerOrientation & GetOrientation  ()const{return orientation;}                    ///<读取导向
 
         void SetGain(float);                                                                        ///<设置音量增益幅度
+        float GetGainDB()const{return GainToDB(gain);}                                              ///<读取音量增益幅度(dB)
+        void SetGainDB(const float db){SetGain(DBToGain(db));}                                      ///<设置音量增益幅度(dB)
         void SetPosition(const Vector3f &);                                                         ///<设置音源坐标位置
         void SetVelocity(const Vector3f &);                                                         ///<设置速率
         void SetOrientation(const ListenerOrientation &);                                           ///<设置导向
