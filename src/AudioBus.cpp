@@ -8,6 +8,7 @@ namespace hgl::audio
         parent=p;
         gain=1.0f;
         mute=false;
+        duck_scale=1.0f;
         cached_effective_gain=1.0f;
     }
 
@@ -22,6 +23,17 @@ namespace hgl::audio
             delete child;
     }
 
+    void AudioBus::RecalculateSubtree()
+    {
+        cached_effective_gain=ParentGain()*(mute?0.0f:gain)*duck_scale;
+
+        for(AudioSource *s : sources)
+            s->OnBusGainChanged(cached_effective_gain);
+
+        for(AudioBus *child : children)
+            child->RecalculateSubtree();
+    }
+
     void AudioBus::SetGain(float g)
     {
         if(g<0.0f)g=0.0f;
@@ -29,12 +41,7 @@ namespace hgl::audio
         if(gain==g)return;
 
         gain=g;
-
-        // 自根节点重算（本节点变更影响整棵子树）
-        AudioBus *root=this;
-        while(root->parent)root=root->parent;
-
-        root->PropagateEffectiveGain(1.0f);
+        RecalculateSubtree();       // 本节点与子树受影响，父链不变
     }
 
     void AudioBus::SetMute(bool m)
@@ -42,11 +49,49 @@ namespace hgl::audio
         if(mute==m)return;
 
         mute=m;
+        RecalculateSubtree();
+    }
 
-        AudioBus *root=this;
-        while(root->parent)root=root->parent;
+    void AudioBus::Duck(float target_scale,double duration,double now)
+    {
+        if(target_scale<0.0f)target_scale=0.0f;
+        if(target_scale>1.0f)target_scale=1.0f;
 
-        root->PropagateEffectiveGain(1.0f);
+        if(duration<=0.0)           // 无过渡：立即生效
+        {
+            if(duck_scale==target_scale)return;
+
+            duck_scale=target_scale;
+            RecalculateSubtree();
+            return;
+        }
+
+        duck_ramp.Start(now,duck_scale,target_scale,duration);
+        Update(now);                // 立即推进一次，让 duck_scale 开始变化
+    }
+
+    void AudioBus::Unduck(double duration,double now)
+    {
+        Duck(1.0f,duration,now);
+    }
+
+    void AudioBus::Update(const double now)
+    {
+        if(duck_ramp.active)
+        {
+            float new_scale;
+
+            duck_ramp.Evaluate(now,new_scale);
+
+            if(new_scale!=duck_scale)
+            {
+                duck_scale=new_scale;
+                RecalculateSubtree();
+            }
+        }
+
+        for(AudioBus *child : children)
+            child->Update(now);
     }
 
     AudioBus *AudioBus::CreateChild(const char *n)
@@ -57,7 +102,7 @@ namespace hgl::audio
 
         children.Add(child);
 
-        child->cached_effective_gain=cached_effective_gain;    // 子节点默认增益 1.0，继承父链有效增益
+        child->RecalculateSubtree();    // 继承父链有效增益
 
         return child;
     }
@@ -74,16 +119,5 @@ namespace hgl::audio
         if(!s)return;
 
         sources.Delete(s);
-    }
-
-    void AudioBus::PropagateEffectiveGain(float parent_gain)
-    {
-        cached_effective_gain=parent_gain*(mute?0.0f:gain);
-
-        for(AudioSource *s : sources)
-            s->OnBusGainChanged(cached_effective_gain);
-
-        for(AudioBus *child : children)
-            child->PropagateEffectiveGain(cached_effective_gain);
     }
 }//namespace hgl::audio

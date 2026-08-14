@@ -34,6 +34,7 @@ cm_audio_example("Resample" wav_resample wav_resample.cpp)
 
 # ---- 音频总线 ----
 cm_audio_example("AudioBus" bus_tree_test bus_tree_test.cpp)
+cm_audio_example("AudioBus" bus_ducking_test bus_ducking_test.cpp)
 
 # ---- 音频资源管理 ----
 cm_audio_example("AudioAsset" asset_manager_test asset_manager_test.cpp)
@@ -44,6 +45,12 @@ cm_audio_example("AudioEngine" engine_update_test engine_update_test.cpp)
 
 # ---- 声音事件数据驱动 ----
 cm_audio_example("SoundEvent" sound_event_test sound_event_test.cpp)
+
+# ---- 动态音乐分层 ----
+cm_audio_example("DynamicMusic" dynamic_music_test dynamic_music_test.cpp)
+
+# ---- 录音 ----
+cm_audio_example("AudioCapture" audio_capture_test audio_capture_test.cpp)
 
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs

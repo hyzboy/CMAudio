@@ -2,6 +2,7 @@
 
 #include<hgl/type/String.h>
 #include<hgl/type/UnorderedSet.h>
+#include<hgl/audio/GainEnvelope.h>
 
 namespace hgl::audio
 {
@@ -9,7 +10,7 @@ namespace hgl::audio
 
     /**
     * 音频总线节点，构成一棵树（Master → Music/SFX/Ambient/UI → ...）。
-    * 有效增益 = 本节点增益 × 父链所有节点增益；静音沿子树向下传播。
+    * 有效增益 = 父链有效增益 × 本节点增益 × 静音系数 × Duck 缩放。
     */
     class AudioBus
     {
@@ -21,9 +22,12 @@ namespace hgl::audio
 
         float gain;                                ///< 本节点增益（0.0=静音，1.0=满）
         bool  mute;                                ///< 静音标志
-        float cached_effective_gain;               ///< 缓存的有效增益（已含父链与静音）
+        float duck_scale;                          ///< Duck 缩放（1.0=无压低）
+        GainRamp duck_ramp;                        ///< Duck 平滑过渡斜坡
+        float cached_effective_gain;               ///< 缓存的有效增益（已含父链/静音/Duck）
 
-        void PropagateEffectiveGain(float parent_gain);    ///< 自顶向下重算有效增益并推送
+        float ParentGain()const{return parent?parent->cached_effective_gain:1.0f;}
+        void  RecalculateSubtree();                ///< 自本节点向下重算有效增益并推送
 
     public:
 
@@ -38,7 +42,14 @@ namespace hgl::audio
         void    SetMute(bool);                     ///< 设置静音
         bool    IsMute()const{return mute;}
 
-        float   GetEffectiveGain()const{return cached_effective_gain;}    ///< 取得有效增益（含父链与静音）
+        float   GetEffectiveGain()const{return cached_effective_gain;}    ///< 取得有效增益（含父链/静音/Duck）
+
+        // Ducking（侧链）：临时压低本总线（及子树）音量，用于"语音/重要音效压低音乐"
+        void    Duck(float target_scale,double duration=0.2,double now=0);   ///< 平滑压低到 target_scale（0=完全压低，1=无）
+        void    Unduck(double duration=0.2,double now=0);                     ///< 恢复
+        float   GetDuckScale()const{return duck_scale;}                      ///< 取得当前 Duck 缩放
+        bool    IsDucked()const{return duck_scale<1.0f-0.0001f;}             ///< 是否处于被压低状态
+        void    Update(const double now);                                    ///< 驱动 Duck 平滑过渡（每帧调用，递归子树）
 
         AudioBus *CreateChild(const char *name);    ///< 创建并挂接一个子总线
 

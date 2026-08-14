@@ -125,11 +125,12 @@
 - 测试：`sound_event_test`（31 项，分组转换 + 事件增删查 + 随机化范围 + 多文件变体覆盖 + TOML 加载）
 - 注：`StringList` 禁用拷贝构造（`=delete`），`SoundEventConfig` 显式实现拷贝构造（借深拷贝赋值）
 
-### P2（体验质感）
+### P2（体验质感）（✅ 已实现）
 
-- Ducking/侧链（音乐在语音/重要音效时自动压低）
-- 动态音乐分层（战斗/探索状态切换 + crossfade）
-- AudioCapture（录音；`alcCapture` 函数指针已就绪）
+- **Ducking/侧链**（✅）：`AudioBus` 加 `duck_scale` + `Duck/Unduck/Update`（`GainRamp` 平滑过渡），有效增益 = 父链 × gain × 静音 × duck；由 `AudioEngine::Update` 驱动
+- **动态音乐分层**（✅）：`DynamicMusic`（音乐层 + 状态 + `SetState` crossfade；`AddLayer/AddState/SetState/Update`）
+- **AudioCapture 录音**（✅）：封装 `alcCapture` 系列函数指针（`Open/Close/Start/Stop/GetAvailableSamples/ReadSamples`）
+- 测试：`bus_ducking_test`（19 项）、`dynamic_music_test`（24 项）、`audio_capture_test`（11 项）
 
 ### P3（特定需求时再做）
 
@@ -146,7 +147,7 @@
 3. ~~**P0-2 AudioAssetManager**~~（✅ 已实现：缓存去重 + 引用计数 + 后台解码线程 + 异步 API）
 4. ~~**P1-1 AudioEngine::update()**~~（✅ 已实现：AudioEngine 中枢 + 资源/世界统一驱动 + engine_update_test 全过）
 5. ~~**P1-2 SoundEvent**~~（✅ 已实现：SoundEventConfig + SoundEventManager + TOML 加载 + sound_event_test 全过）
-6. **P2 / P3 按需**
+6. ~~**P2**~~（✅ 已实现：Ducking + 动态音乐分层 + AudioCapture）；P3 按需
 
 **关键依赖**：效果链（Effect Chain）挂在 Bus 节点上 → Bus 树先于效果链；`AudioEngine::update()` 建立在 Bus 树 + 资源管理之上。
 

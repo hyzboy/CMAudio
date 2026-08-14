@@ -5,10 +5,12 @@
                         ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/xram.h)
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCapture.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAssetManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBus.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEngine.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFileType.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/DynamicMusic.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/GainEnvelope.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFilterPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioManager.h
@@ -40,9 +42,11 @@ set(CM_AUDIO_SOURCE
     OpenAL.cpp
     AudioFileType.cpp
     AudioBuffer.cpp
+    AudioCapture.cpp
     AudioAssetManager.cpp
     AudioBus.cpp
     AudioEngine.cpp
+    DynamicMusic.cpp
     AudioFilterPreset.cpp
     AudioDecode.cpp
     AudioManager.cpp
