@@ -3,6 +3,7 @@
 #include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/audio/AudioMemoryPool.h>
 #include<hgl/audio/OpenAL.h>
+#include<hgl/audio/ParametricEQ.h>
 #include<hgl/type/ValueArray.h>
 #include<hgl/log/Log.h>
 
@@ -49,6 +50,8 @@ namespace hgl::audio
         AudioDataInfo common_info;               ///< 统一音频格式信息
         bool has_common_info;                     ///< 是否已设置统一格式
         AudioDataInfo output_format;             ///< 输出格式
+
+        ParametricEQ eq;                        ///< 参数化均衡器（P2：混音输出前应用）
 
         // 内存池 - 避免频繁分配/释放
         AudioMemoryPool<float> pool_buffer;      ///< 主混音缓冲池
@@ -186,6 +189,17 @@ namespace hgl::audio
          * 获取输出格式
          */
         const AudioDataInfo &GetOutputFormat() const { return output_format; }
+
+        /**
+         * 取得参数化均衡器（可直接 AddBand/SetBand 配置频段，Mix() 输出前应用）
+         */
+        ParametricEQ &GetEQ() { return eq; }
+        const ParametricEQ &GetEQ() const { return eq; }
+
+        /**
+         * 清空 EQ 频段（等效直通）
+         */
+        void ClearEQ() { eq.ClearBands(); }
 
         /**
             * 执行混音

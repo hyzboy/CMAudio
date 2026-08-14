@@ -465,6 +465,15 @@ namespace hgl::audio
                 delete[] pitchShiftedData;
             }
 
+            // 应用参数化 EQ（P2：在削波/归一化之前，EQ 改变峰值后由削波兜底）
+            if(eq.GetBandCount() > 0)
+            {
+                eq.SetSampleRate((float)common_info.sample_rate);
+                eq.Reset();
+                eq.Process(mixBuffer, outputSampleCount);
+                LogInfo(OS_TEXT("Applying parametric EQ (") + OSString::numberOf(eq.GetBandCount()) + OS_TEXT(" bands)"));
+            }
+
             // 应用软削波或归一化
             if(config.use_soft_clipper)
             {
