@@ -71,6 +71,9 @@ cm_audio_example("Loudness" loudness_limiter_test loudness_limiter_test.cpp)
 # ---- 动态范围压缩器（Compressor/Limiter）----
 cm_audio_example("Compressor" compressor_test compressor_test.cpp)
 
+# ---- 时域效果（Delay/Echo/Chorus/Flanger）----
+cm_audio_example("TimeEffects" time_effect_test time_effect_test.cpp)
+
 # ---- 移动平台会话策略 ----
 cm_audio_example("AudioSession" session_policy_test session_policy_test.cpp)
 
