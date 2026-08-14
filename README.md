@@ -72,9 +72,9 @@ CMAudio 是一个基于 OpenAL 的跨平台音频处理库，提供完整的音�
                           │
 ┌─────────────────────────────────────────────────────────┐
 │                  插件层                                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │Audio.WAV │ │Audio.Ogg │ │Audio.Opus│ │Audio.MIDI│  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
+│  ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Audio.Wav │ │Audio.Vorbis│ │Audio.Opus│ │ MIDI ×6  │  │
+│  └──────────┘ └────────────┘ └──────────┘ └──────────┘  │
 │  (FluidSynth / WildMIDI / Timidity / ADLMIDI / etc)    │
 └─────────────────────────────────────────────────────────┘
                           │
@@ -1689,10 +1689,8 @@ CMAudio 使用插件系统支持多种音频格式。每个格式都是一个独
 
 | 插件 | 格式 | 说明 |
 |------|------|------|
-| **Audio.WAV** | WAV | 标准 PCM 波形文件 |
+| **Audio.Wav** | WAV | 标准 PCM 波形文件 |
 | **Audio.Vorbis** | OGG | Ogg Vorbis 压缩格式 |
-| **Audio.Tremor** | OGG | Vorbis 整数解码器（低 CPU） |
-| **Audio.Tremolo** | OGG | Vorbis 定点解码器 |
 | **Audio.Opus** | OPUS | 高质量音频编解码 |
 | **Audio.FluidSynth** | MIDI | FluidSynth MIDI 合成器 |
 | **Audio.WildMIDI** | MIDI | WildMIDI MIDI 播放器 |
