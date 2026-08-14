@@ -110,7 +110,11 @@ namespace hgl
         }
 
         {
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            double open_total_time=0;
+
+            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&open_total_time);
+
+            total_time=open_total_time;
 
             if(!audio_ptr)
             {
@@ -127,8 +131,8 @@ namespace hgl
 
             wait_time=0.1;
 
-            if(wait_time>total_time/3.0f)
-                wait_time=total_time/10.0f;
+            if(wait_time>total_time.load()/3.0f)
+                wait_time=total_time.load()/10.0f;
 
             return(true);
         }
@@ -203,7 +207,7 @@ namespace hgl
     bool MIDIPlayer::IsLoop()
     {
         lock.Lock();
-        bool rv=loop;
+        bool rv=loop.load();
         lock.Unlock();
 
         return(rv);
@@ -286,7 +290,7 @@ namespace hgl
 
         loop=_loop;
 
-        if(ps==MIDIPlayState::None||ps==MIDIPlayState::Pause)
+        if(ps.load()==MIDIPlayState::None||ps.load()==MIDIPlayState::Pause)
             Start();
 
         Playback();
@@ -327,7 +331,7 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==MIDIPlayState::Play)
+        if(ps.load()==MIDIPlayState::Play)
             ps=MIDIPlayState::Pause;
 
         lock.Unlock();
@@ -342,7 +346,7 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==MIDIPlayState::Pause)
+        if(ps.load()==MIDIPlayState::Pause)
         {
             ps=MIDIPlayState::Play;
 
@@ -398,7 +402,7 @@ namespace hgl
         {
             lock.Lock();
 
-            if(ps==MIDIPlayState::Exit)
+            if(ps.load()==MIDIPlayState::Exit)
             {
                 alSourceStop(source);
                 ClearBuffer();
@@ -407,7 +411,7 @@ namespace hgl
                 return(false);
             }
 
-            if(ps==MIDIPlayState::Pause)
+            if(ps.load()==MIDIPlayState::Pause)
             {
                 alSourcePause(source);
 
@@ -417,11 +421,11 @@ namespace hgl
                 continue;
             }
 
-            if(ps==MIDIPlayState::Play)
+            if(ps.load()==MIDIPlayState::Play)
             {
                 if(!UpdateBuffer())
                 {
-                    if(loop)
+                    if(loop.load())
                     {
                         Playback();
                     }
@@ -454,7 +458,7 @@ namespace hgl
                 {
                     const double cur_pos=GetPlayTime();
 
-                    audiosource.SetGain(float(audio::FadeFactor(cur_pos,fade_in_time,fade_out_time,total_time)*gain));
+                    audiosource.SetGain(float(audio::FadeFactor(cur_pos,fade_in_time,fade_out_time,total_time.load())*gain));
                 }
             }
 
@@ -468,10 +472,20 @@ namespace hgl
 
     PreciseTime MIDIPlayer::GetPlayTime()
     {
-        if(ps!=MIDIPlayState::Play)
+        if(ps.load()!=MIDIPlayState::Play)
             return 0;
 
-        return GetTimeSec()-start_time+(audio_buffer_count*wait_time);
+        PreciseTime st;
+        uint base;
+
+        lock.Lock();
+
+        st=start_time;
+        base=audio_buffer_count;
+
+        lock.Unlock();
+
+        return GetTimeSec()-st+(base*wait_time);
     }
 
     void MIDIPlayer::SetFadeTime(PreciseTime fade_in,PreciseTime fade_out)

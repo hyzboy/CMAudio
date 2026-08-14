@@ -2,6 +2,7 @@
 
 #include<hgl/thread/Thread.h>
 #include<hgl/thread/ThreadMutex.h>
+#include<hgl/thread/Atomic.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/GainEnvelope.h>
@@ -71,13 +72,13 @@ namespace hgl
 
     protected:
 
-        volatile bool loop;
-        volatile PlayState ps;
+        atom<bool> loop;
+        atom<PlayState> ps;
 
         AudioSource audiosource;
         ALuint source;
         ALuint buffer[3];
-        PreciseTime total_time;
+        atom<double> total_time;
         PreciseTime wait_time;
 
         double gain;
@@ -91,9 +92,9 @@ namespace hgl
 
                             uint        GetIndex()const{return audiosource.index;}                      ///<获取音源索引
 
-                            double      GetTotalTime()const{return total_time;}                         ///<获取音频总时长
+                            double      GetTotalTime()const{return total_time.load();}                         ///<获取音频总时长
 
-                            PlayState   GetPlayState()const{return ps;}                                 ///<获取播放器状态
+                            PlayState   GetPlayState()const{return ps.load();}                                 ///<获取播放器状态
 
                             int         GetSourceState()const{return audiosource.GetState();}           ///<获取音源索引
 

@@ -103,7 +103,11 @@ namespace hgl
         }
 
         {
-            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&total_time);
+            double open_total_time=0;
+
+            audio_ptr=decode->Open(audio_data,audio_data_size,&format,&rate,&open_total_time);
+
+            total_time=open_total_time;
 
             audio_buffer_size=(AudioTime(format,rate)+9)/10;        // 1/10 秒
 
@@ -114,8 +118,8 @@ namespace hgl
 
             wait_time=0.1;
 
-            if(wait_time>total_time/3.0f)
-                wait_time=total_time/10.0f;
+            if(wait_time>total_time.load()/3.0f)
+                wait_time=total_time.load()/10.0f;
 
             return(true);
         }
@@ -196,7 +200,7 @@ namespace hgl
     bool AudioPlayer::IsLoop()
     {
         lock.Lock();
-        bool rv=loop;
+        bool rv=loop.load();
         lock.Unlock();
 
         return(rv);
@@ -279,7 +283,7 @@ namespace hgl
 
         loop=_loop;
 
-        if(ps==PlayState::None||ps==PlayState::Pause)      //未启动线程
+        if(ps.load()==PlayState::None||ps.load()==PlayState::Pause)      //未启动线程
             Start();
 
         Playback();            //Execute执行有检测Lock，所以不必担心该操作会引起线程冲突
@@ -320,7 +324,7 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==PlayState::Play)
+        if(ps.load()==PlayState::Play)
             ps=PlayState::Pause;
 
         lock.Unlock();
@@ -335,7 +339,7 @@ namespace hgl
 
         lock.Lock();
 
-        if(ps==PlayState::Pause)
+        if(ps.load()==PlayState::Pause)
         {
             ps=PlayState::Play;
 
@@ -358,7 +362,7 @@ namespace hgl
 
         if(fade_in_time>0||fade_out_time>0)
         {
-            const float factor=audio::FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time);
+            const float factor=audio::FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time.load());
 
             audiosource.SetGain(float(factor*gain));
         }
@@ -422,7 +426,7 @@ namespace hgl
         {
             lock.Lock();
 
-            if(ps==PlayState::Play)    //被要求播放
+            if(ps.load()==PlayState::Play)    //被要求播放
             {
                 if(!UpdateBuffer())
                 {
@@ -447,7 +451,7 @@ namespace hgl
                 }
             }
             else
-            if(ps==PlayState::Pause)        //被要求暂停
+            if(ps.load()==PlayState::Pause)        //被要求暂停
             {
                 alSourcePause(source);
 
@@ -455,7 +459,7 @@ namespace hgl
                 return(false);
             }
             else
-            if(ps==PlayState::Exit)      //被要求暂停或退出
+            if(ps.load()==PlayState::Exit)      //被要求暂停或退出
             {
                 alSourceStop(source);
                 alSourcei(source,AL_BUFFER,0);
@@ -475,10 +479,12 @@ namespace hgl
     {
         if(!audio_data)return(0);
 
-        uint base=audio_buffer_count;
+        uint base;
         int off;
 
         lock.Lock();
+
+        base=audio_buffer_count;
 
         alGetSourcei(source,AL_BYTE_OFFSET,&off);
 
