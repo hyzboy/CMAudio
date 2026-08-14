@@ -116,9 +116,14 @@
 - 测试：`engine_update_test`（23 项，OpenAL null 设备 + 总线 + 资源集成 + 世界注册 + Update 驱动异步加载）
 - 音频线程缓冲说明：流式 BGM（`AudioPlayer`）本就在独立线程（3 缓冲循环，主线程卡顿不断流）；`AudioEngine::Update` 轻量、线程安全，可从主线程或音频线程调用。独立音频线程 + 命令队列留作后续增强
 
-**P1-2：SoundEvent 数据驱动层**
-- 事件名 → 配置（音量/音高随机化/衰减/优先级/循环/分组）
-- 配 TOML/JSON（项目已有 TOML 解析先例）
+**P1-2：SoundEvent 数据驱动层**（✅ 已实现）
+
+实现要点：
+- `AudioBusType` 枚举（Master/Music/SFX/Ambient/UI）+ `AudioBusTypeFromString/ToString`
+- `SoundEventConfig`：文件变体列表（`OSStringList`）+ 音量/音高随机化（min/max）+ 空间衰减 + 优先级 + 循环 + 分组；`RandomGain/RandomPitch/RandomFile` 随机化辅助
+- `SoundEventManager`：事件名 → 配置映射（`UnorderedMap`）+ `AddEvent/RemoveEvent/GetEvent/Contains/Clear` + `LoadFromTOML`（简单手写 TOML 解析，支持 `file`/`files = [...]` 数组、`bus` 分组）
+- 测试：`sound_event_test`（31 项，分组转换 + 事件增删查 + 随机化范围 + 多文件变体覆盖 + TOML 加载）
+- 注：`StringList` 禁用拷贝构造（`=delete`），`SoundEventConfig` 显式实现拷贝构造（借深拷贝赋值）
 
 ### P2（体验质感）
 
@@ -140,7 +145,7 @@
 2. ~~**P0-1 Bus 树**~~（✅ 已实现：`AudioBus.h/.cpp` + `AudioEngine.h` + 六路径 `SetBus` + `bus_tree_test` 全过）
 3. ~~**P0-2 AudioAssetManager**~~（✅ 已实现：缓存去重 + 引用计数 + 后台解码线程 + 异步 API）
 4. ~~**P1-1 AudioEngine::update()**~~（✅ 已实现：AudioEngine 中枢 + 资源/世界统一驱动 + engine_update_test 全过）
-5. **P1-2 SoundEvent**
+5. ~~**P1-2 SoundEvent**~~（✅ 已实现：SoundEventConfig + SoundEventManager + TOML 加载 + sound_event_test 全过）
 6. **P2 / P3 按需**
 
 **关键依赖**：效果链（Effect Chain）挂在 Bus 节点上 → Bus 树先于效果链；`AudioEngine::update()` 建立在 Bus 树 + 资源管理之上。

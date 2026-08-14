@@ -1,0 +1,40 @@
+# 声音事件配置示例（SoundEvent 数据驱动层）
+# 一个 [event.xxx] 小节定义一个声音事件；字段缺省使用默认值
+
+[event.shoot]
+file = "wav_samples/shoot.wav"
+min_gain = 0.8
+max_gain = 1.0
+min_pitch = 0.95
+max_pitch = 1.05
+priority = 1.5
+bus = "SFX"
+
+[event.explosion]
+files = ["wav_samples/explosion1.wav", "wav_samples/explosion2.wav"]
+min_gain = 0.9
+max_gain = 1.0
+reference_distance = 5.0
+max_distance = 500.0
+rolloff_factor = 1.0
+priority = 2.0
+bus = "SFX"
+
+[event.bgm]
+file = "wav_samples/bgm.ogg"
+loop = true
+bus = "Music"
+
+[event.ambient_wind]
+file = "wav_samples/wind.wav"
+loop = true
+max_gain = 0.5
+max_distance = 200.0
+bus = "Ambient"
+
+[event.ui_click]
+file = "wav_samples/click.wav"
+min_gain = 0.6
+max_gain = 0.8
+priority = 3.0
+bus = "UI"
