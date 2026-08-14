@@ -105,9 +105,16 @@
 
 ### P1（引擎化 + 生产力）
 
-**P1-1：`AudioEngine::update()` 统一驱动**
-- 收拢 `SpatialAudioWorld` 每帧更新 + 音量淡变/位置插值的集中调度
-- 音频线程缓冲，主线程卡顿（GC/场景加载）不断流
+**P1-1：`AudioEngine::update()` 统一驱动**（✅ 已实现）
+
+实现要点：
+- `AudioEngine` 从 header-only 改为 `.h` + `.cpp`，成为引擎中枢
+- 持有 `AudioAssetManager`（资源缓存 + 异步加载，P0-2）+ 注册 `SpatialAudioWorld` 集合（不持有其生命周期）
+- 资源转发：`Acquire/Release/AcquireAsync/GetAssetManager`
+- 世界注册：`AddWorld/RemoveWorld/GetWorldCount`
+- `Update(ct)` 统一驱动：先 `asset_manager->Update()`（上传异步解码结果），再逐个 `world->Update(ct)`（空间音频刷新，含淡入淡出/位置/多普勒/滤波的集中调度）
+- 测试：`engine_update_test`（23 项，OpenAL null 设备 + 总线 + 资源集成 + 世界注册 + Update 驱动异步加载）
+- 音频线程缓冲说明：流式 BGM（`AudioPlayer`）本就在独立线程（3 缓冲循环，主线程卡顿不断流）；`AudioEngine::Update` 轻量、线程安全，可从主线程或音频线程调用。独立音频线程 + 命令队列留作后续增强
 
 **P1-2：SoundEvent 数据驱动层**
 - 事件名 → 配置（音量/音高随机化/衰减/优先级/循环/分组）
@@ -132,7 +139,7 @@
 1. ~~遗留收尾~~（#1/#2 已完成，见上表；#3 暂不动）
 2. ~~**P0-1 Bus 树**~~（✅ 已实现：`AudioBus.h/.cpp` + `AudioEngine.h` + 六路径 `SetBus` + `bus_tree_test` 全过）
 3. ~~**P0-2 AudioAssetManager**~~（✅ 已实现：缓存去重 + 引用计数 + 后台解码线程 + 异步 API）
-4. **P1-1 AudioEngine::update()**（在 Bus + 资源管理之上收拢）
+4. ~~**P1-1 AudioEngine::update()**~~（✅ 已实现：AudioEngine 中枢 + 资源/世界统一驱动 + engine_update_test 全过）
 5. **P1-2 SoundEvent**
 6. **P2 / P3 按需**
 

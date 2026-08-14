@@ -40,6 +40,7 @@ set(CM_AUDIO_SOURCE
     AudioBuffer.cpp
     AudioAssetManager.cpp
     AudioBus.cpp
+    AudioEngine.cpp
     AudioFilterPreset.cpp
     AudioDecode.cpp
     AudioManager.cpp

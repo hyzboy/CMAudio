@@ -39,6 +39,9 @@ cm_audio_example("AudioBus" bus_tree_test bus_tree_test.cpp)
 cm_audio_example("AudioAsset" asset_manager_test asset_manager_test.cpp)
 cm_audio_example("AudioAsset" async_load_test async_load_test.cpp)
 
+# ---- 音频引擎统一驱动 ----
+cm_audio_example("AudioEngine" engine_update_test engine_update_test.cpp)
+
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
