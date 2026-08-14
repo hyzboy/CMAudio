@@ -5,6 +5,7 @@
 #include "WavReader.h"
 #include "WavWriter.h"
 
+using namespace hgl;
 using namespace hgl::audio;
 
 int main(int argc, char** argv)
@@ -18,7 +19,7 @@ int main(int argc, char** argv)
     std::cout << "Output: " << outputFile << std::endl << std::endl;
 
     // Load input WAV file
-    ALenum format;
+    openal::ALenum format;
     void* data;
     uint dataSize;
     uint sampleRate;

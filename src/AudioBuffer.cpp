@@ -133,6 +133,15 @@ namespace hgl
         return(true);
     }
 
+    bool AudioBuffer::SetData(const audio::AudioDataInfo &info,const void *data)
+    {
+        const ALenum format=openal::ToOpenALFormat(info);
+
+        if(format==0)return(false);
+
+        return SetData(format,data,info.dataSize,info.sampleRate);
+    }
+
     /**
     * 从内存中加载一个音频文件到当前缓冲区,仅支持OGG和WAV。注：由于这个函数会一次性将音频数据载入内存，所以较长的音乐请使用CreateAudioPlayer，以免占用太多的内存。
     * @param memory 要加载数据的内存

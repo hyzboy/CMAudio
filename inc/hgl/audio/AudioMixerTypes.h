@@ -63,10 +63,10 @@ namespace hgl
 
         /**
          * 音频数据信息
+         * 声道数+位深+是否浮点 三元组完全描述采样格式，不依赖任何后端格式枚举
          */
         struct AudioDataInfo
         {
-            uint format;            ///< 音频格式 (AL_FORMAT_*)
             uint sampleRate;        ///< 采样率
             uint channels;          ///< 声道数 (1/2/4/6/7/8)
             uint bitsPerSample;     ///< 每个采样的位数 (8, 16, 32)
@@ -75,7 +75,6 @@ namespace hgl
 
             AudioDataInfo()
             {
-                format = 0;
                 sampleRate = 0;
                 channels = 0;
                 bitsPerSample = 0;
@@ -83,14 +82,6 @@ namespace hgl
                 dataSize = 0;
             }
         };
-
-        /**
-         * 解析音频格式，填充声道数、每采样位数、是否浮点
-         * @param format OpenAL格式常量(AL_FORMAT_*)
-         * @param info  输出格式信息
-         * @return 是否支持该格式
-         */
-        bool ParseAudioFormatInfo(uint format, AudioDataInfo& info);
 
     }//namespace audio
 }//namespace hgl

@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
-#include <hgl/al/al.h>
+#include <hgl/audio/OpenAL.h>
 
 namespace hgl
 {
@@ -59,7 +59,7 @@ namespace hgl
              * @param sampleRate Sample rate in Hz
              * @return true if successful
              */
-            bool Open(const char* filename, ALenum format, uint32_t sampleRate)
+            bool Open(const char* filename, openal::ALenum format, uint32_t sampleRate)
             {
                 if (file) Close();
 

@@ -2,6 +2,7 @@
 
 #include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/audio/AudioMemoryPool.h>
+#include<hgl/audio/OpenAL.h>
 #include<hgl/type/ValueArray.h>
 #include<hgl/log/Log.h>
 
@@ -34,8 +35,8 @@ namespace hgl::audio
             {
                 return data == other.data &&
                        dataSize == other.dataSize &&
-                       info.format == other.info.format &&
                        info.sampleRate == other.info.sampleRate &&
+                       info.channels == other.info.channels &&
                        info.bitsPerSample == other.info.bitsPerSample &&
                        info.isFloat == other.info.isFloat;
             }
@@ -47,7 +48,7 @@ namespace hgl::audio
 
         AudioDataInfo commonInfo;               ///< 统一音频格式信息
         bool hasCommonInfo;                     ///< 是否已设置统一格式
-        uint outputFormat;                      ///< 输出格式 (AL_FORMAT_*)
+        AudioDataInfo outputFormat;             ///< 输出格式
 
         // 内存池 - 避免频繁分配/释放
         AudioMemoryPool<float> poolBuffer;      ///< 主混音缓冲池
@@ -98,14 +99,22 @@ namespace hgl::audio
         virtual ~AudioMixer();
 
         /**
-            * 添加音源数据
-            * @param data 音频数据指针
-            * @param size 数据大小
-            * @param format 音频格式 (AL_FORMAT_*)
-            * @param sampleRate 采样率
-            * @return 音源索引，失败返回 -1
-            */
-        int AddSourceAudio(const void* data, uint size, uint format, uint sampleRate);
+         * 添加音源数据
+         * @param info 音频数据信息（声道数、位深、是否浮点、采样率、数据大小）
+         * @param data 音频数据指针
+         * @return 音源索引，失败返回 -1
+         */
+        int AddSourceAudio(const AudioDataInfo &info,const void *data);
+
+        /**
+         * 添加音源数据(便捷方法)
+         * @param data 音频数据指针
+         * @param size 数据大小
+         * @param format 音频格式 (AL_FORMAT_*)
+         * @param sampleRate 采样率
+         * @return 音源索引，失败返回 -1
+         */
+        int AddSourceAudio(const void *data,uint size,uint format,uint sampleRate);
 
         /**
             * 清除所有音源
@@ -153,15 +162,30 @@ namespace hgl::audio
         const MixerConfig& GetConfig() const { return config; }
 
         /**
-            * 设置输出格式
-            * @param format 输出格式 (AL_FORMAT_*，须与音源声道数一致)
-            */
-        void SetOutputFormat(uint format) { outputFormat = format; }
+         * 设置输出格式
+         * @param info 输出格式信息（声道数、位深、是否浮点）
+         * @return 是否成功
+         */
+        bool SetOutputFormat(const AudioDataInfo &info) { outputFormat=info; return true; }
 
         /**
-            * 获取输出格式
-            */
-        uint GetOutputFormat() const { return outputFormat; }
+         * 设置输出格式(便捷方法)
+         * @param format 输出格式 (AL_FORMAT_*，须与音源声道数一致)
+         * @return 是否成功
+         */
+        bool SetOutputFormat(uint format)
+        {
+            AudioDataInfo info;
+            if(!openal::FromOpenALFormat(format,info))
+                return false;
+            outputFormat=info;
+            return true;
+        }
+
+        /**
+         * 获取输出格式
+         */
+        const AudioDataInfo &GetOutputFormat() const { return outputFormat; }
 
         /**
             * 执行混音

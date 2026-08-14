@@ -7,6 +7,7 @@
 #include "WavReader.h"
 #include "WavWriter.h"
 
+using namespace hgl;
 using namespace hgl::audio;
 
 int main(int argc, char** argv)
@@ -29,20 +30,20 @@ int main(int argc, char** argv)
 
     std::cout << "Configuration loaded:" << std::endl;
     std::cout << "  Duration: " << config.duration << " seconds" << std::endl;
-    std::cout << "  Output: " << config.output.sampleRate << " Hz, ";
-    std::cout << (config.output.format == AL_FORMAT_MONO16 ? "MONO16" : "MONO8") << std::endl;
+    std::cout << "  Output: " << config.output.info.sampleRate << " Hz, ";
+    std::cout << (config.output.info.bitsPerSample == 16 ? "MONO16" : "MONO8") << std::endl;
     std::cout << "  Sources: " << config.sources.size() << std::endl << std::endl;
 
     // Load all WAV files
     std::map<std::string, void*> wavData;
     std::map<std::string, uint> wavSize;
-    std::map<std::string, ALenum> wavFormat;
+    std::map<std::string, openal::ALenum> wavFormat;
     std::map<std::string, uint> wavSampleRate;
 
     std::cout << "Loading WAV files:" << std::endl;
     for (const auto& source : config.sources)
     {
-        ALenum format;
+        openal::ALenum format;
         void* data;
         uint dataSize;
         uint sampleRate;
@@ -70,16 +71,18 @@ int main(int argc, char** argv)
 
     // Create AudioMixerScene
     AudioMixerScene scene;
-    scene.SetOutputFormat(config.output.format, config.output.sampleRate);
+    scene.SetOutputFormat(config.output.info);
 
     std::cout << std::endl << "Configuring sources:" << std::endl;
     for (const auto& source : config.sources)
     {
         AudioMixerSourceConfig srcConfig;
         srcConfig.data = wavData[source.wavFile];
-        srcConfig.dataSize = wavSize[source.wavFile];
-        srcConfig.format = wavFormat[source.wavFile];
-        srcConfig.sampleRate = wavSampleRate[source.wavFile];
+        srcConfig.info.dataSize = wavSize[source.wavFile];
+        srcConfig.info.channels = (wavFormat[source.wavFile] == AL_FORMAT_STEREO16 || wavFormat[source.wavFile] == AL_FORMAT_STEREO8 || wavFormat[source.wavFile] == AL_FORMAT_STEREO_FLOAT32) ? 2 : 1;
+        srcConfig.info.bitsPerSample = (wavFormat[source.wavFile] == AL_FORMAT_MONO8 || wavFormat[source.wavFile] == AL_FORMAT_STEREO8) ? 8 : 16;
+        srcConfig.info.isFloat = (wavFormat[source.wavFile] == AL_FORMAT_MONO_FLOAT32 || wavFormat[source.wavFile] == AL_FORMAT_STEREO_FLOAT32);
+        srcConfig.info.sampleRate = wavSampleRate[source.wavFile];
         srcConfig.minCount = source.minCount;
         srcConfig.maxCount = source.maxCount;
         srcConfig.minInterval = source.minInterval;
@@ -122,7 +125,7 @@ int main(int argc, char** argv)
 
     // Write output WAV file
     WavWriter writer;
-    if (!writer.Open(outputFile, config.output.format, config.output.sampleRate))
+    if (!writer.Open(outputFile, openal::ToOpenALFormat(config.output.info), config.output.info.sampleRate))
     {
         std::cerr << "Error: Failed to create output file" << std::endl;
         delete[] (char*)outputData;

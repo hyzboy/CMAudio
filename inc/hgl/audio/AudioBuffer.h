@@ -2,6 +2,7 @@
 
 #include<hgl/io/InputStream.h>
 #include<hgl/audio/AudioFileType.h>
+#include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/log/Log.h>
 
 namespace hgl
@@ -41,6 +42,7 @@ namespace hgl
         virtual ~AudioBuffer();                                                                     ///<本类析构函数
 
         bool SetData(uint format,const void *data,uint size,uint freq);
+        bool SetData(const audio::AudioDataInfo &info,const void *data);                            ///<使用音频数据信息设置数据
 
         bool Load(void *,int,AudioFileType);                                                        ///<从内存中加载音频数据
         bool Load(InputStream *,int,AudioFileType);                                                 ///<从流中加载音频数据

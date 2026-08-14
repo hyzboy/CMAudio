@@ -1,7 +1,7 @@
 #pragma once
 
 #include<hgl/CoreType.h>
-#include<hgl/audio/OpenAL.h>
+#include<hgl/audio/AudioMixerTypes.h>
 
 namespace hgl::audio
 {
@@ -20,15 +20,15 @@ namespace hgl::audio
      *   integer and float32 samples).
      * - Input and output channel counts must match (resampling does not
      *   remap channel layouts).
-     * - If outputFormat is 0, the input format is preserved.
+     * - If outputInfo.sampleRate is 0, the input sample rate is preserved;
+     *   if outputInfo.channels is 0, the input format is preserved.
      * - Caller owns outputData and must delete[] it.
      */
     bool Resample(const void* inputData,
                   uint inputSize,
-                  uint inputFormat,
-                  uint inputSampleRate,
+                  const AudioDataInfo &inputInfo,
                   uint outputSampleRate,
-                  uint outputFormat,
+                  const AudioDataInfo &outputInfo,
                   ResampleQuality quality,
                   void** outputData,
                   uint* outputSize);
@@ -38,10 +38,9 @@ namespace hgl::audio
      */
     bool ResampleMono(const void* inputData,
                       uint inputSize,
-                      uint inputFormat,
-                      uint inputSampleRate,
+                      const AudioDataInfo &inputInfo,
                       uint outputSampleRate,
-                      uint outputFormat,
+                      const AudioDataInfo &outputInfo,
                       ResampleQuality quality,
                       void** outputData,
                       uint* outputSize);

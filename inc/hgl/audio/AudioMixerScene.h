@@ -23,10 +23,8 @@ namespace hgl::audio
         UnorderedMap<OSString,AudioMixerSourceConfig> sources;    ///< 音频源字典
         MixerConfig globalConfig;               ///< 全局混音配置
 
-        uint sourceFormat;                      ///< 所有音源的统一格式(首个添加的音源决定)
-        uint sourceSampleRate;                  ///< 所有音源的统一采样率(首个添加的音源决定)
-        uint outputFormat;                      ///< 输出音频格式
-        uint outputSampleRate;                  ///< 输出采样率
+        AudioDataInfo sourceFormat;             ///< 所有音源的统一格式(首个添加的音源决定)
+        AudioDataInfo outputFormat;             ///< 输出音频格式
 
         std::random_device rd;
         std::mt19937 rng;
@@ -91,21 +89,35 @@ namespace hgl::audio
         const MixerConfig& GetGlobalConfig() const { return globalConfig; }
 
         /**
-            * 设置输出格式
-            * @param format 输出音频格式 (AL_FORMAT_*，声道数须与音源一致)
-            * @param sampleRate 输出采样率 (如44100, 48000)
-            */
-        void SetOutputFormat(uint format, uint sampleRate);
+         * 设置输出格式
+         * @param info 输出音频格式（声道数须与音源一致）
+         */
+        void SetOutputFormat(const AudioDataInfo &info) { outputFormat=info; }
 
         /**
-            * 获取输出格式
-            */
-        uint GetOutputFormat() const { return outputFormat; }
+         * 设置输出格式(便捷方法)
+         * @param format 输出音频格式 (AL_FORMAT_*，声道数须与音源一致)
+         * @param sampleRate 输出采样率 (如44100, 48000)
+         */
+        void SetOutputFormat(uint format,uint sampleRate)
+        {
+            AudioDataInfo info;
+            if(openal::FromOpenALFormat(format,info))
+            {
+                info.sampleRate = sampleRate;
+                outputFormat = info;
+            }
+        }
 
         /**
-            * 获取输出采样率
-            */
-        uint GetOutputSampleRate() const { return outputSampleRate; }
+         * 获取输出格式
+         */
+        const AudioDataInfo &GetOutputFormat() const { return outputFormat; }
+
+        /**
+         * 获取输出采样率
+         */
+        uint GetOutputSampleRate() const { return outputFormat.sampleRate; }
 
         /**
             * 生成混音场景

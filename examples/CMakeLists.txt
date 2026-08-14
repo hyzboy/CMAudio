@@ -1,39 +1,39 @@
 # AudioMixer Examples
 cmake_minimum_required(VERSION 3.10)
 
-# Include parent project paths
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Link to CMAudio library
-link_directories(${CMAKE_BINARY_DIR}/src)
+# ============================================================================
+# 与 CMCore examples 保持一致的示例工程宏：
+#   统一 VC 工程文件夹为 Examples/CMAudio/<sub_folder>
+#   参考 CMCore/examples/CMakeLists.txt 的 cm_example_project 封装
+# ============================================================================
+macro(cm_audio_example sub_folder project_name)
+    add_executable(${project_name} ${ARGN})
+    target_link_libraries(${project_name} PRIVATE CMAudio CMCore)
 
-# Basic AudioMixer test
-add_executable(mixer_basic_test
-    mixer_basic_test.cpp
-)
-target_link_libraries(mixer_basic_test CMAudio)
+    # 设置 IDE 工程文件夹（与 CMCore 的 Examples/CMCore/... 风格一致）
+    set_property(TARGET ${project_name} PROPERTY FOLDER "Examples/CMAudio/${sub_folder}")
 
-# AudioMixerScene city test
-add_executable(scene_city_test
-    scene_city_test.cpp
-)
-target_link_libraries(scene_city_test CMAudio)
+    if(WIN32 AND COMMAND set_debugger_directory)
+        # 调试运行目录指向构建目录（configs / wav_samples 已复制到那里）
+        set_debugger_directory(${project_name} ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+endmacro()
 
-# AudioMixerScene swarm test
-add_executable(scene_swarm_test
-    scene_swarm_test.cpp
-)
-target_link_libraries(scene_swarm_test CMAudio)
+# ---- 基础混音 ----
+cm_audio_example("AudioMixer" mixer_basic_test mixer_basic_test.cpp)
 
-# WAV resample tool
-add_executable(wav_resample
-    wav_resample.cpp
-)
-target_link_libraries(wav_resample CMAudio)
+# ---- 场景混音 ----
+cm_audio_example("AudioMixerScene" scene_city_test  scene_city_test.cpp)
+cm_audio_example("AudioMixerScene" scene_swarm_test scene_swarm_test.cpp)
+
+# ---- 重采样工具 ----
+cm_audio_example("Resample" wav_resample wav_resample.cpp)
 
 # Copy configuration files to build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Create wav_samples directory in build

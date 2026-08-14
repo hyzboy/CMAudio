@@ -21,8 +21,14 @@ namespace hgl
         {
             struct OutputConfig
             {
-                ALenum format = AL_FORMAT_MONO16;
-                uint sampleRate = 44100;
+                AudioDataInfo info;   // channels/bitsPerSample/isFloat/sampleRate
+                OutputConfig()
+                {
+                    info.channels = 1;
+                    info.bitsPerSample = 16;
+                    info.isFloat = false;
+                    info.sampleRate = 44100;
+                }
             } output;
 
             struct SourceConfig
@@ -137,14 +143,22 @@ namespace hgl
                     if (currentSection == "output")
                     {
                         if (key == "sample_rate")
-                            config.output.sampleRate = ParseInt(value);
+                            config.output.info.sampleRate = ParseInt(value);
                         else if (key == "format")
                         {
                             std::string fmt = UnquoteString(value);
                             if (fmt == "MONO16")
-                                config.output.format = AL_FORMAT_MONO16;
+                            {
+                                config.output.info.channels = 1;
+                                config.output.info.bitsPerSample = 16;
+                                config.output.info.isFloat = false;
+                            }
                             else if (fmt == "MONO8")
-                                config.output.format = AL_FORMAT_MONO8;
+                            {
+                                config.output.info.channels = 1;
+                                config.output.info.bitsPerSample = 8;
+                                config.output.info.isFloat = false;
+                            }
                         }
                     }
                     else if (currentSection == "scene")

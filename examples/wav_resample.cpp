@@ -7,11 +7,12 @@
 #include "WavReader.h"
 #include "WavWriter.h"
 
+using namespace hgl;
 using namespace hgl::audio;
 
 namespace
 {
-    bool GetFormatInfo(ALenum format, uint16_t& channels, uint16_t& bitsPerSample, ALenum& monoFormat)
+    bool GetFormatInfo(openal::ALenum format, uint16_t& channels, uint16_t& bitsPerSample, openal::ALenum& monoFormat)
     {
         switch(format)
         {
@@ -52,7 +53,7 @@ namespace
         }
     }
 
-    ALenum MakeStereoFormat(ALenum monoFormat)
+    openal::ALenum MakeStereoFormat(openal::ALenum monoFormat)
     {
         switch(monoFormat)
         {
@@ -165,10 +166,10 @@ int main(int argc, char** argv)
     if(argc >= 5)
     {
         if(std::strcmp(argv[4], "sinc") == 0)
-            quality = ResampleQuality::Sinc;
+            quality = ResampleQuality::SincFastest;
     }
 
-    ALenum format = 0;
+    openal::ALenum format = 0;
     void* data = nullptr;
     uint32_t size = 0;
     uint32_t sampleRate = 0;
@@ -181,7 +182,7 @@ int main(int argc, char** argv)
 
     uint16_t channels = 0;
     uint16_t bitsPerSample = 0;
-    ALenum monoFormat = 0;
+    openal::ALenum monoFormat = 0;
     if(!GetFormatInfo(format, channels, bitsPerSample, monoFormat))
     {
         std::cerr << "Unsupported format in input WAV\n";
@@ -198,11 +199,20 @@ int main(int argc, char** argv)
 
     void* outData = nullptr;
     uint32_t outSize = 0;
-    ALenum outputFormat = format;
+    openal::ALenum outputFormat = format;
+
+    AudioDataInfo inputInfo;
+    inputInfo.sampleRate = sampleRate;
+    inputInfo.channels = channels;
+    inputInfo.bitsPerSample = bitsPerSample;
+    inputInfo.isFloat = (bitsPerSample == 32);
+
+    AudioDataInfo monoInfo = inputInfo;
+    monoInfo.channels = 1;
 
     if(channels == 1)
     {
-        if(!ResampleMono(data, size, monoFormat, sampleRate, targetRate, monoFormat, quality, &outData, &outSize))
+        if(!ResampleMono(data, (uint)size, inputInfo, targetRate, monoInfo, quality, &outData, &outSize))
         {
             std::cerr << "Resample failed\n";
             free(data);
@@ -223,14 +233,14 @@ int main(int argc, char** argv)
         uint32_t leftOutSize = 0;
         uint32_t rightOutSize = 0;
 
-        if(!ResampleMono(left.data(), (uint)left.size(), monoFormat, sampleRate, targetRate, monoFormat, quality, &leftOut, &leftOutSize))
+        if(!ResampleMono(left.data(), (uint)left.size(), inputInfo, targetRate, monoInfo, quality, &leftOut, &leftOutSize))
         {
             std::cerr << "Left channel resample failed\n";
             free(data);
             return 1;
         }
 
-        if(!ResampleMono(right.data(), (uint)right.size(), monoFormat, sampleRate, targetRate, monoFormat, quality, &rightOut, &rightOutSize))
+        if(!ResampleMono(right.data(), (uint)right.size(), inputInfo, targetRate, monoInfo, quality, &rightOut, &rightOutSize))
         {
             std::cerr << "Right channel resample failed\n";
             delete[] (char*)leftOut;

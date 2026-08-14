@@ -16,59 +16,15 @@ namespace hgl
               tempBuffer(OS_TEXT("AudioMixer::tempBuffer"))
         {
             hasCommonInfo = false;
-            outputFormat = AL_FORMAT_MONO16;  // 默认输出int16
+            outputFormat.channels = 1;      // 默认单声道
+            outputFormat.bitsPerSample = 16; // 默认输出int16
+            outputFormat.isFloat = false;
         }
 
         AudioMixer::~AudioMixer()
         {
             ClearTracks();
             // 内存池自动释放
-        }
-
-        /**
-         * 解析音频格式 - 支持单声道及多声道
-         */
-        bool ParseAudioFormatInfo(uint format, AudioDataInfo& info)
-        {
-            info.format = format;
-            info.isFloat = false;
-
-            switch(format)
-            {
-                case AL_FORMAT_MONO8:        info.bitsPerSample=8;  info.channels=1; return true;
-                case AL_FORMAT_MONO16:       info.bitsPerSample=16; info.channels=1; return true;
-                case AL_FORMAT_MONO_FLOAT32: info.bitsPerSample=32; info.channels=1; info.isFloat=true; return true;
-
-                case AL_FORMAT_STEREO8:        info.bitsPerSample=8;  info.channels=2; return true;
-                case AL_FORMAT_STEREO16:       info.bitsPerSample=16; info.channels=2; return true;
-                case AL_FORMAT_STEREO_FLOAT32: info.bitsPerSample=32; info.channels=2; info.isFloat=true; return true;
-
-                case AL_FORMAT_QUAD8:  info.bitsPerSample=8;  info.channels=4; return true;
-                case AL_FORMAT_QUAD16: info.bitsPerSample=16; info.channels=4; return true;
-                case AL_FORMAT_QUAD32: info.bitsPerSample=32; info.channels=4; return true;
-
-                case AL_FORMAT_REAR8:  info.bitsPerSample=8;  info.channels=4; return true;
-                case AL_FORMAT_REAR16: info.bitsPerSample=16; info.channels=4; return true;
-                case AL_FORMAT_REAR32: info.bitsPerSample=32; info.channels=4; return true;
-
-                case AL_FORMAT_51CHN8:  info.bitsPerSample=8;  info.channels=6; return true;
-                case AL_FORMAT_51CHN16: info.bitsPerSample=16; info.channels=6; return true;
-                case AL_FORMAT_51CHN32: info.bitsPerSample=32; info.channels=6; return true;
-
-                case AL_FORMAT_61CHN8:  info.bitsPerSample=8;  info.channels=7; return true;
-                case AL_FORMAT_61CHN16: info.bitsPerSample=16; info.channels=7; return true;
-                case AL_FORMAT_61CHN32: info.bitsPerSample=32; info.channels=7; return true;
-
-                case AL_FORMAT_71CHN8:  info.bitsPerSample=8;  info.channels=8; return true;
-                case AL_FORMAT_71CHN16: info.bitsPerSample=16; info.channels=8; return true;
-                case AL_FORMAT_71CHN32: info.bitsPerSample=32; info.channels=8; return true;
-
-                default:
-                    GLogError(OS_TEXT("Unsupported audio format: ") + OSString::numberOf(format));
-                    RETURN_FALSE;
-            }
-
-            return false;
         }
 
         /**
@@ -231,22 +187,19 @@ namespace hgl
         /**
          * 添加音源数据
          */
-        int AudioMixer::AddSourceAudio(const void* data, uint size, uint format, uint sampleRate)
+        int AudioMixer::AddSourceAudio(const AudioDataInfo &info,const void *data)
         {
-            if(!data || size == 0 || sampleRate == 0)
+            if(!data || info.dataSize == 0 || info.sampleRate == 0)
             {
                 LogError(OS_TEXT("Invalid audio data parameters"));
                 return -1;
             }
 
-            AudioDataInfo info;
-            if(!ParseAudioFormatInfo(format, info))
+            if(info.channels==0||info.bitsPerSample==0)
             {
+                LogError(OS_TEXT("Invalid audio format (channels/bitsPerSample)"));
                 return -1;
             }
-
-            info.sampleRate = sampleRate;
-            info.dataSize = size;
 
             if(!hasCommonInfo)
             {
@@ -255,8 +208,8 @@ namespace hgl
             }
             else
             {
-                if(commonInfo.format != info.format ||
-                   commonInfo.sampleRate != info.sampleRate ||
+                if(commonInfo.sampleRate != info.sampleRate ||
+                   commonInfo.channels != info.channels ||
                    commonInfo.bitsPerSample != info.bitsPerSample ||
                    commonInfo.isFloat != info.isFloat)
                 {
@@ -268,10 +221,26 @@ namespace hgl
             SourceAudio source;
             source.info = info;
             source.data = data;
-            source.dataSize = size;
+            source.dataSize = info.dataSize;
 
             sources.Add(source);
             return sources.GetCount() - 1;
+        }
+
+        int AudioMixer::AddSourceAudio(const void *data,uint size,uint format,uint sampleRate)
+        {
+            AudioDataInfo info;
+
+            if(!openal::FromOpenALFormat(format,info))
+            {
+                LogError(OS_TEXT("Unsupported audio format: ") + OSString::numberOf(format));
+                return -1;
+            }
+
+            info.sampleRate = sampleRate;
+            info.dataSize = size;
+
+            return AddSourceAudio(info,data);
         }
 
         /**
@@ -533,12 +502,7 @@ namespace hgl
             // 如果都不启用，则可能存在超出[-1.0, 1.0]的数据，在转换时会被硬削波
 
             // 转换为目标格式（注意：不再使用mixBuffer，因为ConvertFromFloat会分配新内存）
-            AudioDataInfo outputInfo;
-            if(!ParseAudioFormatInfo(outputFormat, outputInfo))
-            {
-                LogError(OS_TEXT("Unsupported output format"));
-                RETURN_FALSE;
-            }
+            const AudioDataInfo &outputInfo = outputFormat;
 
             if(!outputInfo.isFloat && outputInfo.channels != channels)
             {

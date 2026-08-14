@@ -38,6 +38,87 @@ namespace openal
     void ClearXRAM();
     void ClearEFX();
 
+    bool FromOpenALFormat(ALenum format,hgl::audio::AudioDataInfo &info)
+    {
+        info.sampleRate = 0;
+        info.channels = 0;
+        info.bitsPerSample = 0;
+        info.isFloat = false;
+
+        switch(format)
+        {
+            case AL_FORMAT_MONO8:        info.bitsPerSample=8;  info.channels=1; return true;
+            case AL_FORMAT_MONO16:       info.bitsPerSample=16; info.channels=1; return true;
+            case AL_FORMAT_MONO_FLOAT32: info.bitsPerSample=32; info.channels=1; info.isFloat=true; return true;
+
+            case AL_FORMAT_STEREO8:        info.bitsPerSample=8;  info.channels=2; return true;
+            case AL_FORMAT_STEREO16:       info.bitsPerSample=16; info.channels=2; return true;
+            case AL_FORMAT_STEREO_FLOAT32: info.bitsPerSample=32; info.channels=2; info.isFloat=true; return true;
+
+            case AL_FORMAT_QUAD8:  info.bitsPerSample=8;  info.channels=4; return true;
+            case AL_FORMAT_QUAD16: info.bitsPerSample=16; info.channels=4; return true;
+            case AL_FORMAT_QUAD32: info.bitsPerSample=32; info.channels=4; return true;
+
+            case AL_FORMAT_REAR8:  info.bitsPerSample=8;  info.channels=4; return true;
+            case AL_FORMAT_REAR16: info.bitsPerSample=16; info.channels=4; return true;
+            case AL_FORMAT_REAR32: info.bitsPerSample=32; info.channels=4; return true;
+
+            case AL_FORMAT_51CHN8:  info.bitsPerSample=8;  info.channels=6; return true;
+            case AL_FORMAT_51CHN16: info.bitsPerSample=16; info.channels=6; return true;
+            case AL_FORMAT_51CHN32: info.bitsPerSample=32; info.channels=6; return true;
+
+            case AL_FORMAT_61CHN8:  info.bitsPerSample=8;  info.channels=7; return true;
+            case AL_FORMAT_61CHN16: info.bitsPerSample=16; info.channels=7; return true;
+            case AL_FORMAT_61CHN32: info.bitsPerSample=32; info.channels=7; return true;
+
+            case AL_FORMAT_71CHN8:  info.bitsPerSample=8;  info.channels=8; return true;
+            case AL_FORMAT_71CHN16: info.bitsPerSample=16; info.channels=8; return true;
+            case AL_FORMAT_71CHN32: info.bitsPerSample=32; info.channels=8; return true;
+
+            default:
+                return false;
+        }
+    }
+
+    ALenum ToOpenALFormat(const hgl::audio::AudioDataInfo &info)
+    {
+        switch(info.channels)
+        {
+            case 1:
+                if(info.isFloat)        return AL_FORMAT_MONO_FLOAT32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_MONO8;
+                return AL_FORMAT_MONO16;
+
+            case 2:
+                if(info.isFloat)        return AL_FORMAT_STEREO_FLOAT32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_STEREO8;
+                return AL_FORMAT_STEREO16;
+
+            case 4:
+                if(info.isFloat||info.bitsPerSample==32) return AL_FORMAT_QUAD32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_QUAD8;
+                return AL_FORMAT_QUAD16;
+
+            case 6:
+                if(info.isFloat||info.bitsPerSample==32) return AL_FORMAT_51CHN32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_51CHN8;
+                return AL_FORMAT_51CHN16;
+
+            case 7:
+                if(info.isFloat||info.bitsPerSample==32) return AL_FORMAT_61CHN32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_61CHN8;
+                return AL_FORMAT_61CHN16;
+
+            case 8:
+                if(info.isFloat||info.bitsPerSample==32) return AL_FORMAT_71CHN32;
+                if(info.bitsPerSample==8)  return AL_FORMAT_71CHN8;
+                return AL_FORMAT_71CHN16;
+
+            default:
+                return 0;
+        }
+    }
+
     void PutOpenALInfo();
     //--------------------------------------------------------------------------------------------------
     bool OnFindedOpenALDynamicLinkLibrary(const OSString &filename,void *user_data,bool exist)

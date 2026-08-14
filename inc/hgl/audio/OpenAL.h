@@ -24,6 +24,7 @@
 
 #include<hgl/platform/Platform.h>
 #include<hgl/type/ValueArray.h>
+#include<hgl/audio/AudioMixerTypes.h>
 
 #include<hgl/al/al.h>
 #include<hgl/al/alc.h>
@@ -144,4 +145,19 @@ namespace openal                                                                
     const char* GetHRTFSpecifierName(int index);                                                   ///<获取HRTF配置名称
     //--------------------------------------------------------------------------------------------------
     #define alLastError()   alGetErrorInfo(__FILE__,__LINE__)
+
+    /**
+     * 将音频数据信息转换为OpenAL格式常量
+     * @param info 音频数据信息（声道数、位深、是否浮点）
+     * @return OpenAL格式常量(AL_FORMAT_*)，不支持时返回0
+     */
+    ALenum ToOpenALFormat(const hgl::audio::AudioDataInfo &info);
+
+    /**
+     * 将OpenAL格式常量解析为音频数据信息
+     * @param format OpenAL格式常量(AL_FORMAT_*)
+     * @param info  输出音频数据信息
+     * @return 是否支持该格式
+     */
+    bool FromOpenALFormat(ALenum format,hgl::audio::AudioDataInfo &info);
 }//namespace openal

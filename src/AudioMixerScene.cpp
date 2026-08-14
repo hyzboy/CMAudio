@@ -1,5 +1,4 @@
 #include<hgl/audio/AudioMixerScene.h>
-#include<hgl/audio/OpenAL.h>
 #include<string.h>
 #include<algorithm>
 #include<vector>
@@ -20,10 +19,10 @@ namespace hgl
             poolBuffer(OS_TEXT("AudioMixerScene::poolBuffer")),
             tempBuffer(OS_TEXT("AudioMixerScene::tempBuffer"))
         {
-            sourceFormat = 0;
-            sourceSampleRate = 0;
-            outputFormat = AL_FORMAT_MONO16;    // 默认16位单声道
-            outputSampleRate = 44100;            // 默认44.1kHz
+            outputFormat.channels = 1;      // 默认16位单声道
+            outputFormat.bitsPerSample = 16;
+            outputFormat.isFloat = false;
+            outputFormat.sampleRate = 44100; // 默认44.1kHz
         }
 
         AudioMixerScene::~AudioMixerScene()
@@ -203,9 +202,7 @@ namespace hgl
             if(!input || !outputData || !outputSize)
                 return(false);
 
-            AudioDataInfo outInfo;
-            if(!ParseAudioFormatInfo(outputFormat, outInfo))
-                return(false);
+            const AudioDataInfo &outInfo = outputFormat;
 
             if(outInfo.isFloat && outInfo.bitsPerSample == 32)
             {
@@ -273,13 +270,13 @@ namespace hgl
          */
         void AudioMixerScene::AddSource(const OSString& name, const AudioMixerSourceConfig& config)
         {
-            if(!config.data || config.dataSize == 0)
+            if(!config.data || config.info.dataSize == 0)
             {
                 LogError(OS_TEXT("Invalid audio source data for: ") + name);
                 return;
             }
 
-            if(config.format == 0 || config.sampleRate == 0)
+            if(config.info.sampleRate == 0 || config.info.channels == 0 || config.info.bitsPerSample == 0)
             {
                 LogError(OS_TEXT("Invalid format or sample rate for: ") + name);
                 return;
@@ -288,19 +285,21 @@ namespace hgl
             // 如果是第一个音源，设置格式标准
             if(sources.GetCount() == 0)
             {
-                sourceFormat = config.format;
-                sourceSampleRate = config.sampleRate;
-                LogInfo(OS_TEXT("Set source format standard: format=") + OSString::numberOf((int)sourceFormat) +
-                       OS_TEXT(", sampleRate=") + OSString::numberOf((int)sourceSampleRate));
+                sourceFormat = config.info;
+                LogInfo(OS_TEXT("Set source format standard: sampleRate=") + OSString::numberOf((int)sourceFormat.sampleRate) +
+                       OS_TEXT(", channels=") + OSString::numberOf((int)sourceFormat.channels));
             }
             else
             {
                 // 验证格式一致性
-                if(config.format != sourceFormat || config.sampleRate != sourceSampleRate)
+                if(config.info.sampleRate != sourceFormat.sampleRate ||
+                   config.info.channels != sourceFormat.channels ||
+                   config.info.bitsPerSample != sourceFormat.bitsPerSample ||
+                   config.info.isFloat != sourceFormat.isFloat)
                 {
                     LogError(OS_TEXT("Format mismatch for: ") + name +
-                            OS_TEXT(". All sources must have format=") + OSString::numberOf((int)sourceFormat) +
-                            OS_TEXT(", sampleRate=") + OSString::numberOf((int)sourceSampleRate));
+                            OS_TEXT(". All sources must have sampleRate=") + OSString::numberOf((int)sourceFormat.sampleRate) +
+                            OS_TEXT(", channels=") + OSString::numberOf((int)sourceFormat.channels));
                     return;
                 }
             }
@@ -326,20 +325,7 @@ namespace hgl
             sources.Clear();
 
             // 重置格式标准
-            sourceFormat = 0;
-            sourceSampleRate = 0;
-        }
-
-        /**
-         * 设置输出格式
-         */
-        void AudioMixerScene::SetOutputFormat(uint format, uint sampleRate)
-        {
-            outputFormat = format;
-            outputSampleRate = sampleRate;
-
-            LogInfo(OS_TEXT("Set output format: format=") + OSString::numberOf((int)outputFormat) +
-                   OS_TEXT(", sampleRate=") + OSString::numberOf((int)outputSampleRate));
+            sourceFormat = AudioDataInfo();
         }
 
         /**
@@ -360,24 +346,14 @@ namespace hgl
             }
 
             LogInfo(OS_TEXT("Generating scene with duration: ") + OSString::floatOf(duration,3) +
-                   OS_TEXT(" seconds, output format=") + OSString::numberOf((int)outputFormat) +
-                   OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputSampleRate));
+                   OS_TEXT(" seconds, output channels=") + OSString::numberOf((int)outputFormat.channels) +
+                   OS_TEXT(", output sampleRate=") + OSString::numberOf((int)outputFormat.sampleRate));
 
-            AudioDataInfo sourceInfo;
-            if(!ParseAudioFormatInfo(sourceFormat, sourceInfo))
-            {
-                LogError(OS_TEXT("Unsupported source format"));
-                RETURN_FALSE;
-            }
+            const AudioDataInfo &sourceInfo = sourceFormat;
 
             const uint channels = sourceInfo.channels ? sourceInfo.channels : 1;
 
-            AudioDataInfo outInfo;
-            if(!ParseAudioFormatInfo(outputFormat, outInfo))
-            {
-                LogError(OS_TEXT("Unsupported output format"));
-                RETURN_FALSE;
-            }
+            const AudioDataInfo &outInfo = outputFormat;
 
             if(outInfo.channels != channels)
             {
@@ -385,7 +361,7 @@ namespace hgl
                 RETURN_FALSE;
             }
 
-            if(outputSampleRate != sourceSampleRate)
+            if(outputFormat.sampleRate != sourceInfo.sampleRate)
             {
                 LogError(OS_TEXT("Output sample rate must match source sample rate for AudioMixer"));
                 RETURN_FALSE;
@@ -395,7 +371,7 @@ namespace hgl
 
             uint bytesPerSample = mix_in_float ? sizeof(float) : (outInfo.bitsPerSample / 8);
             uint bytesPerFrame = bytesPerSample * channels;
-            uint totalFrames = (uint)(duration * outputSampleRate);
+            uint totalFrames = (uint)(duration * outputFormat.sampleRate);
             uint totalSamples = totalFrames * channels;
             uint totalSize = totalFrames * bytesPerFrame;
 
@@ -424,16 +400,22 @@ namespace hgl
                 for(uint i = 0; i < count; i++)
                 {
                     AudioMixer instanceMixer;
-                    int sourceIndex = instanceMixer.AddSourceAudio(srcConfig.data, srcConfig.dataSize,
-                                                                  srcConfig.format, srcConfig.sampleRate);
+                    int sourceIndex = instanceMixer.AddSourceAudio(srcConfig.info, srcConfig.data);
                     if(sourceIndex < 0)
                     {
                         LogError(OS_TEXT("Failed to add source audio for mixer instance"));
                         RETURN_FALSE;
                     }
                     // 浮点混音时，AudioMixer::Mix 会直接透传按源声道数交织的 float 缓冲，
-                    // 输出格式声明的声道数被忽略，因此 MONO_FLOAT32 仅作为占位符。
-                    instanceMixer.SetOutputFormat(mix_in_float ? AL_FORMAT_MONO_FLOAT32 : outputFormat);
+                    // 输出格式声明的声道数被忽略，因此 float32 仅作为占位符。
+                    AudioDataInfo instanceOutputFormat = outputFormat;
+                    if(mix_in_float)
+                    {
+                        instanceOutputFormat.channels = srcConfig.info.channels;
+                        instanceOutputFormat.bitsPerSample = 32;
+                        instanceOutputFormat.isFloat = true;
+                    }
+                    instanceMixer.SetOutputFormat(instanceOutputFormat);
 
                     // 生成随机时间偏移
                     if(i == 0)
@@ -494,7 +476,7 @@ namespace hgl
                                 }
 
                                 ApplyFilter(instanceSamples, sampleCount, channels, filter);
-                                ApplySimpleReverb(instanceSamples, sampleCount, channels, outputSampleRate, reverb);
+                                ApplySimpleReverb(instanceSamples, sampleCount, channels, outputFormat.sampleRate, reverb);
                             }
 
                             float* outputSamples = (float*)outputBuffer;

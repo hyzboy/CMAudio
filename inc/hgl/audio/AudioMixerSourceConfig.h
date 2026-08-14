@@ -1,6 +1,7 @@
 #pragma once
 
 #include<hgl/audio/AudioFilterPreset.h>
+#include<hgl/audio/AudioMixerTypes.h>
 
 namespace hgl::audio
 {
@@ -11,9 +12,7 @@ namespace hgl::audio
     struct AudioMixerSourceConfig
     {
         const void* data;           ///< 音频数据指针(原始PCM数据起始地址)
-        uint dataSize;              ///< 数据大小(字节数)
-        uint format;                ///< 音频格式(如AL_FORMAT_MONO16/AL_FORMAT_MONO8)
-        uint sampleRate;            ///< 采样率(Hz，与输出一致)
+        AudioDataInfo info;         ///< 音频数据信息（声道数、位深、是否浮点、采样率、数据大小）
 
         // 生成控制参数
         uint minCount;              ///< 最小生成数量(每类音源生成的实例下限)
@@ -90,9 +89,7 @@ namespace hgl::audio
         AudioMixerSourceConfig()
         {
             data = nullptr;
-            dataSize = 0;
-            format = 0;
-            sampleRate = 0;
+            info = AudioDataInfo();
 
             minCount = 1;
             maxCount = 1;
@@ -109,8 +106,11 @@ namespace hgl::audio
 
         const bool operator ==(const AudioMixerSourceConfig& cfg) const
         {
-            return (data == cfg.data) && (dataSize == cfg.dataSize) &&
-                   (format == cfg.format) && (sampleRate == cfg.sampleRate) &&
+            return (data == cfg.data) && (info.dataSize == cfg.info.dataSize) &&
+                   (info.sampleRate == cfg.info.sampleRate) &&
+                   (info.channels == cfg.info.channels) &&
+                   (info.bitsPerSample == cfg.info.bitsPerSample) &&
+                   (info.isFloat == cfg.info.isFloat) &&
                    (minCount == cfg.minCount) && (maxCount == cfg.maxCount) &&
                    (minInterval == cfg.minInterval) && (maxInterval == cfg.maxInterval) &&
                    (minVolume == cfg.minVolume) && (maxVolume == cfg.maxVolume) &&
