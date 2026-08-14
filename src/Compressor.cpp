@@ -53,8 +53,15 @@ namespace hgl::audio
 
     float Compressor::Process(float x)
     {
+        const float gain_linear = UpdateFromLevel(std::fabs(x)) * makeup_linear;
+
+        return x * gain_linear;
+    }
+
+    float Compressor::UpdateFromLevel(float level)
+    {
         // 峰值检测（|x|）
-        const float level_db = GainToDB(std::fabs(x));
+        const float level_db = GainToDB(std::fabs(level));
 
         // 目标增益衰减（超过阈值部分按 ratio 压缩）
         float target_db = 0.0f;
@@ -70,10 +77,7 @@ namespace hgl::audio
 
         gain_reduction_db += coeff * (target_db - gain_reduction_db);
 
-        // 应用增益衰减 + 补偿增益
-        const float gain_linear = DBToGain(gain_reduction_db) * makeup_linear;
-
-        return x * gain_linear;
+        return DBToGain(gain_reduction_db);
     }
 
     void Compressor::Process(float *samples, int count)

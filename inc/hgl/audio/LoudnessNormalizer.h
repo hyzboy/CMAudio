@@ -75,5 +75,12 @@ namespace hgl::audio
                                           float sample_rate, float target_lufs = -23.0f);
         /// 对样本原地应用线性增益
         static void  ApplyGain(float *samples, int count, float gain);
+
+        /// 峰值限制（P3 延伸）：把超过 limit_peak 的部分用高比率 limiter 压回（true-peak 兜底）
+        static void  ApplyPeakLimiter(float *samples, int count, float sample_rate,
+                                      float limit_peak = 1.0f);
+        /// 归一化到目标 LUFS + limiter 兜底（P3 延伸）：增益后峰值不超 limit_peak
+        static void  NormalizeWithLimiter(float *samples, int count, float sample_rate,
+                                          float target_lufs = -23.0f, float limit_peak = 1.0f);
     };//class LoudnessNormalizer
 }//namespace hgl::audio

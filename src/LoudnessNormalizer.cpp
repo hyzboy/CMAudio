@@ -1,5 +1,7 @@
 ﻿#include<hgl/audio/LoudnessNormalizer.h>
 #include<hgl/audio/AudioAnalysis.h>
+#include<hgl/audio/Compressor.h>
+#include<hgl/audio/Gain.h>
 
 #include<cmath>
 
@@ -179,5 +181,26 @@ namespace hgl::audio
 
         for(int i = 0; i < count; i++)
             samples[i] *= gain;
+    }
+
+    void LoudnessNormalizer::ApplyPeakLimiter(float *samples, int count, float sample_rate, float limit_peak)
+    {
+        if(!samples || count < 1)
+            return;
+
+        const float threshold_db = GainToDB(limit_peak);
+
+        Compressor limiter(sample_rate, {.threshold_db=threshold_db, .ratio=50.0f,
+                                         .attack_sec=0.001f, .release_sec=0.05f});
+        limiter.Process(samples, count);
+    }
+
+    void LoudnessNormalizer::NormalizeWithLimiter(float *samples, int count, float sample_rate,
+                                                  float target_lufs, float limit_peak)
+    {
+        const float gain = ComputeNormalizeGain(samples, count, sample_rate, target_lufs);
+
+        ApplyGain(samples, count, gain);
+        ApplyPeakLimiter(samples, count, sample_rate, limit_peak);
     }
 }//namespace hgl::audio

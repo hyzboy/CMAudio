@@ -10,6 +10,7 @@ namespace hgl::audio
         mute=false;
         duck_scale=1.0f;
         cached_effective_gain=1.0f;
+        sidechain_enabled=false;
     }
 
     AudioBus::~AudioBus()
@@ -73,6 +74,34 @@ namespace hgl::audio
     void AudioBus::Unduck(double duration,double now)
     {
         Duck(1.0f,duration,now);
+    }
+
+    void AudioBus::SetSidechainDuck(float sr,float threshold_db,float ratio,float attack_sec,float release_sec)
+    {
+        sidechain_comp.SetSampleRate(sr);
+        sidechain_comp.Configure({.threshold_db=threshold_db, .ratio=ratio,
+                                  .attack_sec=attack_sec, .release_sec=release_sec});
+        sidechain_comp.Reset();
+        sidechain_enabled=true;
+    }
+
+    void AudioBus::UpdateSidechainDuck(float sidechain_level)
+    {
+        if(!sidechain_enabled)return;
+
+        const float gain=sidechain_comp.UpdateFromLevel(sidechain_level);
+
+        if(gain!=duck_scale)
+        {
+            duck_scale=gain;
+            RecalculateSubtree();
+        }
+    }
+
+    void AudioBus::DisableSidechainDuck()
+    {
+        sidechain_enabled=false;
+        Duck(1.0f,0.0,0.0);         // 立即恢复
     }
 
     void AudioBus::Update(const double now)

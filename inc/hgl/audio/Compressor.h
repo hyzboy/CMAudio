@@ -49,6 +49,13 @@ namespace hgl::audio
         float Process(float x);                     ///< 单样本
         void  Process(float *samples, int count);   ///< 批量原地
 
+        /**
+        * 侧链用法（P3 延伸）：用外部电平（幅度 0..1）驱动压缩器，
+        * 仅更新增益衰减，返回当前增益（线性，不含 makeup）。
+        * 用于 sidechain duck：侧链信号电平 → 增益衰减 → 压低目标总线。
+        */
+        float UpdateFromLevel(float level);
+
         float GetGainReductionDB()const{return gain_reduction_db;}   ///< 当前增益衰减（<=0，0=无压缩）
     };//class Compressor
 }//namespace hgl::audio

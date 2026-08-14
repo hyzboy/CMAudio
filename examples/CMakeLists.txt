@@ -35,6 +35,7 @@ cm_audio_example("Resample" wav_resample wav_resample.cpp)
 # ---- 音频总线 ----
 cm_audio_example("AudioBus" bus_tree_test bus_tree_test.cpp)
 cm_audio_example("AudioBus" bus_ducking_test bus_ducking_test.cpp)
+cm_audio_example("AudioBus" sidechain_duck_test sidechain_duck_test.cpp)
 
 # ---- 音频资源管理 ----
 cm_audio_example("AudioAsset" asset_manager_test asset_manager_test.cpp)
@@ -65,6 +66,7 @@ cm_audio_example("ParametricEQ" audio_eq_test audio_eq_test.cpp)
 
 # ---- 响度归一化（LUFS）----
 cm_audio_example("Loudness" loudness_test loudness_test.cpp)
+cm_audio_example("Loudness" loudness_limiter_test loudness_limiter_test.cpp)
 
 # ---- 动态范围压缩器（Compressor/Limiter）----
 cm_audio_example("Compressor" compressor_test compressor_test.cpp)
