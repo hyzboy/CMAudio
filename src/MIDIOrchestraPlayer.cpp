@@ -759,7 +759,7 @@ namespace hgl
         }
     }
 
-    const int MIDIOrchestraPlayer::GetChannelCount()
+    int MIDIOrchestraPlayer::GetChannelCount()
     {
         if(midi_channels)
             return midi_channels->GetChannelCount();
@@ -767,7 +767,7 @@ namespace hgl
         return 16; // Standard MIDI channel count
     }
 
-    const MidiChannelInfo MIDIOrchestraPlayer::GetChannelInfo(int channel)
+    MidiChannelInfo MIDIOrchestraPlayer::GetChannelInfo(int channel)
     {
         MidiChannelInfo info={0};
 

@@ -97,61 +97,61 @@ namespace hgl
     /**
      * 计算指定音源相对于监听者的音量
      */
-    const double GetGain(AudioListener *l,SpatialAudioSource *s)
+    double SpatialAudioSource::GetGain(const AudioListener *l)const
     {
-        if(!l||!s)return(0);
+        if(!l)return(0);
 
-        if(s->gain<=0)return(0);        // 本身音量为0
+        if(gain<=0)return(0);        // 本身音量为0
 
         // 参数验证：无效的距离参数返回0（静音）而非1，避免掩盖配置错误
-        if(s->ref_distance<=0.0f)return(0);
-        if(s->max_distance<=s->ref_distance)return(0);
+        if(ref_distance<=0.0f)return(0);
+        if(max_distance<=ref_distance)return(0);
 
         float distance;
 
         const Vector3f &        lpos=l->GetPosition();
 
-        distance=math::Length(lpos,s->cur_pos);
+        distance=math::Length(lpos,cur_pos);
 
-        if(s->distance_model==AL_INVERSE_DISTANCE_CLAMPED||s->distance_model==AL_INVERSE_DISTANCE)
+        if(distance_model==AL_INVERSE_DISTANCE_CLAMPED||distance_model==AL_INVERSE_DISTANCE)
         {
-            if(s->distance_model==AL_INVERSE_DISTANCE_CLAMPED)
-                if(distance<=s->ref_distance)
+            if(distance_model==AL_INVERSE_DISTANCE_CLAMPED)
+                if(distance<=ref_distance)
                     return 1;
 
             // 使用 std::clamp 进行边界限定
-            distance = std::clamp(distance, s->ref_distance, s->max_distance);
+            distance = std::clamp(distance, ref_distance, max_distance);
 
-            return s->ref_distance/(s->ref_distance+s->rolloff_factor*(distance-s->ref_distance));
+            return ref_distance/(ref_distance+rolloff_factor*(distance-ref_distance));
         }
         else
-        if(s->distance_model==AL_LINEAR_DISTANCE_CLAMPED)
+        if(distance_model==AL_LINEAR_DISTANCE_CLAMPED)
         {
             // 使用 std::clamp 进行边界限定
-            distance = std::clamp(distance, s->ref_distance, s->max_distance);
+            distance = std::clamp(distance, ref_distance, max_distance);
 
-            float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
+            float gain = 1-rolloff_factor*(distance-ref_distance)/(max_distance-ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
-        if(s->distance_model==AL_LINEAR_DISTANCE)
+        if(distance_model==AL_LINEAR_DISTANCE)
         {
-            distance = std::min(distance, s->max_distance);
-            float gain = 1-s->rolloff_factor*(distance-s->ref_distance)/(s->max_distance-s->ref_distance);
+            distance = std::min(distance, max_distance);
+            float gain = 1-rolloff_factor*(distance-ref_distance)/(max_distance-ref_distance);
             return std::clamp(gain, 0.0f, 1.0f);  // 钳位到 [0, 1]
         }
         else
-        if(s->distance_model==AL_EXPONENT_DISTANCE)
+        if(distance_model==AL_EXPONENT_DISTANCE)
         {
-            return std::pow(distance/s->ref_distance, -s->rolloff_factor);
+            return std::pow(distance/ref_distance, -rolloff_factor);
         }
         else
-        if(s->distance_model==AL_EXPONENT_DISTANCE_CLAMPED)
+        if(distance_model==AL_EXPONENT_DISTANCE_CLAMPED)
         {
             // 使用 std::clamp 进行边界限定
-            distance = std::clamp(distance, s->ref_distance, s->max_distance);
+            distance = std::clamp(distance, ref_distance, max_distance);
 
-            return std::pow(distance/s->ref_distance, -s->rolloff_factor);
+            return std::pow(distance/ref_distance, -rolloff_factor);
         }
         else
             return 1;

@@ -78,10 +78,10 @@ namespace hgl
                         uint    GetIndex()const{return index;}                                      ///<获取当前音源索引
                         int     GetState()const;                                                    ///<获取当前音源状态
 
-                const   bool    IsNone      ()const{return GetState()==AL_NONE; }
-                const   bool    IsStopped   ()const{return GetState()==AL_STOPPED;}
-                const   bool    IsPaused    ()const{return GetState()==AL_PAUSED;}
-                const   bool    IsPlaying   ()const{return GetState()==AL_PLAYING;}
+                bool            IsNone      ()const{return GetState()==AL_NONE; }
+                bool            IsStopped   ()const{return GetState()==AL_STOPPED;}
+                bool            IsPaused    ()const{return GetState()==AL_PAUSED;}
+                bool            IsPlaying   ()const{return GetState()==AL_PLAYING;}
 
                         double  GetCurTime()const;                                                  ///<获取当前播放到的时间
                         void    SetCurTime(const double &);                                         ///<设置当前播放时间
@@ -89,21 +89,21 @@ namespace hgl
                         float   GetMinGain()const;                                                  ///<获取最小增益
                         float   GetMaxGain()const;                                                  ///<获取最大增益
 
-                const   bool    IsLoop()const{return loop;}                                         ///<是否循环播放
+                bool            IsLoop()const{return loop;}                                         ///<是否循环播放
         virtual         void    SetLoop(bool);                                                      ///<设置是否循环播放
 
-                const   float   GetPitch()const{return pitch;}                                      ///<获取播放频率
+                float           GetPitch()const{return pitch;}                                      ///<获取播放频率
                         void    SetPitch(float);                                                    ///<设置播放频率
 
-                const   float   GetGain()const{return gain;}                                        ///<获取音量增益幅度
+                float           GetGain()const{return gain;}                                        ///<获取音量增益幅度
                         void    SetGain(float);                                                     ///<设置音量增益幅度
-                const   float   GetConeGain()const{return cone_gain;}                               ///<获取锥形音量增益幅度
+                float           GetConeGain()const{return cone_gain;}                               ///<获取锥形音量增益幅度
                         void    SetConeGain(float);                                                 ///<设置锥形音量增益幅度
 
-                const   uint    GetDistanceModel()const{return distance_model;}                     ///<获取音量距离衰减模型
+                uint            GetDistanceModel()const{return distance_model;}                     ///<获取音量距离衰减模型
                         void    SetDistanceModel(uint);                                             ///<设置音量距离衰减模型
 
-                const   float   GetRolloffFactor()const{return rolloff_factor;}                     ///<获取音量衰减因子
+                float           GetRolloffFactor()const{return rolloff_factor;}                     ///<获取音量衰减因子
                         void    SetRolloffFactor(float);                                            ///<设置音量衰减因子(>=0,默认1.0)
 
                         void    GetDoppler(float &factor,float &velocity)const                      ///<获取多普勒强度和速度
@@ -115,18 +115,18 @@ namespace hgl
                         void    SetDopplerFactor(const float &);                                    ///<设置多普勒效果强度
                         void    SetDopplerVelocity(const float &);                                  ///<设置多普勒速度
 
-                const   float   GetAirAbsorptionFactor()const{return air_absorption_factor;}        ///<获取空气吸收因子
+                float           GetAirAbsorptionFactor()const{return air_absorption_factor;}        ///<获取空气吸收因子
                         void    SetAirAbsorptionFactor(const float &);                              ///<设置空气吸收因子(0.0-10.0,默认0.0)
 
-                const   bool    IsFilterEnabled()const{return filter_type!=AudioFilterType::None && direct_filter!=0;}
-                const   AudioFilterType GetFilterType()const{return filter_type;}
+                bool            IsFilterEnabled()const{return filter_type!=AudioFilterType::None && direct_filter!=0;}
+                AudioFilterType GetFilterType()const{return filter_type;}
                         bool    SetLowpassFilter(const float gain,const float gain_hf);
                         bool    SetHighpassFilter(const float gain,const float gain_lf);
                         bool    SetBandpassFilter(const float gain,const float gain_lf,const float gain_hf);
                         bool    SetFilter(const AudioFilterConfig &config);
                         void    DisableFilter();
 
-                const   void    GetDistance(float &rd,float &md)const                               ///<获取音源距离范围
+                void            GetDistance(float &rd,float &md)const                               ///<获取音源距离范围
                 {
                     rd=ref_dist;
                     md=max_dist;

@@ -160,9 +160,9 @@ namespace hgl
         virtual const bool  IsPlaying   ()const{return state==MIDIOrchestraState::Play;}       ///<是否正在播放 / Is playing
         virtual const bool  IsPaused    ()const{return state==MIDIOrchestraState::Pause;}      ///<是否暂停 / Is paused
 
-                const int   GetChannelCount();                                                  ///<获取MIDI通道数量 / Get MIDI channel count
+                int         GetChannelCount();                                                  ///<获取MIDI通道数量 / Get MIDI channel count
 
-                const MidiChannelInfo GetChannelInfo(int channel);                              ///<获取通道信息 / Get channel info
+                MidiChannelInfo GetChannelInfo(int channel);                              ///<获取通道信息 / Get channel info
 
     public: //方法 / Methods
 

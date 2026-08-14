@@ -54,7 +54,6 @@ namespace hgl
      */
     struct SpatialAudioSource
     {
-        friend const double GetGain(AudioListener *,SpatialAudioSource *);
         friend class SpatialAudioWorld;
 
     private:
@@ -187,9 +186,20 @@ namespace hgl
             cur_pos=pos;
             cur_time=ct;
         }
-    };//struct SpatialAudioSource
 
-    const double GetGain(AudioListener *,SpatialAudioSource *);                                     ///< 获取相对音量
+        /**
+         * 计算该音源相对于监听者的音量（距离衰减+方向性增益）
+         * @param l 监听者
+         * @return 相对音量（0.0-1.0+）
+         */
+        double GetGain(const AudioListener *l)const;
+
+    public: //属性
+
+        bool            IsPlaying()const{return is_play;}                                            ///<是否在播放
+        const Vector3f &GetPosition()const{return cur_pos;}                                          ///<获取当前位置
+        double          GetStartPlayTime()const{return start_play_time;}                             ///<获取开始播放时间
+    };//struct SpatialAudioSource
 
     /**
      * 空间音频场景管理
@@ -259,7 +269,7 @@ namespace hgl
 
         virtual float   OnCheckGain(SpatialAudioSource *asi)                                        ///< 检测音量事件
         {
-            return asi?GetGain(listener,asi)*asi->gain:0;
+            return asi?float(asi->GetGain(listener)*asi->gain):0;
         }
 
         virtual void    OnToMute(SpatialAudioSource *){/* 无任何处理，请自行重载处理 */}           ///< 从有声变为听不到声音

@@ -28,10 +28,10 @@ namespace hgl
 
     public:
 
-        const uint      GetIndex()const{return Index;}
-        const double    GetTime()const{return Time;}
-        const uint      GetSize()const{return Size;}
-        const uint      GetFreq()const{return Freq;}
+        uint            GetIndex()const{return Index;}
+        double          GetTime()const{return Time;}
+        uint            GetSize()const{return Size;}
+        uint            GetFreq()const{return Freq;}
 
     public:
 

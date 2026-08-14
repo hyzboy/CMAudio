@@ -117,19 +117,19 @@ namespace hgl
 
     public: //属性方法
 
-        const Vector3f &        GetPosition(){return audiosource.position;} const
+        const Vector3f &        GetPosition()const{return audiosource.position;}
         void                    SetPosition(const Vector3f &pos){audiosource.SetPosition(pos);}
 
-        const Vector3f &        GetVelocity(){return audiosource.velocity;} const
+        const Vector3f &        GetVelocity()const{return audiosource.velocity;}
         void                    SetVelocity(const Vector3f &vel){audiosource.SetVelocity(vel);}
 
-        const Vector3f &        GetDirection(){return audiosource.direction;} const
+        const Vector3f &        GetDirection()const{return audiosource.direction;}
         void                    SetDirection(const Vector3f &dir){audiosource.SetDirection(dir);}
 
-        const void              GetDistance(float &ref_distance, float &max_distance)const{audiosource.GetDistance(ref_distance,max_distance);} const
+        void                    GetDistance(float &ref_distance, float &max_distance)const{audiosource.GetDistance(ref_distance,max_distance);}
         void                    SetDistance(const float &ref_distance,const float &max_distance){audiosource.SetDistance(ref_distance,max_distance);}
 
-        const ConeAngle &       GetConeAngle(){return audiosource.angle;} const
+        const ConeAngle &       GetConeAngle()const{return audiosource.angle;}
         void                    SetConeAngle(const ConeAngle &ca){audiosource.SetConeAngle(ca);}
 
     public: //方法

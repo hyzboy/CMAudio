@@ -33,7 +33,7 @@ namespace hgl
 
     public: //属性方法
 
-        const float                 GetGain         ()const{return gain;}                           ///<读取音量增益幅度
+        float                       GetGain         ()const{return gain;}                           ///<读取音量增益幅度
         const Vector3f &            GetPosition     ()const{return position;}                       ///<读取音源坐标位置
         const Vector3f &            GetVelocity     ()const{return velocity;}                       ///<读取速率
         const ListenerOrientation & GetOrientation  ()const{return orientation;}                    ///<读取导向
