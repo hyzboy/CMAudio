@@ -132,11 +132,12 @@
 - **AudioCapture 录音**（✅）：封装 `alcCapture` 系列函数指针（`Open/Close/Start/Stop/GetAvailableSamples/ReadSamples`）
 - 测试：`bus_ducking_test`（19 项）、`dynamic_music_test`（24 项）、`audio_capture_test`（11 项）
 
-### P3（特定需求时再做）
+### P3（特定需求时再做）（✅ 已实现）
 
-- 音频分析（频谱/FFT/RMS/节拍检测）
-- 响度归一化（EBU R128/LUFS）
-- 移动平台策略（iOS 静音开关 / Android Audio Focus）
+- **音频分析**（✅）：`AudioAnalysis`（radix-2 FFT + RMS/dB 电平 + 幅度谱 + 谱通量 + `OnsetDetector`）
+- **响度归一化**（✅）：`LoudnessNormalizer`（`BiquadFilter` + EBU R128 K-weighting + `LoudnessMeter` momentary/short-term/integrated LUFS + 归一化增益）
+- **移动平台策略**（✅）：`AudioSessionPolicy`（iOS 静音开关 / Android Audio Focus 抽象 + 桌面实现 + iOS/Android stub）+ `MobilePlatform_Strategy.md`
+- 测试：`audio_analysis_test`（26 项）、`loudness_test`（14 项）、`session_policy_test`（13 项）
 
 ---
 
@@ -147,7 +148,7 @@
 3. ~~**P0-2 AudioAssetManager**~~（✅ 已实现：缓存去重 + 引用计数 + 后台解码线程 + 异步 API）
 4. ~~**P1-1 AudioEngine::update()**~~（✅ 已实现：AudioEngine 中枢 + 资源/世界统一驱动 + engine_update_test 全过）
 5. ~~**P1-2 SoundEvent**~~（✅ 已实现：SoundEventConfig + SoundEventManager + TOML 加载 + sound_event_test 全过）
-6. ~~**P2**~~（✅ 已实现：Ducking + 动态音乐分层 + AudioCapture）；P3 按需
+6. ~~**P2**~~（✅ 已实现：Ducking + 动态音乐分层 + AudioCapture）；~~**P3**~~（✅ 已实现：音频分析 + 响度归一化 + 移动平台策略）
 
 **关键依赖**：效果链（Effect Chain）挂在 Bus 节点上 → Bus 树先于效果链；`AudioEngine::update()` 建立在 Bus 树 + 资源管理之上。
 

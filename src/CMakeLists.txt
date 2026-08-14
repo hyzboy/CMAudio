@@ -5,6 +5,7 @@
                         ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/al/xram.h)
 
 set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAnalysis.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCapture.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAssetManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBus.h
@@ -25,6 +26,8 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ConeAngle.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/DirectionalGainPattern.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioListener.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioSessionPolicy.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/LoudnessNormalizer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
@@ -42,6 +45,7 @@ set(CM_AUDIO_SOURCE
     OpenAL.cpp
     AudioFileType.cpp
     AudioBuffer.cpp
+    AudioAnalysis.cpp
     AudioCapture.cpp
     AudioAssetManager.cpp
     AudioBus.cpp
@@ -50,8 +54,10 @@ set(CM_AUDIO_SOURCE
     AudioFilterPreset.cpp
     AudioDecode.cpp
     AudioManager.cpp
+    AudioSessionPolicy.cpp
     SpatialAudioWorld.cpp
     DirectionalGainPattern.cpp
+    LoudnessNormalizer.cpp
     SoundEvent.cpp
     SoundEventManager.cpp
     ReverbPreset.cpp

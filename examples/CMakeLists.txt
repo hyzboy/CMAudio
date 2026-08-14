@@ -52,6 +52,15 @@ cm_audio_example("DynamicMusic" dynamic_music_test dynamic_music_test.cpp)
 # ---- 录音 ----
 cm_audio_example("AudioCapture" audio_capture_test audio_capture_test.cpp)
 
+# ---- 音频分析（FFT/RMS/频谱/onset）----
+cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
+
+# ---- 响度归一化（LUFS）----
+cm_audio_example("Loudness" loudness_test loudness_test.cpp)
+
+# ---- 移动平台会话策略 ----
+cm_audio_example("AudioSession" session_policy_test session_policy_test.cpp)
+
 # Copy configuration files to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/configs
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
