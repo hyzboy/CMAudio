@@ -3,6 +3,7 @@
 #include<hgl/io/InputStream.h>
 #include<hgl/audio/AudioFileType.h>
 #include<hgl/audio/AudioMixerTypes.h>
+#include<hgl/audio/ParametricEQ.h>
 #include<hgl/thread/Atomic.h>
 #include<hgl/log/Log.h>
 
@@ -30,6 +31,8 @@ namespace hgl::audio
 
         atom<uint> ref_count;                                                                           ///<引用计数（由 AudioAssetManager 管理）
 
+        ParametricEQ eq;                                                                                ///<buffer 级参数化 EQ（P2：解码后/上传前应用，EFX 缺失兜底）
+
     public:
 
         uint            GetIndex()const{return buffer_id;}
@@ -41,6 +44,10 @@ namespace hgl::audio
         uint            GetRefCount()const{return ref_count.load();}                                      ///<获取当前引用计数
         uint            IncRef();                                                                         ///<引用计数+1，返回新值
         uint            DecRef();                                                                         ///<引用计数-1，返回新值
+
+        ParametricEQ &  GetEQ(){return eq;}                                                              ///<取得 buffer 级参数化 EQ（Load/SetData 时应用）
+        const ParametricEQ &GetEQ()const{return eq;}
+        void            ClearEQ(){eq.ClearBands();}                                                      ///<清空 EQ 频段（等效直通）
 
     public:
 

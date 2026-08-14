@@ -2,10 +2,14 @@
 #include<hgl/type/Pair.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioBuffer.h>
+#include<hgl/audio/AudioEQ.h>
 #include<hgl/io/FileInputStream.h>
 #include<hgl/io/MemoryInputStream.h>
 #include<hgl/plugin/PlugIn.h>
 #include"AudioDecode.h"
+
+#include<vector>
+#include<cstring>
 
 using namespace openal;
 
@@ -154,6 +158,26 @@ namespace hgl::audio
 
         if(alLastError())return(loaded=false);
 
+        // 应用 buffer 级 EQ（P2）：data 为 const，需复制后原地处理
+        std::vector<char> eq_data;
+
+        if(eq.GetBandCount() > 0)
+        {
+            AudioDataInfo eq_info;
+
+            if(openal::FromOpenALFormat(format, eq_info))
+            {
+                eq_info.sample_rate = freq;
+                eq_info.data_size   = size;
+
+                eq_data.resize(size);
+                memcpy(eq_data.data(), data, size);
+
+                if(ApplyEQToPCM(eq_data.data(), size, eq_info, eq))
+                    data = eq_data.data();
+            }
+        }
+
         alBufferData(buffer_id, format, data, size, freq);
 
         if(alLastError())return(loaded=false);
@@ -209,6 +233,20 @@ namespace hgl::audio
 
             const uint dec_sample_rate=decoded->freq;
             const double dec_duration=decoded->duration;
+
+            // 应用 buffer 级 EQ（P2：解码后、上传前，EFX 缺失兜底）
+            if(eq.GetBandCount() > 0)
+            {
+                AudioDataInfo eq_info;
+
+                if(openal::FromOpenALFormat(decoded->format, eq_info))
+                {
+                    eq_info.sample_rate = decoded->freq;
+                    eq_info.data_size   = decoded->size;
+
+                    ApplyEQToPCM(decoded->data, decoded->size, eq_info, eq);
+                }
+            }
 
             if(!UploadDecoded(buffer_id,decoded))
             {

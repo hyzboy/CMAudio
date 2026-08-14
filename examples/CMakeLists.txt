@@ -61,6 +61,7 @@ cm_audio_example("BiquadFilter" biquad_test biquad_test.cpp)
 # ---- 参数化均衡器（PEQ）----
 cm_audio_example("ParametricEQ" param_eq_test param_eq_test.cpp)
 cm_audio_example("ParametricEQ" eq_mixer_test eq_mixer_test.cpp)
+cm_audio_example("ParametricEQ" audio_eq_test audio_eq_test.cpp)
 
 # ---- 响度归一化（LUFS）----
 cm_audio_example("Loudness" loudness_test loudness_test.cpp)
