@@ -18,6 +18,7 @@ namespace hgl::audio
     using math::Vector3f;
 
     struct AudioPlugInInterface;
+    class CaptureSource;                    ///< 实时捕获源（前向声明，P0）
 
     enum class PlayState        //播放器状态
     {
@@ -49,6 +50,9 @@ namespace hgl::audio
         uint audio_buffer_count;                                                                        ///<播放数据计数
 
         AudioPlugInInterface *decoder;
+
+        CaptureSource *capture;             ///< 实时捕获源（录音伪装解码器，P0）
+        bool realtime_source;               ///< 是否实时源模式（捕获伪装）
 
         ALenum al_format;                                                                                  ///<音频数据格式
         ALsizei sample_rate;                                                                                   ///<音频数据采样率
@@ -144,6 +148,15 @@ namespace hgl::audio
 
         virtual bool Load(io::InputStream *,int,AudioFileType);                                     ///<从流中加载一个音频文件
         virtual bool Load(const os_char *,AudioFileType=AudioFileType::None);                       ///<加载一个音频文件
+
+        /**
+        * 实时源模式（P0）：把录音捕获伪装成解码器，复用三缓冲流式播放管线
+        * 用于 Live 录音监听、语音输入、实时变声（DSP 挂载点在 CaptureSource）
+        * @param sample_rate 采样率（通话 16000 / 变声 48000）
+        * @param frame_ms 帧长（毫秒，通话 20 / 变声 10）
+        * @param use_mock 无录音设备时用内部合成源（开发/测试）
+        */
+        virtual bool LoadCapture(uint sample_rate=16000,uint frame_ms=20,bool use_mock=false);         ///<实时源模式：录音捕获伪装成解码器（P0）
 //      virtual bool Load(HAC *,const os_char *,AudioFileType=AudioFileType::None);                 ///<从HAC包中加载一个音频文件
 
         virtual void Play(bool=true);                                                               ///<播放音频

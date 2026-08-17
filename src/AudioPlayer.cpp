@@ -1,4 +1,5 @@
 ﻿#include<hgl/audio/AudioPlayer.h>
+#include<hgl/audio/CaptureSource.h>
 #include<hgl/log/Log.h>
 #include<hgl/plugin/PlugIn.h>
 #include<hgl/io/MemoryInputStream.h>
@@ -35,6 +36,9 @@ namespace hgl::audio
         play_state=PlayState::None;
 
         total_time=0;
+
+        capture=nullptr;
+        realtime_source=false;
 
         if(!audiosource.Create())return;
 
@@ -76,7 +80,7 @@ namespace hgl::audio
     {
         SAFE_CLEAR(decoder);
 
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         Clear();
 
@@ -182,6 +186,35 @@ namespace hgl::audio
         return(Load(file_stream,file_stream->Available(),aft));
     }
 
+    bool AudioPlayer::LoadCapture(uint sr,uint frame_ms,bool use_mock)
+    {
+        if(!alGenBuffers)
+            return(false);
+
+        Clear();
+
+        capture=new CaptureSource;
+
+        if(!capture->Open(sr,frame_ms,AL_FORMAT_MONO16,use_mock))
+        {
+            SAFE_CLEAR(capture);
+            return(false);
+        }
+
+        al_format=capture->GetFormat();
+        this->sample_rate=capture->GetSampleRate();
+
+        total_time=0;                       // 实时流：时长未知
+        realtime_source=true;
+
+        audio_buffer_size=capture->GetFrameBytes();         // 一帧大小
+        audio_buffer=new char[audio_buffer_size];
+
+        wait_time=frame_ms/2000.0;          // 帧长一半（20ms 帧 → 10ms 轮询）
+
+        return(true);
+    }
+
     void AudioPlayer::Clear()
     {
         Stop();
@@ -195,6 +228,9 @@ namespace hgl::audio
         audio_ptr=nullptr;
 
         total_time=0;
+        realtime_source=false;
+
+        SAFE_CLEAR(capture);
     }
 
     bool AudioPlayer::IsLoop()
@@ -215,6 +251,24 @@ namespace hgl::audio
 
     bool AudioPlayer::ReadData(ALuint n)
     {
+        if(realtime_source)
+        {
+            if(!capture)
+                return(false);
+
+            const int bytes=capture->ReadFrame(audio_buffer,(int)capture->GetFrameSamples());
+
+            if(bytes<=0)
+                return(false);
+
+            alBufferData(n,al_format,audio_buffer,bytes,sample_rate);
+
+            if(alLastError())
+                return(false);
+
+            return(true);
+        }
+
         if(!decoder)return(false);
 
         uint size;
@@ -235,12 +289,16 @@ namespace hgl::audio
 
     bool AudioPlayer::Playback()
     {
-        if(!audio_data)return(false);
-        if(!decoder)return(false);
+        if(!audio_data&&!realtime_source)return(false);
+        if(!decoder&&!realtime_source)return(false);
 
         alSourceStop(source_id);
         ClearBuffer();
-        decoder->Restart(audio_ptr);
+
+        if(realtime_source)
+            capture->Start();               // 重新开始采集
+        else
+            decoder->Restart(audio_ptr);
 
         int count=0;
 
@@ -277,7 +335,7 @@ namespace hgl::audio
     */
     void AudioPlayer::Play(bool _loop)
     {
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         lock.Lock();
 
@@ -296,7 +354,7 @@ namespace hgl::audio
     */
     void AudioPlayer::Stop()
     {
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         bool thread_is_live=true;
 
@@ -320,7 +378,7 @@ namespace hgl::audio
     */
     void AudioPlayer::Pause()
     {
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         lock.Lock();
 
@@ -335,7 +393,7 @@ namespace hgl::audio
     */
     void AudioPlayer::Resume()
     {
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         lock.Lock();
 
@@ -360,7 +418,7 @@ namespace hgl::audio
 
         const PreciseTime cur_time=GetTimeSec();
 
-        if(fade_in_time>0||fade_out_time>0)
+        if(!realtime_source&&(fade_in_time>0||fade_out_time>0))
         {
             const float factor=FadeFactor(cur_time-start_time,fade_in_time,fade_out_time,total_time.load());
 
@@ -420,7 +478,7 @@ namespace hgl::audio
 
     bool AudioPlayer::Execute()
     {
-        if(!audio_data)return(false);
+        if(!audio_data&&!realtime_source)return(false);
 
         while(true)
         {
@@ -437,6 +495,16 @@ namespace hgl::audio
                     }
                     else
                     {
+                        if(realtime_source)
+                        {
+                            // 实时源暂无数据：继续等待（不退出线程）
+                            lock.Unlock();
+
+                            SleepSecond(wait_time);
+
+                            continue;
+                        }
+
                         //退出
                         lock.Unlock();
 
@@ -477,7 +545,7 @@ namespace hgl::audio
 
     PreciseTime AudioPlayer::GetPlayTime()
     {
-        if(!audio_data)return(0);
+        if(!audio_data&&!realtime_source)return(0);
 
         uint base;
         int off;
@@ -501,7 +569,7 @@ namespace hgl::audio
     */
     void AudioPlayer::AutoGain(float target_gain,PreciseTime adjust_time,const PreciseTime cur_time)
     {
-        if(!audio_data)return;
+        if(!audio_data&&!realtime_source)return;
 
         lock.Lock();
             gain_ramp.Start(cur_time,GetGain(),target_gain,adjust_time);

@@ -53,6 +53,7 @@ cm_audio_example("DynamicMusic" dynamic_music_test dynamic_music_test.cpp)
 
 # ---- 录音 ----
 cm_audio_example("AudioCapture" audio_capture_test audio_capture_test.cpp)
+cm_audio_example("AudioCapture" capture_player_test capture_player_test.cpp)
 
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)

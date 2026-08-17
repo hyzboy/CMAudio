@@ -10,6 +10,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Compressor.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEQ.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCapture.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/CaptureSource.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioAssetManager.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBus.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEngine.h
@@ -55,6 +56,7 @@ set(CM_AUDIO_SOURCE
     Compressor.cpp
     AudioEQ.cpp
     AudioCapture.cpp
+    CaptureSource.cpp
     AudioAssetManager.cpp
     AudioBus.cpp
     AudioEngine.cpp
