@@ -38,6 +38,9 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/LinearResampler.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/PitchShifter.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/VoiceChain.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OfflinePitchShift.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/FormantCorrector.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OfflineVoiceFX.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
@@ -62,6 +65,9 @@ set(CM_AUDIO_SOURCE
     LinearResampler.cpp
     PitchShifter.cpp
     VoiceChain.cpp
+    OfflinePitchShift.cpp
+    FormantCorrector.cpp
+    OfflineVoiceFX.cpp
     AudioEQ.cpp
     AudioCapture.cpp
     CaptureSource.cpp
