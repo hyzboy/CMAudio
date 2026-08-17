@@ -76,6 +76,9 @@ cm_audio_example("Compressor" compressor_test compressor_test.cpp)
 # ---- 时域效果（Delay/Echo/Chorus/Flanger）----
 cm_audio_example("TimeEffects" time_effect_test time_effect_test.cpp)
 
+# ---- 实时变声（WSOLA 变速 / PitchShifter 变调 / VoiceChain 预设）----
+cm_audio_example("VoiceFX" voice_fx_test voice_fx_test.cpp)
+
 # ---- 移动平台会话策略 ----
 cm_audio_example("AudioSession" session_policy_test session_policy_test.cpp)
 

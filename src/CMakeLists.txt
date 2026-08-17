@@ -34,6 +34,10 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/LoudnessNormalizer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ParametricEQ.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/TimeEffects.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/WSOLAShifter.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/LinearResampler.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/PitchShifter.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/VoiceChain.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OpenAL.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMixerTypes.h
@@ -54,6 +58,10 @@ set(CM_AUDIO_SOURCE
     AudioAnalysis.cpp
     BiquadFilter.cpp
     Compressor.cpp
+    WSOLAShifter.cpp
+    LinearResampler.cpp
+    PitchShifter.cpp
+    VoiceChain.cpp
     AudioEQ.cpp
     AudioCapture.cpp
     CaptureSource.cpp
