@@ -21,6 +21,11 @@ CMAudio 的模块按功能域分为以下层次：
 │  上层：数据驱动与场景                                        │
 │  SoundEventManager · DynamicMusic · AudioMixerScene        │
 ├─────────────────────────────────────────────────────────────┤
+│  语音通话链（Live 录音 → 变声/通话）                         │
+│  CaptureSource · VoiceCall · VoicePreprocess(NS/AGC/VAD)   │
+│  AudioCodec(Opus 编码插件 ver=5) · JitterBuffer            │
+│  WSOLAShifter · PitchShifter · VoiceChain · OfflineVoiceFX │
+├─────────────────────────────────────────────────────────────┤
 │  中层：空间音频与播放                                        │
 │  SpatialAudioWorld · AudioPlayer · AudioSource · AudioManager│
 ├─────────────────────────────────────────────────────────────┤
@@ -32,7 +37,7 @@ CMAudio 的模块按功能域分为以下层次：
 │  TimeEffects · AudioAnalysis · AudioResampler · AudioMixer  │
 ├─────────────────────────────────────────────────────────────┤
 │  后端：OpenAL Soft 绑定 + 插件 + 会话策略                    │
-│  OpenAL · Plug-Ins(解码/MIDI) · AudioSessionPolicy          │
+│  OpenAL · Plug-Ins(解码/编码/MIDI) · AudioSessionPolicy     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,6 +59,7 @@ CMAudio 的模块按功能域分为以下层次：
 | [重采样与混音](resample-mix.md) | AudioResampler / AudioMixer / AudioMixerScene |
 | [MIDI 播放](midi.md) | MIDIPlayer / MIDIOrchestraPlayer |
 | [插件系统](plugins.md) | 解码插件 / MIDI 合成器插件 |
+| [语音通话链](voice-call.md) | VoiceCall：录音→预处理(NS/AGC/VAD)→Opus 编解码→抖动缓冲→播放 |
 | [会话策略](session-policy.md) | AudioSessionPolicy（移动平台） |
 
 ## 命名与类型约定

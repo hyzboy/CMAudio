@@ -59,6 +59,7 @@ cm_audio_example("AudioCapture" capture_player_test capture_player_test.cpp)
 cm_audio_example("VoiceCall" audio_codec_test audio_codec_test.cpp)
 cm_audio_example("VoiceCall" voice_preprocess_test voice_preprocess_test.cpp)
 cm_audio_example("VoiceCall" voice_call_test voice_call_test.cpp)
+cm_audio_example("VoiceCall" voice_call_device_test voice_call_device_test.cpp)
 
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
@@ -84,7 +85,7 @@ cm_audio_example("TimeEffects" time_effect_test time_effect_test.cpp)
 # ---- 实时变声（WSOLA 变速 / PitchShifter 变调 / VoiceChain 预设）----
 cm_audio_example("VoiceFX" voice_fx_test voice_fx_test.cpp)
 
-# ---- 离线高质量变声（相位声码器 + formant 保持）----
+# ---- 离线高质量变声（WSOLA 大窗 + SINC 重采样 + cepstral formant 保持）----
 cm_audio_example("VoiceFX" offline_voice_fx_test offline_voice_fx_test.cpp)
 
 # ---- 移动平台会话策略 ----

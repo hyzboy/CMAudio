@@ -15,6 +15,13 @@ CMAudio 是 [ULRE 游戏引擎](https://github.com/) 的音频子系统模块（
 - **数据驱动事件**：`SoundEventManager` 用 TOML 配置声音事件（文件变体 + 参数随机化 + 分组）。
 - **动态音乐**：`DynamicMusic` 多层 stem 播放 + 游戏状态驱动的 crossfade。
 - **录音**：`AudioCapture` 封装 OpenAL 录音（语音聊天 / 语音指令）。
+- **语音通话链**（Live 录音 → 变声 / 通话）：
+  - `CaptureSource` 实时捕获源（P0）：录音伪装解码器，复用 AudioPlayer 三缓冲管线
+  - 变声双轨：实时 `VoiceChain`（WSOLA 变速 + 重采样变调 + 5 预设，P1）+ 离线 `OfflineVoiceFX`
+    （WSOLA 大窗 + SINC 重采样 + cepstral formant 保持，P2）
+  - 通话链 `VoiceCall`（P3/P4）：`VoicePreprocess`（NS 频谱门限降噪 / AGC / VAD）→
+    `AudioCodec`（Opus 编码插件接口 ver=5）→ `JitterBuffer`（抖动重排 / 丢包 PLC）→ 播放；
+    支持设备模式（真实录音/麦克风）与会话策略焦点联动
 - **完整 DSP 工具链**（纯 CPU，无需 OpenAL EFX）：
   - 滤波：`BiquadFilter`（RBJ 8 类型）、`ParametricEQ`（N 段级联）、`AudioEQ`（缓冲级兜底）
   - 动态：`Compressor`（压缩/限制/侧链）
@@ -25,17 +32,17 @@ CMAudio 是 [ULRE 游戏引擎](https://github.com/) 的音频子系统模块（
 - **重采样与离线混音**：`AudioResampler`（libsamplerate）、`AudioMixer`（多轨离线混音 + EQ + 软削波 + 抖动）、`AudioMixerScene`（TOML 场景混音）。
 - **MIDI 播放**：`MIDIPlayer` / `MIDIOrchestraPlayer`（多通道控制、声像、独奏、管弦乐 3D 布局）。
 - **移动平台会话策略**：`AudioSessionPolicy`（iOS 静音开关 / Android Audio Focus 抽象）。
-- **插件系统**：3 个解码插件（WAV / Vorbis / Opus）+ 6 个 MIDI 合成器插件（FluidSynth / Timidity / TinySoundFont / WildMIDI / ADLMIDI / OPNMIDI）。
+- **插件系统**：3 个解码插件（WAV / Vorbis / Opus）+ 6 个 MIDI 合成器插件（FluidSynth / Timidity / TinySoundFont / WildMIDI / ADLMIDI / OPNMIDI）；Opus 插件另提供编码接口（ver=5，语音通话链）。
 
 ## 目录结构
 
 ```
 CMAudio/
-├── inc/hgl/audio/        # 公共头文件（41 个）
+├── inc/hgl/audio/        # 公共头文件（48 个）
 ├── inc/hgl/al/           # OpenAL 绑定头
-├── src/                  # 实现（39 个 .cpp）
-├── Plug-Ins/             # 插件（解码器 + MIDI 合成器）
-├── examples/             # 示例与测试（26 个）
+├── src/                  # 实现（48 个 .cpp）
+├── Plug-Ins/             # 插件（解码器 + Opus 编码 + MIDI 合成器）
+├── examples/             # 示例与测试（30 个）
 ├── doc/                  # 技术手册（Hugo 站点格式）
 ├── third_party/          # 第三方依赖
 └── CMakeLists.txt
@@ -107,6 +114,7 @@ while(running) {
 | [重采样与混音](doc/resample-mix.md) | AudioResampler / AudioMixer / AudioMixerScene |
 | [MIDI 播放](doc/midi.md) | MIDIPlayer / MIDIOrchestraPlayer |
 | [插件系统](doc/plugins.md) | 解码插件 / MIDI 合成器插件 |
+| [语音通话链](doc/voice-call.md) | VoiceCall：录音→预处理(NS/AGC/VAD)→Opus 编解码→抖动缓冲→播放 |
 | [会话策略](doc/session-policy.md) | AudioSessionPolicy（移动平台） |
 
 ## 示例程序
@@ -115,7 +123,9 @@ while(running) {
 
 - 引擎/总线/资源：`engine_update_test`、`bus_tree_test`、`bus_ducking_test`、`sidechain_duck_test`、`asset_manager_test`、`async_load_test`
 - 事件/音乐：`sound_event_test`、`dynamic_music_test`
-- 录音：`audio_capture_test`
+- 录音：`audio_capture_test`、`capture_player_test`
+- 变声：`voice_fx_test`（实时 5 预设）、`offline_voice_fx_test`（离线 formant 保持）
+- 通话：`audio_codec_test`（Opus 编解码）、`voice_preprocess_test`（NS/AGC/VAD）、`voice_call_test`（环回+丢包）、`voice_call_device_test`（设备+会话策略）
 - DSP：`biquad_test`、`param_eq_test`、`eq_mixer_test`、`audio_eq_test`、`compressor_test`、`loudness_test`、`loudness_limiter_test`、`time_effect_test`、`audio_analysis_test`、`pitch_shift_test`
 - 混音：`mixer_basic_test`、`scene_city_test`、`scene_swarm_test`、`wav_resample`
 - 会话：`session_policy_test`
