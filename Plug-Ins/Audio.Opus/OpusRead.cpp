@@ -7,6 +7,7 @@
 #include<hgl/al/al.h>
 
 #include<opusfile.h>
+#include<opus.h>
 
 using namespace hgl;
 using namespace openal;
@@ -268,6 +269,77 @@ static OutInterface3 out_interface_3
     ReadOpusFloat32
 };
 //--------------------------------------------------------------------------------------------------
+// 编码接口（ver=5）：PCM ↔ 压缩包 流式编解码（LibOpus encoder/decoder）
+// 供实时通话链使用；Opus 原生支持 PLC（丢包隐藏）：Decode 传 packet=nullptr 即走 PLC
+//--------------------------------------------------------------------------------------------------
+void *OpenOpusEncoder(uint sample_rate,uint channels,uint bitrate,int *error)
+{
+    int err=0;
+    OpusEncoder *enc=opus_encoder_create(sample_rate,channels,OPUS_APPLICATION_VOIP,&err);
+
+    if(enc&&bitrate>0)
+        opus_encoder_ctl(enc,OPUS_SET_BITRATE(bitrate));
+
+    if(error)*error=err;
+
+    return(enc);
+}
+
+int EncodeOpus(void *enc,const float *pcm,uint frame_samples,char *packet,uint packet_cap)
+{
+    return(opus_encode_float((OpusEncoder *)enc,pcm,frame_samples,(unsigned char *)packet,packet_cap));
+}
+
+void CloseOpusEncoder(void *enc)
+{
+    opus_encoder_destroy((OpusEncoder *)enc);
+}
+
+void *OpenOpusDecoder(uint sample_rate,uint channels,int *error)
+{
+    int err=0;
+    OpusDecoder *dec=opus_decoder_create(sample_rate,channels,&err);
+
+    if(error)*error=err;
+
+    return(dec);
+}
+
+int DecodeOpus(void *dec,const char *packet,int packet_size,float *pcm,uint pcm_cap)
+{
+    if(!packet||packet_size<=0)         //丢包：PLC 隐藏
+        return(opus_decode_float((OpusDecoder *)dec,nullptr,0,pcm,pcm_cap,0));
+
+    return(opus_decode_float((OpusDecoder *)dec,(const unsigned char *)packet,packet_size,pcm,pcm_cap,0));
+}
+
+void CloseOpusDecoder(void *dec)
+{
+    opus_decoder_destroy((OpusDecoder *)dec);
+}
+
+struct OutInterface5
+{
+    void *(*OpenEncoder)(uint,uint,uint,int *);
+    int   (*Encode)(void *,const float *,uint,char *,uint);
+    void  (*CloseEncoder)(void *);
+
+    void *(*OpenDecoder)(uint,uint,int *);
+    int   (*Decode)(void *,const char *,int,float *,uint);
+    void  (*CloseDecoder)(void *);
+};
+
+static OutInterface5 out_interface_5
+{
+    OpenOpusEncoder,
+    EncodeOpus,
+    CloseOpusEncoder,
+
+    OpenOpusDecoder,
+    DecodeOpus,
+    CloseOpusDecoder
+};
+//--------------------------------------------------------------------------------------------------
 #if HGL_OS != HGL_OS_Windows
 const u16char plugin_intro[]=U16_TEXT("Opus 音频文件解码(使用操作系统内置解码器,2016-09-16)");
 #else
@@ -276,7 +348,7 @@ const u16char plugin_intro[]=U16_TEXT("Opus 音频文件解码(LibOpus 1.1.3,Lib
 
 uint32 GetPlugInVersion()
 {
-    return(3);        //版本号
+    return(5);        //版本号
                     //根据版本号取得不同的API
 }
 
@@ -295,6 +367,11 @@ bool GetPlugInInterface(uint32 ver,void *data)
     if(ver==3)
     {
         memcpy(data,&out_interface_3,sizeof(OutInterface3));
+    }
+    else
+    if(ver==5)
+    {
+        memcpy(data,&out_interface_5,sizeof(OutInterface5));
     }
     else
         return(false);

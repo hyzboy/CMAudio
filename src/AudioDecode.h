@@ -75,7 +75,30 @@ namespace hgl::audio
         void    (AL_APIENTRY *CloseMultiChannel )(void *stream);              // Close multi-channel stream
     };//struct AudioMidiChannelInterface
 
+    /**
+    * 音频编码插件接口（ver=5，可选能力，同浮点解码\"不是谁都有\"）
+    *
+    * 与解码接口（ver=2/3 文件→PCM）对称：编码接口做 PCM↔压缩包 的流式编解码，
+    * 供实时通话链（CaptureSource→预处理→编码→网络→解码→播放）使用。
+    * 只有具备编码能力的插件才实现本接口（GetInterface(5) 返回 false 即无编码能力）。
+    *
+    * 约定：
+    * - Encode 输入 float PCM（-1..1），返回压缩包字节数；负数为编码错误码
+    * - Decode 输入压缩包，输出 float PCM，返回样本数；packet==nullptr 表示丢包，走 PLC 隐藏
+    */
+    struct AudioCodecPlugInInterface
+    {
+        void *  (AL_APIENTRY *OpenEncoder      )(uint sample_rate,uint channels,uint bitrate,int *error);   ///< 打开编码器（bitrate=0 用默认），返回编码器句柄
+        int     (AL_APIENTRY *Encode           )(void *enc,const float *pcm,uint frame_samples,char *packet,uint packet_cap);  ///< 编码一帧 PCM→压缩包
+        void    (AL_APIENTRY *CloseEncoder     )(void *enc);                                                  ///< 关闭编码器
+
+        void *  (AL_APIENTRY *OpenDecoder      )(uint sample_rate,uint channels,int *error);                 ///< 打开解码器
+        int     (AL_APIENTRY *Decode           )(void *dec,const char *packet,int packet_size,float *pcm,uint pcm_cap);  ///< 解码一包→PCM（packet=nullptr→PLC）
+        void    (AL_APIENTRY *CloseDecoder     )(void *dec);                                                  ///< 关闭解码器
+    };//struct AudioCodecPlugInInterface
+
     bool GetAudioInterface(const OSString &,AudioPlugInInterface *,AudioFloatPlugInInterface *);
+    bool GetAudioCodecInterface(const OSString &,AudioCodecPlugInInterface *);
     bool GetAudioMidiInterface(const OSString &,AudioMidiConfigInterface *);
     bool GetAudioMidiChannelInterface(const OSString &,AudioMidiChannelInterface *);
 

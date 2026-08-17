@@ -74,6 +74,19 @@ namespace hgl::audio
         return result>0;
     }
 
+    bool GetAudioCodecInterface(const OSString &name,AudioCodecPlugInInterface *acpi)
+    {
+        if(!acpi)
+            return(false);
+
+        PlugIn *pi=audio_plug_in.LoadPlugin(name);
+
+        if(!pi)
+            return(false);
+
+        return pi->GetInterface(5,acpi);
+    }
+
     bool GetAudioMidiInterface(const OSString &name,AudioMidiConfigInterface *amci)
     {
         PlugIn *pi=audio_plug_in.LoadPlugin(name);

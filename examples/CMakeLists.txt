@@ -55,6 +55,11 @@ cm_audio_example("DynamicMusic" dynamic_music_test dynamic_music_test.cpp)
 cm_audio_example("AudioCapture" audio_capture_test audio_capture_test.cpp)
 cm_audio_example("AudioCapture" capture_player_test capture_player_test.cpp)
 
+# ---- 语音通话编解码（编码插件接口 ver=5）----
+cm_audio_example("VoiceCall" audio_codec_test audio_codec_test.cpp)
+cm_audio_example("VoiceCall" voice_preprocess_test voice_preprocess_test.cpp)
+cm_audio_example("VoiceCall" voice_call_test voice_call_test.cpp)
+
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
 
