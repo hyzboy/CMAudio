@@ -43,13 +43,12 @@ CMAudio 是 [ULRE 游戏引擎](https://github.com/) 的音频子系统模块（
 
 ```
 CMAudio/
-├── inc/hgl/audio/        # 公共头文件（48 个）
+├── inc/hgl/audio/        # 公共头文件（57 个）
 ├── inc/hgl/al/           # OpenAL 绑定头
-├── src/                  # 实现（48 个 .cpp）
+├── src/                  # 实现（54 个 .cpp，含内置 libsamplerate）
 ├── Plug-Ins/             # 插件（解码器 + Opus 编码 + MIDI 合成器）
-├── examples/             # 示例与测试（30 个）
+├── examples/             # 示例与测试（40 个）
 ├── doc/                  # 技术手册（Hugo 站点格式）
-├── third_party/          # 第三方依赖
 └── CMakeLists.txt
 ```
 

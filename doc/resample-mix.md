@@ -62,7 +62,7 @@ Resample(in_pcm, in_size, in, 48000, out, ResampleQuality::SincMedium, &out_data
 class AudioMixer
 {
     int  AddSourceAudio(const AudioDataInfo &info, const void *data);
-    int  AddSourceAudio(const void *data, uint size, uint format, uint sample_rate);
+    int  AddSourceAudio(const void *data, uint size, uint format, uint sample_rate);  // 兼容层：内部转 AudioDataInfo
     void ClearSources();   int GetSourceCount() const;
 
     void AddTrack(const MixingTrack &track);
@@ -92,7 +92,11 @@ struct MixerConfig
 
 ```cpp
 AudioMixer mixer;
-int src = mixer.AddSourceAudio(pcm, size, AL_FORMAT_MONO16, 44100);
+
+// 用 AudioDataInfo 描述源格式（channels+bits+isFloat 三元组，无需 AL_FORMAT_*）
+AudioDataInfo src_info{44100, 1, 16, false, size};
+int src = mixer.AddSourceAudio(src_info, pcm);
+
 mixer.AddTrack(src, 0.0f, 1.0f, 1.0f);      // 原始
 mixer.AddTrack(src, 0.5f, 0.7f, 0.95f);     // 延迟+轻+慢
 mixer.AddTrack(src, 1.2f, 0.6f, 1.05f);     // 更延迟+高音调

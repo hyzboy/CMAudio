@@ -5,9 +5,14 @@
 #include<hgl/audio/AudioFileType.h>
 #include<hgl/type/String.h>
 
-using namespace openal;
 namespace hgl::audio
 {
+    using openal::ALboolean;
+    using openal::ALbyte;
+    using openal::ALenum;
+    using openal::ALsizei;
+    using openal::ALvoid;
+
     struct AudioPlugInInterface
     {
         void    (AL_APIENTRY *Load      )(ALbyte *,ALsizei,ALenum *,ALvoid **,ALsizei *,ALsizei *,ALboolean *);
