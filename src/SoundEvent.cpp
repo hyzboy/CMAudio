@@ -40,6 +40,30 @@ namespace hgl::audio
         }
     }
 
+    RTPCTarget RTPCTargetFromString(const char *str)
+    {
+        if(!str||!(*str))return RTPCTarget::Pitch;
+
+        if     (strcmp(str,"pitch"  )==0)return RTPCTarget::Pitch;
+        else if(strcmp(str,"gain"   )==0)return RTPCTarget::Gain;
+        else if(strcmp(str,"lowpass")==0)return RTPCTarget::Lowpass;
+        else if(strcmp(str,"pan"    )==0)return RTPCTarget::Pan;
+
+        return RTPCTarget::Pitch;
+    }
+
+    const char *RTPCTargetToString(RTPCTarget target)
+    {
+        switch(target)
+        {
+            case RTPCTarget::Gain:   return "gain";
+            case RTPCTarget::Lowpass:return "lowpass";
+            case RTPCTarget::Pan:    return "pan";
+            case RTPCTarget::Pitch:
+            default:                 return "pitch";
+        }
+    }
+
     float SoundEventConfig::RandomGain()const
     {
         if(max_gain<=min_gain)return min_gain;

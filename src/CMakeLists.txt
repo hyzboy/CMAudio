@@ -42,6 +42,8 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/FormantCorrector.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/OfflineVoiceFX.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCodec.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEvent.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/EventTransport.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/VoicePreprocess.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/JitterBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/VoiceCall.h
@@ -72,6 +74,7 @@ set(CM_AUDIO_SOURCE
     OfflinePitchShift.cpp
     FormantCorrector.cpp
     OfflineVoiceFX.cpp
+    AudioEvent.cpp
     AudioCodec.cpp
     VoicePreprocess.cpp
     JitterBuffer.cpp

@@ -15,6 +15,7 @@ namespace hgl::audio
     class SoundEventManager
     {
         UnorderedMap<OSString, SoundEventConfig> events;    ///< 事件名 → 配置
+        UnorderedMap<OSString, SnapshotConfig> snapshots;   ///< 快照名 → 配置（T2）
 
     public:
 
@@ -27,6 +28,14 @@ namespace hgl::audio
         bool Contains(const os_char *name)const;                             ///< 是否存在该事件
         int  GetCount()const;                                                ///< 事件总数
         void Clear();                                                        ///< 清空全部事件
+
+        // ---- 混音快照（T2）----
+
+        bool AddSnapshot(const os_char *name,const SnapshotConfig &config);  ///< 添加/覆盖快照
+        bool RemoveSnapshot(const os_char *name);                            ///< 删除快照
+        const SnapshotConfig *GetSnapshot(const os_char *name)const;         ///< 按名查快照（未命中返回 nullptr）
+        bool ContainsSnapshot(const os_char *name)const;                     ///< 是否存在该快照
+        int  GetSnapshotCount()const;                                        ///< 快照总数
 
         /**
         * 从 TOML 文件加载声音事件配置（追加模式，不覆盖已有事件）

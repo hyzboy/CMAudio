@@ -46,6 +46,7 @@ CMAudio 的模块按功能域分为以下层次：
 | 手册 | 说明 |
 |---|---|
 | [快速开始](getting-started.md) | 环境准备、构建、最小播放示例 |
+| [EVENT/CUE 机制](event-cue-system.md) | 事件驱动架构设计：EVENT 指令协议 / CUE 配置 / 传输层 / 引擎线程化（设计稿） |
 | [核心引擎](core-engine.md) | AudioEngine / AudioManager / AudioPlayer / AudioSource / AudioListener |
 | [音频总线](audio-bus.md) | AudioBus 树、增益、Ducking、侧链压缩 |
 | [资源管理](asset-management.md) | AudioAssetManager / AudioBuffer / 异步加载 |

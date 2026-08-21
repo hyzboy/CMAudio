@@ -92,7 +92,7 @@ int main()
     Check("Clear 后 GetCount == 0", manager.GetCount() == 0);
 
     Check("LoadFromTOML 成功", manager.LoadFromTOML("configs/sound_events.toml"));
-    Check("加载后 GetCount == 5", manager.GetCount() == 5);
+    Check("加载后 GetCount == 8", manager.GetCount() == 8);
 
     const SoundEventConfig *boom = manager.GetEvent(OS_TEXT("explosion"));
     Check("explosion 存在", boom != nullptr);

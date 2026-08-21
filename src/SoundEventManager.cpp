@@ -109,6 +109,44 @@ namespace hgl::audio
     void SoundEventManager::Clear()
     {
         events.Clear();
+        snapshots.Clear();
+    }
+
+    // ---- 混音快照（T2）----
+
+    bool SoundEventManager::AddSnapshot(const os_char *name,const SnapshotConfig &config)
+    {
+        if(!name||!(*name))return false;
+
+        snapshots[OSString(name)]=config;
+
+        return true;
+    }
+
+    bool SoundEventManager::RemoveSnapshot(const os_char *name)
+    {
+        if(!name||!(*name))return false;
+
+        return snapshots.DeleteByKey(OSString(name));
+    }
+
+    const SnapshotConfig *SoundEventManager::GetSnapshot(const os_char *name)const
+    {
+        if(!name||!(*name))return nullptr;
+
+        return snapshots.GetValuePointer(OSString(name));
+    }
+
+    bool SoundEventManager::ContainsSnapshot(const os_char *name)const
+    {
+        if(!name||!(*name))return false;
+
+        return snapshots.ContainsKey(OSString(name));
+    }
+
+    int SoundEventManager::GetSnapshotCount()const
+    {
+        return snapshots.GetCount();
     }
 
     bool SoundEventManager::LoadFromTOML(const char *filename)
@@ -120,8 +158,14 @@ namespace hgl::audio
 
         std::string line;
         std::string current_event;
+        std::string current_snapshot;
         SoundEventConfig current_config;
+        SnapshotConfig current_snapshot_config;
         bool in_event=false;
+        bool in_snapshot=false;
+        bool in_snapshot_gain=false;
+        bool in_rtpc=false;
+        RTPCConfig current_rtpc;
 
         int loaded=0;
 
@@ -131,33 +175,88 @@ namespace hgl::audio
 
             if(line.empty()||line[0]=='#')continue;
 
-            // [event.xxx] section
-            if(line[0]=='['&&line[line.length()-1]==']')
+            // 段头：[[数组表]] 或 [表]
+            if(line[0]=='[')
             {
-                // 保存上一个事件
+                const bool is_array=(line.size()>=2&&line[1]=='[');
+                std::string section;
+
+                if(is_array)
+                    section=line.substr(2,line.length()-4);     // 去掉 [[ ]]
+                else
+                    section=line.substr(1,line.length()-2);     // 去掉 [ ]
+
+                // RTPC 数组表 [[event.xxx.rtpc]]：属于当前事件，不退出事件上下文
+                if(is_array&&section.rfind("event.",0)==0&&section.find(".rtpc")!=std::string::npos&&in_event)
+                {
+                    // 保存上一个 rtpc（若已有）
+                    if(!current_rtpc.param.IsEmpty())
+                        current_config.rtpc.push_back(current_rtpc);
+
+                    current_rtpc=RTPCConfig();
+                    in_rtpc=true;
+                    continue;
+                }
+
+                // 普通段头：保存上一个事件
                 if(in_event&&!current_event.empty())
                 {
+                    // flush 当前 rtpc
+                    if(in_rtpc&&!current_rtpc.param.IsEmpty())
+                        current_config.rtpc.push_back(current_rtpc);
+
                     AddEvent(ToOSString(current_event).c_str(),current_config);
                     ++loaded;
                 }
 
-                current_event=line.substr(1,line.length()-2);
+                // 快照 bus_gain 子段：不保存上一个快照（续写当前快照）
+                const bool is_bus_gain_sub=(!is_array&&section.rfind("snapshots.",0)==0
+                                            &&section.find(".bus_gain")!=std::string::npos
+                                            &&!current_snapshot.empty()
+                                            &&section.substr(10,section.length()-10-9)==current_snapshot);
 
-                if(current_event.rfind("event.",0)==0)     // 以 "event." 开头
+                // 保存上一个快照（bus_gain 子段除外）
+                if(!is_bus_gain_sub&&in_snapshot&&!current_snapshot.empty())
                 {
-                    current_event=current_event.substr(6);
-                    in_event=true;
-                    current_config=SoundEventConfig();
+                    AddSnapshot(ToOSString(current_snapshot).c_str(),current_snapshot_config);
+                    ++loaded;
                 }
-                else
+
+                in_event=false;
+                in_snapshot=false;
+                in_snapshot_gain=false;
+                in_rtpc=false;
+
+                // 事件段 [event.xxx]
+                if(section.rfind("event.",0)==0)
                 {
-                    in_event=false;
+                    current_event=section.substr(6);
+                    current_config=SoundEventConfig();
+                    in_event=true;
+                }
+                // 快照段 [snapshots.xxx] 或 [snapshots.xxx.bus_gain]
+                else if(section.rfind("snapshots.",0)==0)
+                {
+                    std::string sub=section.substr(10);     // 去掉 "snapshots."
+
+                    const bool is_bus_gain=(sub.size()>=9&&sub.compare(sub.size()-9,9,".bus_gain")==0);
+
+                    if(is_bus_gain)     // 以 .bus_gain 结尾
+                    {
+                        current_snapshot=sub.substr(0,sub.size()-9);
+                        in_snapshot=true;
+                        in_snapshot_gain=true;
+                    }
+                    else
+                    {
+                        current_snapshot=sub;
+                        current_snapshot_config=SnapshotConfig();
+                        in_snapshot=true;
+                    }
                 }
 
                 continue;
             }
-
-            if(!in_event)continue;
 
             size_t eq=line.find('=');
             if(eq==std::string::npos)continue;
@@ -165,8 +264,32 @@ namespace hgl::audio
             const std::string key=Trim(line.substr(0,eq));
             const std::string value=Trim(line.substr(eq+1));
 
+            // 快照总线增益行：Music = -6.0
+            if(in_snapshot_gain)
+            {
+                current_snapshot_config.SetGain(AudioBusTypeFromString(key.c_str()),ParseFloat(value));
+                continue;
+            }
+
+            // RTPC 字段
+            if(in_rtpc)
+            {
+                if     (key=="param")     current_rtpc.param=ToOSString(Unquote(value));
+                else if(key=="min")       current_rtpc.min=ParseFloat(value);
+                else if(key=="max")       current_rtpc.max=ParseFloat(value);
+                else if(key=="target")    current_rtpc.target=RTPCTargetFromString(Unquote(value).c_str());
+                else if(key=="min_value") current_rtpc.min_value=ParseFloat(value);
+                else if(key=="max_value") current_rtpc.max_value=ParseFloat(value);
+
+                continue;
+            }
+
+            if(!in_event)continue;
+
             if     (key=="file")            current_config.files.Add(ToOSString(Unquote(value)));
             else if(key=="files")           { std::vector<std::string> arr; ParseStringArray(value,arr); for(auto &s:arr) current_config.files.Add(ToOSString(s)); }
+            else if(key=="sequence")        { std::vector<std::string> arr; ParseStringArray(value,arr); for(auto &s:arr) current_config.sequence.Add(ToOSString(s)); }
+            else if(key=="children")        { std::vector<std::string> arr; ParseStringArray(value,arr); for(auto &s:arr) current_config.children.Add(ToOSString(s)); }
             else if(key=="min_gain")        current_config.min_gain=ParseFloat(value);
             else if(key=="max_gain")        current_config.max_gain=ParseFloat(value);
             else if(key=="min_pitch")       current_config.min_pitch=ParseFloat(value);
@@ -182,7 +305,18 @@ namespace hgl::audio
         // 保存最后一个事件
         if(in_event&&!current_event.empty())
         {
+            // flush 当前 rtpc
+            if(in_rtpc&&!current_rtpc.param.IsEmpty())
+                current_config.rtpc.push_back(current_rtpc);
+
             AddEvent(ToOSString(current_event).c_str(),current_config);
+            ++loaded;
+        }
+
+        // 保存最后一个快照
+        if(in_snapshot&&!current_snapshot.empty())
+        {
+            AddSnapshot(ToOSString(current_snapshot).c_str(),current_snapshot_config);
             ++loaded;
         }
 

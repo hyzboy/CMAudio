@@ -101,6 +101,7 @@ while(running) {
 
 | 手册 | 内容 |
 |---|---|
+| [EVENT/CUE 机制](doc/event-cue-system.md) | 事件驱动架构设计（指令协议 / CUE 配置 / 传输层 / 引擎线程化 / 三形态部署） |
 | [核心引擎](doc/core-engine.md) | AudioEngine / AudioManager / AudioPlayer / AudioSource / AudioListener |
 | [音频总线](doc/audio-bus.md) | AudioBus 树、增益、Ducking、侧链压缩 |
 | [资源管理](doc/asset-management.md) | AudioAssetManager / AudioBuffer / 异步加载 |
