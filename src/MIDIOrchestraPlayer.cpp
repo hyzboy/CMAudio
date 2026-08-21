@@ -6,6 +6,8 @@
 #include<hgl/audio/AudioManager.h>
 #include"AudioDecode.h"
 
+using namespace openal;
+
 namespace hgl::audio
 {
     // 标准交响乐团布局（单位：米）

@@ -6,6 +6,8 @@
 #include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
 
+using namespace openal;
+
 namespace hgl::audio
 {
     const os_char *GetAudioDecodeName(const AudioFileType aft);

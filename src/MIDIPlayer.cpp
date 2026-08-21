@@ -5,6 +5,8 @@
 #include<hgl/io/FileInputStream.h>
 #include"AudioDecode.h"
 
+using namespace openal;
+
 namespace hgl::audio
 {
     void MIDIPlayer::InitPrivate()

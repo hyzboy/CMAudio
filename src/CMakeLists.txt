@@ -127,10 +127,3 @@ add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_AUDIO_SOURCE})
 
 target_link_libraries(CMAudio PRIVATE samplerate)
-
-#ADD_LIBRARY(CM.OpenALEE.StandAlone SHARED ${OpenALEESource} OpenALEECPort.cpp OpenALEEStandAlone.cpp ${CM_BASE_ALL_SOURCE})
-
-#IF(WIN32)
-#    target_compile_options(CM.OpenALEE.StandAlone PRIVATE "/MT")
-#    target_link_libraries(CM.OpenALEE.StandAlone CM.Base.Static CM.Platform.Static)
-#ENDIF(WIN32)
