@@ -65,6 +65,7 @@ cm_audio_example("VoiceCall" voice_call_device_test voice_call_device_test.cpp)
 cm_audio_example("AudioEvent" audio_event_test audio_event_test.cpp)
 cm_audio_example("AudioEvent" cue_config_test cue_config_test.cpp)
 cm_audio_example("AudioEvent" event_transport_test event_transport_test.cpp)
+cm_audio_example("AudioEvent" engine_thread_test engine_thread_test.cpp)
 
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
