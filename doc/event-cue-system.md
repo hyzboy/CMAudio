@@ -9,12 +9,12 @@ draft: false
 
 # EVENT/CUE 机制设计
 
-本文档是 CMAudio 结构性重置（事件驱动架构）的**设计稿**：调用方完全通过 EVENT 指令控制播放，
+本文档是 CMAudio 结构性重置（事件驱动架构）的设计与实现说明：调用方完全通过 EVENT 指令控制播放，
 音频引擎在独立线程（或独立进程）运行，与主程序隔离。核心思想对标行业标准
 （Wwise Event / FMOD EventInstance）。
 
-> 状态：**设计阶段**（T0）。`SoundEventConfig`（数据驱动事件）已存在可作为 CUE 定义基础；
-> 事件指令层、传输层、引擎线程化为新增设计，尚未实现。
+> 状态：**已实现**（T1-T7 全部落地，2026-08）。`SoundEventConfig`（数据驱动事件）作为 CUE 定义基础，
+> 事件指令层 / 传输层 / 引擎线程 / 三种部署形态均已交付并测试。
 
 ## 1. 核心概念：EVENT 与 CUE 是两层
 
@@ -322,16 +322,24 @@ HGL_AUDIO_API const AudioStateSnapshot *hgl_audio_get_state(void);      // 只�
 | 性能 | 最高（零拷贝） | 高 | 中（memcpy + 唤醒开销） |
 | 典型场景 | 游戏发布版 | 编辑器/工具/热更新 | 音频服务/多客户端共享/强隔离 |
 
-## 9. 实施路线（每步可构建验证）
+## 9. 实施路线（已全部完成 ✅）
 
-- **T1** 事件协议层：`AudioEvent`/`AudioEventResult` 结构 + 序列化 + 单测
-- **T2** Cue 配置扩展：TOML 新字段（sequence/children/rtpc/snapshot）+ 解析 + 单测
-- **T3** 传输层：`EventTransport` 抽象 + `SameProcessQueue`（无锁环形队列）+ 单测
-- **T4** 引擎线程化：`AudioEngineThread` + 事件消费 + `WaitIdle`（静态库模式全链落地）
-- **T5** 现有 API → 事件指令映射（Play/Stop/SetParam/总线），测试改事件驱动
-- **T6** DLL 模式：导出 C API + 客户端 SDK 头
-- **T7** 进程模式：`IPCTransport`（共享内存 + 命名管道）+ 生命周期管理 + 崩溃恢复
-- **T8** 文档（三形态部署手册）+ 全量回归
+- **T1** ✅ 事件协议层：`AudioEvent`(48B POD)/`AudioEventResult`(16B) + `CueNameHash`（复用 CMCoreType FNV1a）+ 单测（30 断言）
+- **T2** ✅ Cue 配置扩展：TOML 新字段（sequence/children/rtpc/snapshot）+ 解析器扩展 + 单测（36 断言）
+- **T3** ✅ 传输层：`EventTransport` 抽象 + `hgl::SpscQueue`（Vyukov 无锁 SPSC，已下沉 CMCore）+ `SameProcessQueue`（29 断言）
+- **T4** ✅ 引擎线程化：`AudioEngineThread`（独立线程主循环 + 事件消费 + `WaitIdle` + 回传）+ 5000 事件跨线程压力验证
+- **T5** ✅ 现有 API → 事件指令映射（Play 真实播放/Stop/SetParam RTPC/总线/快照/PauseAll）+ 排障（WAV 插件流式接口 NULL、Play 默认循环、播放线程 context 绑定）
+- **T6** ✅ DLL 模式：`AudioClient.h` 纯 C API + `CMP.AudioClient.dll` + 客户端测试（19 断言）
+- **T7** ✅ 进程模式：`IPCTransport`（命名管道双通道）+ `audio_server` 独立进程 + 断开检测/优雅退出
+- **T8** ✅ 文档更新 + 全量回归（7 个事件架构测试全绿）
+
+### 三形态部署速查
+
+| 形态 | 传输 | 客户端接入 |
+|---|---|---|
+| 静态库 | `SameProcessQueue`（同进程无锁队列） | 直接组合 `AudioEngineThread` + 事件队列 |
+| DLL/SO | 同上（DLL 内） | `AudioClient_Create/Play/PollResult`（纯 C API） |
+| 独占进程 | `IPCTransport`（命名管道） | `IPCTransport::ConnectClient` + 事件发送 |
 
 ## 10. 关键设计决策摘要
 

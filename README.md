@@ -33,6 +33,11 @@ CMAudio 是 [ULRE 游戏引擎](https://github.com/) 的音频子系统模块（
 - **MIDI 播放**：`MIDIPlayer` / `MIDIOrchestraPlayer`（多通道控制、声像、独奏、管弦乐 3D 布局）。
 - **移动平台会话策略**：`AudioSessionPolicy`（iOS 静音开关 / Android Audio Focus 抽象）。
 - **插件系统**：3 个解码插件（WAV / Vorbis / Opus）+ 6 个 MIDI 合成器插件（FluidSynth / Timidity / TinySoundFont / WildMIDI / ADLMIDI / OPNMIDI）；Opus 插件另提供编码接口（ver=5，语音通话链）。
+- **EVENT/CUE 事件驱动架构**（对标 Wwise/FMOD）：调用方只发事件指令，引擎独立线程/进程隔离运行。
+  - 事件协议：`AudioEvent`（48B 定长 POD）+ `AudioEventResult` 回传，Cue 名 FNV-1a 哈希
+  - Cue 配置：`SoundEventConfig` 扩展（随机变体 / sequence 轮播 / children 复合 / RTPC 映射 / 快照）
+  - 引擎线程：`AudioEngineThread` 独立线程主循环（消费 → 分发 → Update → 回传）
+  - **三形态部署**：静态库（`SameProcessQueue` 无锁 SPSC，下沉 CMCore）/ DLL（`CMP.AudioClient.dll` 纯 C API）/ 独占进程（`IPCTransport` 命名管道 + `audio_server`）
 
 ## 目录结构
 
@@ -123,7 +128,7 @@ while(running) {
 `examples/` 下每个测试都是可独立运行的程序（多数纯内存合成，无需外部音频文件）：
 
 - 引擎/总线/资源：`engine_update_test`、`bus_tree_test`、`bus_ducking_test`、`sidechain_duck_test`、`asset_manager_test`、`async_load_test`
-- 事件/音乐：`sound_event_test`、`dynamic_music_test`
+- 事件/音乐：`sound_event_test`、`dynamic_music_test`、`audio_event_test`（事件协议）、`cue_config_test`（Cue 配置）、`event_transport_test`（无锁传输）、`engine_thread_test`（引擎线程）、`event_play_test`（事件→真实播放）、`audio_client_test`（DLL C API）、`ipc_client_test` + `audio_server`（独占进程）
 - 录音：`audio_capture_test`、`capture_player_test`
 - 变声：`voice_fx_test`（实时 5 预设）、`offline_voice_fx_test`（离线 formant 保持）
 - 通话：`audio_codec_test`（Opus 编解码）、`voice_preprocess_test`（NS/AGC/VAD）、`voice_call_test`（环回+丢包）、`voice_call_device_test`（设备+会话策略）

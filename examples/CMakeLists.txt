@@ -66,6 +66,16 @@ cm_audio_example("AudioEvent" audio_event_test audio_event_test.cpp)
 cm_audio_example("AudioEvent" cue_config_test cue_config_test.cpp)
 cm_audio_example("AudioEvent" event_transport_test event_transport_test.cpp)
 cm_audio_example("AudioEvent" engine_thread_test engine_thread_test.cpp)
+cm_audio_example("AudioEvent" event_play_test event_play_test.cpp)
+cm_audio_example("AudioEvent" player_mini_test player_mini_test.cpp)
+cm_audio_example("AudioEvent" audio_client_test audio_client_test.cpp)
+target_link_libraries(audio_client_test PRIVATE CMP.AudioClient)
+
+# ---- 独占进程模式（T7）----
+cm_audio_example("AudioEvent" ipc_client_test ipc_client_test.cpp)
+add_executable(audio_server audio_server.cpp)
+target_link_libraries(audio_server PRIVATE CMAudio CMCore)
+set_property(TARGET audio_server PROPERTY FOLDER "Examples/CMAudio/AudioEvent")
 
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)

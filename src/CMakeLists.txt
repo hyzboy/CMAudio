@@ -44,6 +44,7 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioCodec.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEvent.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/EventTransport.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/IPCTransport.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioEngineThread.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/VoicePreprocess.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/JitterBuffer.h
@@ -77,6 +78,7 @@ set(CM_AUDIO_SOURCE
     OfflineVoiceFX.cpp
     AudioEvent.cpp
     AudioEngineThread.cpp
+    IPCTransport.cpp
     AudioCodec.cpp
     VoicePreprocess.cpp
     JitterBuffer.cpp
@@ -114,6 +116,10 @@ source_group("OpenAL" FILES ${CM_OPENAL_HEADER}
 
 source_group("Audio" FILES  ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
+
+# ---- AudioClient DLL（T6：C API 客户端 SDK）----
+add_cm_plugin(CMP.AudioClient "Plug-Ins//Audio" AudioClient.cpp)
+target_link_libraries(CMP.AudioClient PRIVATE CMAudio CMCore)
 
 add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_OPENAL_SOURCE}
