@@ -25,6 +25,7 @@ namespace hgl::audio
         bool AddEvent(const os_char *name,const SoundEventConfig &config);    ///< 添加/覆盖事件
         bool RemoveEvent(const os_char *name);                               ///< 删除事件
         const SoundEventConfig *GetEvent(const os_char *name)const;          ///< 按名查事件（未命中返回 nullptr）
+        const SoundEventConfig *GetEventByHash(uint32 hash)const;            ///< 按 CueNameHash 查事件（未命中返回 nullptr，T5）
         bool Contains(const os_char *name)const;                             ///< 是否存在该事件
         int  GetCount()const;                                                ///< 事件总数
         void Clear();                                                        ///< 清空全部事件
@@ -34,6 +35,7 @@ namespace hgl::audio
         bool AddSnapshot(const os_char *name,const SnapshotConfig &config);  ///< 添加/覆盖快照
         bool RemoveSnapshot(const os_char *name);                            ///< 删除快照
         const SnapshotConfig *GetSnapshot(const os_char *name)const;         ///< 按名查快照（未命中返回 nullptr）
+        const SnapshotConfig *GetSnapshotByHash(uint32 hash)const;           ///< 按哈希查快照（未命中返回 nullptr，T5）
         bool ContainsSnapshot(const os_char *name)const;                     ///< 是否存在该快照
         int  GetSnapshotCount()const;                                        ///< 快照总数
 

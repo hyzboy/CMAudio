@@ -1,4 +1,6 @@
 ﻿#include<hgl/audio/SoundEventManager.h>
+#include<hgl/audio/AudioEvent.h>
+#include<hgl/utf.h>
 #include<hgl/type/StdString.h>      // ToOSString(std::string)
 
 #include<fstream>
@@ -8,6 +10,17 @@
 
 namespace hgl::audio
 {
+    namespace
+    {
+        // OSString(u16) → FNV1a 哈希（与 CueNameHash(UTF-8) 一致：先转 UTF-8 再哈希）
+        uint32 HashEventKey(const OSString &s)
+        {
+            const U8String u=ToU8String(s);
+
+            return CueNameHash(reinterpret_cast<const char *>(u.c_str()));
+        }
+    }
+
     // ====================================================================
     // 简单 TOML 解析辅助（section + key-value + 字符串数组）
     // 风格与 examples/AudioMixerSceneConfig.h 一致，避免引入重型 TOML 库
@@ -94,6 +107,22 @@ namespace hgl::audio
         return events.GetValuePointer(OSString(name));
     }
 
+    const SoundEventConfig *SoundEventManager::GetEventByHash(uint32 hash)const
+    {
+        if(!hash)return nullptr;
+
+        // 遍历事件表找哈希匹配（事件数通常几十，线性可接受）
+        const SoundEventConfig *result=nullptr;
+
+        events.EnumKeys([&](const OSString &key)
+        {
+            if(HashEventKey(key)==hash)
+                result=events.GetValuePointer(key);
+        });
+
+        return result;
+    }
+
     bool SoundEventManager::Contains(const os_char *name)const
     {
         if(!name||!(*name))return false;
@@ -135,6 +164,21 @@ namespace hgl::audio
         if(!name||!(*name))return nullptr;
 
         return snapshots.GetValuePointer(OSString(name));
+    }
+
+    const SnapshotConfig *SoundEventManager::GetSnapshotByHash(uint32 hash)const
+    {
+        if(!hash)return nullptr;
+
+        const SnapshotConfig *result=nullptr;
+
+        snapshots.EnumKeys([&](const OSString &key)
+        {
+            if(HashEventKey(key)==hash)
+                result=snapshots.GetValuePointer(key);
+        });
+
+        return result;
     }
 
     bool SoundEventManager::ContainsSnapshot(const os_char *name)const

@@ -40,6 +40,8 @@ namespace hgl::audio
         capture=nullptr;
         realtime_source=false;
 
+        loop=false;             // atom<bool> 默认构造不初始化，必须显式置位（否则 Execute 的 if(loop) 读垃圾值循环播放）
+
         if(!audiosource.Create())return;
 
         audiosource.SetLoop(false);
@@ -474,6 +476,15 @@ namespace hgl::audio
 
         while(queued--)
             alSourceUnqueueBuffers(source_id, 1, &buffer);
+    }
+
+    bool AudioPlayer::ProcStartThread()
+    {
+        // OpenAL current context 是 per-thread：播放线程必须绑定，
+        // 否则 alGetSourcei(AL_BUFFERS_PROCESSED) 等调用全部失败 → processed 恒 0 → 播放永不推进
+        openal::alcSetDefaultContext();
+
+        return hgl::Thread::ProcStartThread();
     }
 
     bool AudioPlayer::Execute()

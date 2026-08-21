@@ -162,6 +162,95 @@ ALvoid alutUnloadWAV(ALenum, ALvoid *data, ALsizei, ALsizei)
     if (data)
         free(data);
 }
+
+//--------------------------------------------------------------------------------------------------
+// 流式接口（Open/Read/Restart/Close）：Open 时整文件解码到内存，Read 按块输出
+// （AudioPlayer 三缓冲播放管线使用；修复 Open 为 NULL 导致的段错误）
+//--------------------------------------------------------------------------------------------------
+struct WAVStream
+{
+    ALbyte *data;           ///< 解码后 PCM 数据
+    ALsizei size;           ///< PCM 字节数
+    ALsizei pos;            ///< 读取游标
+    ALsizei freq;           ///< 采样率
+};
+
+void *OpenWAV(ALbyte *memory,ALsizei memory_size,ALenum *format,ALsizei *freq,double *total_time)
+{
+    if(!memory||memory_size<=0)
+        return(nullptr);
+
+    WAVStream *s=(WAVStream *)malloc(sizeof(WAVStream));
+    if(!s)return(nullptr);
+
+    ALvoid *pcm=nullptr;
+    ALsizei pcm_size=0;
+    ALboolean loop=AL_FALSE;
+
+    alutLoadWAVMemory(memory,memory_size,format,&pcm,&pcm_size,freq,&loop);
+
+    if(!pcm||pcm_size<=0)
+    {
+        free(s);
+        return(nullptr);
+    }
+
+    s->data=(ALbyte *)pcm;
+    s->size=pcm_size;
+    s->pos=0;
+    s->freq=*freq;
+
+    // 总时长（秒）= PCM 字节 / (采样率 × 每样本字节)
+    if(total_time)
+    {
+        const int channels=(*format==AL_FORMAT_STEREO16||*format==AL_FORMAT_QUAD16)?2:1;
+        const int bytes_per_sample=channels*2;      // 16bit
+
+        *total_time=(s->size)/(double)(s->freq*bytes_per_sample);
+    }
+
+    return(s);
+}
+
+void CloseWAV(void *ptr)
+{
+    if(!ptr)return;
+
+    WAVStream *s=(WAVStream *)ptr;
+
+    free(s->data);
+    free(s);
+}
+
+uint ReadWAV(void *ptr,char *buffer,uint max_bytes)
+{
+    if(!ptr||!buffer||max_bytes==0)
+        return(0);
+
+    WAVStream *s=(WAVStream *)ptr;
+
+    const int remain=s->size-s->pos;
+
+    if(remain<=0)
+        return(0);
+
+    const int n=(remain<(int)max_bytes)?remain:(int)max_bytes;
+
+    memcpy(buffer,s->data+s->pos,n);
+    s->pos+=n;
+
+    return((uint)n);
+}
+
+void RestartWAV(void *ptr)
+{
+    if(!ptr)return;
+
+    WAVStream *s=(WAVStream *)ptr;
+
+    s->pos=0;
+}
+
 //--------------------------------------------------------------------------------------------------
 struct OutInterface
 {
@@ -179,10 +268,10 @@ static OutInterface out_interface=
     alutLoadWAVMemory,
     alutUnloadWAV,
 
-    NULL,
-    NULL,
-    NULL,
-    NULL
+    OpenWAV,
+    CloseWAV,
+    ReadWAV,
+    RestartWAV
 };
 //--------------------------------------------------------------------------------------------------
 const u16char plugin_intro[]=U16_TEXT("WAV音频文件解码(2014-04-09,代码源自ALUT)");

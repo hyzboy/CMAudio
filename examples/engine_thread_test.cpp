@@ -79,16 +79,16 @@ int main()
 
         Check("WaitIdle 完成", t.WaitIdle(3000));
 
-        // 收集回传
+        // 收集回传（T5：未知 Cue → Error，不再回传 PlayStarted）
         AudioEventResult r;
-        int started=0;
+        int errors=0;
         while(q.PollResult(r))
         {
-            if(r.type==uint32(AudioEventResultType::PlayStarted))
-                ++started;
+            if(r.type==uint32(AudioEventResultType::Error))
+                ++errors;
         }
 
-        Check("10 个 PlayStarted 回传", started==10);
+        Check("10 个 Error 回传（未知 Cue）", errors==10);
         Check("回传队列已清空", q.GetResultCount()==0);
 
         t.WaitExit(1.0);

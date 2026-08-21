@@ -66,6 +66,7 @@ namespace hgl::audio
         bool Playback();
 
         bool DeletedAfterExit()const override{return false;}
+        bool ProcStartThread()override;         ///< 播放线程启动：绑定 OpenAL context（per-thread 语义）
         bool Execute() override;
 
         void InitPrivate();
