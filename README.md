@@ -11,6 +11,7 @@ CMAudio 是 [ULRE 游戏引擎](https://github.com/) 的音频子系统模块（
 - **音频引擎中枢**：`AudioEngine` 统一驱动总线树、资源管理、空间音频世界的每帧更新。
 - **总线树混音**：`AudioBus` 树形总线（Master → Music/SFX/Ambient/UI），支持增益、静音、Ducking 与侧链压缩。
 - **资源管理**：`AudioAssetManager` 缓存去重 + 引用计数 + 后台异步解码线程。
+- **音频库打包**：`AudioBank` 将 wav/ogg 原始数据打包为单一 .bank 文件（条目名 FNV1a 哈希，与事件系统 CueNameHash 无缝对接），运行时按需解码。
 - **3D 空间音频**：`SpatialAudioWorld` 距离衰减、多普勒、锥形方向、频率相关衰减、场景低通、混响预设。
 - **数据驱动事件**：`SoundEventManager` 用 TOML 配置声音事件（文件变体 + 参数随机化 + 分组）。
 - **动态音乐**：`DynamicMusic` 多层 stem 播放 + 游戏状态驱动的 crossfade。
@@ -108,7 +109,7 @@ while(running) {
 | [EVENT/CUE 机制](doc/event-cue-system.md) | 事件驱动架构设计（指令协议 / CUE 配置 / 传输层 / 引擎线程化 / 三形态部署） |
 | [核心引擎](doc/core-engine.md) | AudioEngine / AudioManager / AudioPlayer / AudioSource / AudioListener |
 | [音频总线](doc/audio-bus.md) | AudioBus 树、增益、Ducking、侧链压缩 |
-| [资源管理](doc/asset-management.md) | AudioAssetManager / AudioBuffer / 异步加载 |
+| [资源管理](doc/asset-management.md) | AudioAssetManager / AudioBuffer / 异步加载 / AudioBank 打包 |
 | [声音事件与动态音乐](doc/sound-events.md) | SoundEventManager / DynamicMusic |
 | [录音](doc/audio-capture.md) | AudioCapture |
 | [空间音频](doc/spatial-audio.md) | SpatialAudioWorld / 方向性 / 混响 / 频率衰减 |

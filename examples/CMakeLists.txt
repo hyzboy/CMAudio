@@ -104,6 +104,9 @@ cm_audio_example("VoiceFX" voice_fx_test voice_fx_test.cpp)
 # ---- 离线高质量变声（WSOLA 大窗 + SINC 重采样 + cepstral formant 保持）----
 cm_audio_example("VoiceFX" offline_voice_fx_test offline_voice_fx_test.cpp)
 
+# ---- 音频库打包（AudioBank，P0）----
+cm_audio_example("AudioBank" audio_bank_test audio_bank_test.cpp)
+
 # ---- 移动平台会话策略 ----
 cm_audio_example("AudioSession" session_policy_test session_policy_test.cpp)
 
