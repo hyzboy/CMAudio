@@ -77,6 +77,9 @@ add_executable(audio_server audio_server.cpp)
 target_link_libraries(audio_server PRIVATE CMAudio CMCore)
 set_property(TARGET audio_server PROPERTY FOLDER "Examples/CMAudio/AudioEvent")
 
+# ---- 卷积/FFT（R1 移植）----
+cm_audio_example("DSP" convolver_test convolver_test.cpp)
+
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
 

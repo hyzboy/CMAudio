@@ -62,7 +62,10 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFilter.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioMemoryPool.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Gain.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/InterpolationType.h)
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/InterpolationType.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SplitComplex.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFFT.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Convolver.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
                         alc.cpp
@@ -117,7 +120,11 @@ set(CM_AUDIO_SOURCE
     Listener.cpp
     AudioMixer.cpp
     AudioResampler.cpp
-    AudioMixerScene.cpp)
+    AudioMixerScene.cpp
+    AudioFFT.cpp
+    Convolver.cpp
+    pffft/pffft.cpp
+    pffft/pffft_common.cpp)
 
 # ===== source_group 按功能域分组（VS 解决方案内组织）=====
 
@@ -218,6 +225,9 @@ source_group("DSP" FILES
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFilter.h
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/ReverbPreset.h
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/InterpolationType.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SplitComplex.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFFT.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Convolver.h
     BiquadFilter.cpp
     Compressor.cpp
     AudioEQ.cpp
@@ -225,7 +235,9 @@ source_group("DSP" FILES
     LoudnessNormalizer.cpp
     AudioAnalysis.cpp
     AudioFilterPreset.cpp
-    ReverbPreset.cpp)
+    ReverbPreset.cpp
+    AudioFFT.cpp
+    Convolver.cpp)
 
 # 8. Mixer：混音 / 重采样 / 场景
 source_group("Mixer" FILES
@@ -270,5 +282,7 @@ add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_OPENAL_SOURCE}
                             ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
+
+target_include_directories(CMAudio PRIVATE ${CMAUDIO_ROOT_SOURCE_PATH})
 
 target_link_libraries(CMAudio PRIVATE samplerate)
