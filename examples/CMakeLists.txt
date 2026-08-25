@@ -90,6 +90,9 @@ add_custom_command(TARGET hrir_test POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/data/sadie_h12.amir
         $<TARGET_FILE_DIR:hrir_test>/sadie_h12.amir)
 
+# ---- Room/Environment（R4 重构）----
+cm_audio_example("Spatial" room_test room_test.cpp)
+
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
 

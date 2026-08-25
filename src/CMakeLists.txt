@@ -77,7 +77,8 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicShelfFilter.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicBinauralizer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/LinkwitzRileyFilter.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/HRTF/HRIRSphere.h)
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/HRTF/HRIRSphere.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Room.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
                         alc.cpp
@@ -138,7 +139,8 @@ set(CM_AUDIO_SOURCE
     pffft/pffft.cpp
     pffft/pffft_common.cpp
     Ambisonics/AmbisonicDecoder.cpp
-    HRTF/HRIRSphere.cpp)
+    HRTF/HRIRSphere.cpp
+    Room.cpp)
 
 # ===== source_group 按功能域分组（VS 解决方案内组织）=====
 
