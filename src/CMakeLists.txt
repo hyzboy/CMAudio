@@ -137,7 +137,8 @@ set(CM_AUDIO_SOURCE
     Convolver.cpp
     pffft/pffft.cpp
     pffft/pffft_common.cpp
-    Ambisonics/AmbisonicDecoder.cpp)
+    Ambisonics/AmbisonicDecoder.cpp
+    HRTF/HRIRSphere.cpp)
 
 # ===== source_group 按功能域分组（VS 解决方案内组织）=====
 

@@ -38,6 +38,10 @@ public:
     bool IsLoaded()const override { return true; }
     uint32 GetIRLength()const override { return _len; }
     uint32 GetSampleRate()const override { return 48000; }
+    uint32 GetVertexCount()const override { return 0; }
+    uint32 GetFaceCount()const override { return 0; }
+    SamplingMode GetSamplingMode()const override { return SamplingMode::NearestNeighbor; }
+    void SetSamplingMode(SamplingMode) override {}
     void Sample(const Vec3 &, float *left, float *right)const override
     {
         for(uint32 i=0;i<_len;i++) { left[i]=0.0f; right[i]=0.0f; }
