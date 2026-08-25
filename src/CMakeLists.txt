@@ -65,7 +65,19 @@ set(CM_AUDIO_HEADER ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioBuffer.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/InterpolationType.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SplitComplex.h
                     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFFT.h
-                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Convolver.h)
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Convolver.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicTypes.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicComponent.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/BFormat.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicEntity.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicSource.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicSpeaker.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicDecoder.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicOrientationProcessor.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicShelfFilter.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicBinauralizer.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/LinkwitzRileyFilter.h
+                    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/HRTF/HRIRSphere.h)
 
 set(CM_OPENAL_SOURCE    al.cpp
                         alc.cpp
@@ -124,7 +136,8 @@ set(CM_AUDIO_SOURCE
     AudioFFT.cpp
     Convolver.cpp
     pffft/pffft.cpp
-    pffft/pffft_common.cpp)
+    pffft/pffft_common.cpp
+    Ambisonics/AmbisonicDecoder.cpp)
 
 # ===== source_group 按功能域分组（VS 解决方案内组织）=====
 
@@ -228,6 +241,18 @@ source_group("DSP" FILES
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/SplitComplex.h
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/AudioFFT.h
     ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Convolver.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicTypes.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicComponent.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/BFormat.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicEntity.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicSource.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicSpeaker.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicDecoder.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicOrientationProcessor.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicShelfFilter.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/AmbisonicBinauralizer.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/Ambisonics/LinkwitzRileyFilter.h
+    ${CMAUDIO_ROOT_INCLUDE_PATH}/hgl/audio/HRTF/HRIRSphere.h
     BiquadFilter.cpp
     Compressor.cpp
     AudioEQ.cpp
@@ -237,7 +262,8 @@ source_group("DSP" FILES
     AudioFilterPreset.cpp
     ReverbPreset.cpp
     AudioFFT.cpp
-    Convolver.cpp)
+    Convolver.cpp
+    Ambisonics/AmbisonicDecoder.cpp)
 
 # 8. Mixer：混音 / 重采样 / 场景
 source_group("Mixer" FILES
@@ -283,6 +309,7 @@ add_cm_library(CMAudio "CM" ${CMAUDIO_ROOT_INCLUDE_PATH} ${CM_OPENAL_HEADER}
                             ${CM_AUDIO_HEADER}
                             ${CM_AUDIO_SOURCE})
 
-target_include_directories(CMAudio PRIVATE ${CMAUDIO_ROOT_SOURCE_PATH})
+target_include_directories(CMAudio PRIVATE ${CMAUDIO_ROOT_SOURCE_PATH}
+                                            ${CMAUDIO_ROOT_SOURCE_PATH}/Ambisonics)
 
 target_link_libraries(CMAudio PRIVATE samplerate)

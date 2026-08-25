@@ -80,6 +80,9 @@ set_property(TARGET audio_server PROPERTY FOLDER "Examples/CMAudio/AudioEvent")
 # ---- 卷积/FFT（R1 移植）----
 cm_audio_example("DSP" convolver_test convolver_test.cpp)
 
+# ---- Ambisonics（R2 移植）----
+cm_audio_example("Ambisonics" ambisonics_test ambisonics_test.cpp)
+
 # ---- 音频分析（FFT/RMS/频谱/onset）----
 cm_audio_example("AudioAnalysis" audio_analysis_test audio_analysis_test.cpp)
 
