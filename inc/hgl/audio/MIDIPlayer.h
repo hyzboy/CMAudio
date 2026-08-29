@@ -34,7 +34,7 @@ namespace hgl::audio
 
     /**
     * 专业MIDI播放器类，提供对MIDI文件的完整控制
-    * 
+    *
     * 特性：
     * - 实时通道控制（音量、声像、静音、独奏）
     * - 动态乐器更换
@@ -42,7 +42,7 @@ namespace hgl::audio
     * - 多通道分离解码
     * - 通道信息查询
     * - 独立的播放线程
-    * 
+    *
     * 使用场景：
     * - 音乐制作和混音
     * - 卡拉OK系统
@@ -90,7 +90,7 @@ namespace hgl::audio
 
         bool Playback();
 
-        bool DeletedAfterExit()const override{return false;}    
+        bool DeletedAfterExit()const override{return false;}
         bool Execute() override;
 
         void InitPrivate();

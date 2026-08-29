@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright (c) 2020  Dario Mambro ( dario.mambro@gmail.com )
 */
 
@@ -137,56 +137,56 @@ FORCE_INLINE __m256d _mm256_reverse(__m256d x)
 out1 = [ in1[0], in2[0], in1[1], in2[1] ]
 out2 = [ in1[2], in2[2], in1[3], in2[3] ]
 */
-#  define INTERLEAVE2(in1, in2, out1, out2) {							\
-	__m128d low1__ = _mm256_castpd256_pd128(in1);						\
-	__m128d low2__ = _mm256_castpd256_pd128(in2);						\
-	__m128d high1__ = _mm256_extractf128_pd(in1, 1);					\
-	__m128d high2__ = _mm256_extractf128_pd(in2, 1);					\
-	__m256d tmp__ = _mm256_insertf128_pd_1(								\
-		_mm256_castpd128_pd256(_mm_shuffle_pd_00(low1__, low2__)),		\
-		_mm_shuffle_pd_11(low1__, low2__));								\
-	out2 = _mm256_insertf128_pd_1(										\
-		_mm256_castpd128_pd256(_mm_shuffle_pd_00(high1__, high2__)),	\
-		_mm_shuffle_pd_11(high1__, high2__));							\
-	out1 = tmp__;														\
+#  define INTERLEAVE2(in1, in2, out1, out2) {                           \
+    __m128d low1__ = _mm256_castpd256_pd128(in1);                       \
+    __m128d low2__ = _mm256_castpd256_pd128(in2);                       \
+    __m128d high1__ = _mm256_extractf128_pd(in1, 1);                    \
+    __m128d high2__ = _mm256_extractf128_pd(in2, 1);                    \
+    __m256d tmp__ = _mm256_insertf128_pd_1(                             \
+        _mm256_castpd128_pd256(_mm_shuffle_pd_00(low1__, low2__)),      \
+        _mm_shuffle_pd_11(low1__, low2__));                             \
+    out2 = _mm256_insertf128_pd_1(                                      \
+        _mm256_castpd128_pd256(_mm_shuffle_pd_00(high1__, high2__)),    \
+        _mm_shuffle_pd_11(high1__, high2__));                           \
+    out1 = tmp__;                                                       \
 }
 
 /*UNINTERLEAVE2(in1, in2, out1, out2) pseudo code:
 out1 = [ in1[0], in1[2], in2[0], in2[2] ]
 out2 = [ in1[1], in1[3], in2[1], in2[3] ]
 */
-#  define UNINTERLEAVE2(in1, in2, out1, out2) {							\
-	__m128d low1__ = _mm256_castpd256_pd128(in1);						\
-	__m128d low2__ = _mm256_castpd256_pd128(in2);						\
-	__m128d high1__ = _mm256_extractf128_pd(in1, 1);					\
-	__m128d high2__ = _mm256_extractf128_pd(in2, 1); 					\
-	__m256d tmp__ = _mm256_insertf128_pd_1(								\
-		_mm256_castpd128_pd256(_mm_shuffle_pd_00(low1__, high1__)),		\
-		_mm_shuffle_pd_00(low2__, high2__));							\
-	out2 = _mm256_insertf128_pd_1(										\
-		_mm256_castpd128_pd256(_mm_shuffle_pd_11(low1__, high1__)),		\
-		_mm_shuffle_pd_11(low2__, high2__));							\
-	out1 = tmp__;														\
+#  define UNINTERLEAVE2(in1, in2, out1, out2) {                         \
+    __m128d low1__ = _mm256_castpd256_pd128(in1);                       \
+    __m128d low2__ = _mm256_castpd256_pd128(in2);                       \
+    __m128d high1__ = _mm256_extractf128_pd(in1, 1);                    \
+    __m128d high2__ = _mm256_extractf128_pd(in2, 1);                    \
+    __m256d tmp__ = _mm256_insertf128_pd_1(                             \
+        _mm256_castpd128_pd256(_mm_shuffle_pd_00(low1__, high1__)),     \
+        _mm_shuffle_pd_00(low2__, high2__));                            \
+    out2 = _mm256_insertf128_pd_1(                                      \
+        _mm256_castpd128_pd256(_mm_shuffle_pd_11(low1__, high1__)),     \
+        _mm_shuffle_pd_11(low2__, high2__));                            \
+    out1 = tmp__;                                                       \
 }
 
-#  define VTRANSPOSE4(row0, row1, row2, row3) {							\
-        __m256d tmp3, tmp2, tmp1, tmp0;                     			\
-                                                            			\
-        tmp0 = _mm256_shuffle_pd_00((row0),(row1));       				\
-        tmp2 = _mm256_shuffle_pd_11((row0),(row1));       				\
-        tmp1 = _mm256_shuffle_pd_00((row2),(row3));       				\
-        tmp3 = _mm256_shuffle_pd_11((row2),(row3));       				\
-                                                            			\
-        (row0) = _mm256_permute2f128_pd_0x20(tmp0, tmp1);			    \
-        (row1) = _mm256_permute2f128_pd_0x20(tmp2, tmp3); 		        \
-        (row2) = _mm256_permute2f128_pd_0x31(tmp0, tmp1); 		        \
-        (row3) = _mm256_permute2f128_pd_0x31(tmp2, tmp3); 		        \
+#  define VTRANSPOSE4(row0, row1, row2, row3) {                         \
+        __m256d tmp3, tmp2, tmp1, tmp0;                                 \
+                                                                        \
+        tmp0 = _mm256_shuffle_pd_00((row0),(row1));                     \
+        tmp2 = _mm256_shuffle_pd_11((row0),(row1));                     \
+        tmp1 = _mm256_shuffle_pd_00((row2),(row3));                     \
+        tmp3 = _mm256_shuffle_pd_11((row2),(row3));                     \
+                                                                        \
+        (row0) = _mm256_permute2f128_pd_0x20(tmp0, tmp1);               \
+        (row1) = _mm256_permute2f128_pd_0x20(tmp2, tmp3);               \
+        (row2) = _mm256_permute2f128_pd_0x31(tmp0, tmp1);               \
+        (row3) = _mm256_permute2f128_pd_0x31(tmp2, tmp3);               \
     }
 
 /*VSWAPHL(a, b) pseudo code:
 return [ b[0], b[1], a[2], a[3] ]
 */
-#  define VSWAPHL(a,b)	\
+#  define VSWAPHL(a,b)  \
    _mm256_insertf128_pd_1(_mm256_castpd128_pd256(_mm256_castpd256_pd128(b)), _mm256_extractf128_pd(a, 1))
 
 /* reverse/flip all floats */

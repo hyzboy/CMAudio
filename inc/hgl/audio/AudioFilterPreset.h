@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include<hgl/audio/AudioFilter.h>
 

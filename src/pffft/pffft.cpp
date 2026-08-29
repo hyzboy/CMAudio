@@ -1,4 +1,4 @@
-/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
+﻿/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
    Copyright (c) 2020  Hayati Ayguen ( h_ayguen@web.de )
 
    Based on original fortran 77 code from FFTPACKv4 from NETLIB

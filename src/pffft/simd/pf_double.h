@@ -1,4 +1,4 @@
-
+﻿
 /* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
 
    Redistribution and use of the Software in source and binary forms,

@@ -45,12 +45,12 @@ static const char* GetConfigPath()
     // Priority 1: Custom path set via API
     if (custom_soundfont_path[0] != '\0')
         return custom_soundfont_path;
-    
+
     // Priority 2: Environment variable
     const char* config_path = getenv("TIMIDITY_CFG");
     if (config_path && *config_path)
         return config_path;
-    
+
 #ifdef _WIN32
     return "C:\\timidity\\timidity.cfg";  // Windows default
 #else
@@ -93,10 +93,10 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     while (out_size < pcm_total_bytes)
     {
         read_size = (int)mid_song_read_wave(song, (sint8*)ptr + out_size, pcm_total_bytes - out_size);
-        
+
         if (read_size <= 0)
             break;
-            
+
         out_size += read_size;
     }
 
@@ -134,12 +134,12 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
     }
 
     MidiStream *stream = new MidiStream;
-    
+
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
     stream->sample_rate = sample_rate;
-    
+
     stream->song = LoadSongFromMemory(stream->midi_data, stream->midi_size, stream->sample_rate);
     if (!stream->song)
     {
@@ -163,20 +163,20 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (stream->song)
         mid_song_free(stream->song);
-    
+
     delete stream;
 }
 
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->song)
         return 0;
-    
+
     int result = (int)mid_song_read_wave(stream->song, (sint8*)data, buf_max);
 
     if (result <= 0)
@@ -188,25 +188,25 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream)
         return;
-    
+
     // Free current song
     if (stream->song)
     {
         mid_song_free(stream->song);
         stream->song = nullptr;
     }
-    
+
     // Reload and restart
     stream->song = LoadSongFromMemory(stream->midi_data, stream->midi_size, stream->sample_rate);
-    
+
     if (stream->song)
     {
         mid_song_start(stream->song);
     }
-    
+
     // Note: If reload fails, song will be nullptr and subsequent ReadMIDI calls will return 0
 }
 
@@ -220,7 +220,7 @@ void SetSoundFont(const char* path)
     {
         strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
         custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
-        
+
         // Requires reinitialization to take effect
     }
 }
@@ -354,7 +354,7 @@ bool GetPlugInInterface(uint32 ver, void *data)
         memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
         return true;
     }
-    
+
     return false;
 }
 

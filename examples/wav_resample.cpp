@@ -1,4 +1,4 @@
-// WAV Resampler Example
+﻿// WAV Resampler Example
 // Resamples mono or stereo WAV files
 #include <iostream>
 #include <vector>

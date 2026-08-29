@@ -1,4 +1,4 @@
-// 验证 null 后端播放推进：AL_BUFFERS_PROCESSED / AL_BYTE_OFFSET 是否随播放变化
+﻿// 验证 null 后端播放推进：AL_BUFFERS_PROCESSED / AL_BYTE_OFFSET 是否随播放变化
 #include <cstdio>
 #include <hgl/audio/OpenAL.h>
 #include <hgl/audio/AudioPlayer.h>

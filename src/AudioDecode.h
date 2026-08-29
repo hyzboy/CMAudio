@@ -64,7 +64,7 @@ namespace hgl::audio
         // Channel information
         int     (AL_APIENTRY *GetChannelCount   )();                          // Get total number of MIDI channels (usually 16)
         bool    (AL_APIENTRY *GetChannelInfo    )(int channel, MIDIChannelInfo*);  // Get information about a specific channel
-        
+
         // Channel control
         void    (AL_APIENTRY *SetChannelProgram )(int channel, int program);  // Change instrument on a channel (0-127)
         void    (AL_APIENTRY *SetChannelBank    )(int channel, int bank);     // Change bank for a channel
@@ -72,7 +72,7 @@ namespace hgl::audio
         void    (AL_APIENTRY *SetChannelPan     )(int channel, float pan);    // Set channel pan (-1.0 to 1.0)
         void    (AL_APIENTRY *MuteChannel       )(int channel, bool mute);    // Mute/unmute a channel
         void    (AL_APIENTRY *SoloChannel       )(int channel, bool solo);    // Solo/unsolo a channel
-        
+
         // Multi-channel decoding
         void*   (AL_APIENTRY *OpenMultiChannel  )(ALbyte *data, ALsizei size, ALenum *format, ALsizei *freq, double *time);  // Open for multi-channel decode
         uint    (AL_APIENTRY *ReadChannel       )(void *stream, int channel, char *pcm_data, uint buf_size);  // Read specific channel

@@ -31,12 +31,12 @@ static const char* GetSoundFontPath()
     // Priority 1: Custom path set via API
     if (custom_soundfont_path[0] != '\0')
         return custom_soundfont_path;
-    
+
     // Priority 2: Environment variable
     const char* sf_path = getenv("TSF_SOUNDFONT");
     if (sf_path && *sf_path)
         return sf_path;
-    
+
 #ifdef _WIN32
     return "C:\\soundfonts\\default.sf2";  // Windows default
 #else
@@ -49,10 +49,10 @@ static bool InitTinySoundFont()
 {
     if (tsf_initialized && g_tsf)
         return true;
-        
+
     const char* sf_path = GetSoundFontPath();
     g_tsf = tsf_load_filename(sf_path);
-    
+
     if (!g_tsf)
     {
         // Try alternative common paths
@@ -63,22 +63,22 @@ static bool InitTinySoundFont()
             "/usr/share/sounds/sf2/GeneralUser_GS.sf2",
             nullptr
         };
-        
+
         for (int i = 0; alt_paths[i] != nullptr; i++)
         {
             g_tsf = tsf_load_filename(alt_paths[i]);
             if (g_tsf)
                 break;
         }
-        
+
         if (!g_tsf)
             return false;
     }
-    
+
     // Set output mode using configuration state
     tsf_set_output(g_tsf, TSF_STEREO_INTERLEAVED, sample_rate, 0.0f);
     tsf_set_volume(g_tsf, global_volume);
-    
+
     tsf_initialized = true;
     return true;
 }
@@ -105,7 +105,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
             total_time = msg->time;
     }
     total_time /= 1000.0; // Convert ms to seconds
-    
+
     size_t total_samples = (size_t)(total_time * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
@@ -115,17 +115,17 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Reset synthesizer
     tsf_reset(g_tsf);
-    
+
     // Render MIDI to PCM
     tml_message* msg = midi;
     double current_time = 0.0;
     const size_t render_samples = 4096; // samples per channel per render
-    
+
     while (out_size < pcm_total_bytes && msg)
     {
         // Process MIDI messages up to next render time
         double next_time = current_time + (render_samples / (double)sample_rate * 1000.0); // in ms
-        
+
         while (msg && msg->time <= next_time)
         {
             switch (msg->type)
@@ -148,12 +148,12 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
             }
             msg = msg->next;
         }
-        
+
         // Render audio
         size_t samples_to_render = render_samples;
         if (out_size + samples_to_render * 2 * sizeof(int16_t) > pcm_total_bytes)
             samples_to_render = (pcm_total_bytes - out_size) / (2 * sizeof(int16_t));
-        
+
         if (samples_to_render > 0)
         {
             tsf_render_short(g_tsf, (short*)((char*)ptr + out_size), samples_to_render, 0);
@@ -193,20 +193,20 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
         return nullptr;
 
     MidiStream *stream = new MidiStream;
-    
+
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
     stream->sample_rate = sample_rate;
     stream->current_time = 0.0;
-    
+
     stream->midi = tml_load_memory(stream->midi_data, stream->midi_size);
     if (!stream->midi)
     {
         delete stream;
         return nullptr;
     }
-    
+
     stream->current_msg = stream->midi;
 
     // TinySoundFont outputs stereo 16-bit
@@ -221,7 +221,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
             max_time = msg->time;
     }
     *total_time = max_time / 1000.0;
-    
+
     // Reset synthesizer for this stream
     tsf_reset(g_tsf);
 
@@ -231,61 +231,61 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (stream->midi)
         tml_free(stream->midi);
-    
+
     delete stream;
 }
 
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->midi)
         return 0;
-    
+
     // Calculate samples to render
     size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
-    
+
     // Process MIDI messages
     double next_time = stream->current_time + (samples / (double)stream->sample_rate * 1000.0); // in ms
-    
+
     while (stream->current_msg && stream->current_msg->time <= next_time)
     {
         switch (stream->current_msg->type)
         {
             case TML_PROGRAM_CHANGE:
-                tsf_channel_set_presetnumber(g_tsf, stream->current_msg->channel, 
-                                            stream->current_msg->program, 
+                tsf_channel_set_presetnumber(g_tsf, stream->current_msg->channel,
+                                            stream->current_msg->program,
                                             (stream->current_msg->channel == 9));
                 break;
             case TML_NOTE_ON:
-                tsf_channel_note_on(g_tsf, stream->current_msg->channel, 
-                                   stream->current_msg->key, 
+                tsf_channel_note_on(g_tsf, stream->current_msg->channel,
+                                   stream->current_msg->key,
                                    stream->current_msg->velocity / 127.0f);
                 break;
             case TML_NOTE_OFF:
-                tsf_channel_note_off(g_tsf, stream->current_msg->channel, 
+                tsf_channel_note_off(g_tsf, stream->current_msg->channel,
                                     stream->current_msg->key);
                 break;
             case TML_PITCH_BEND:
-                tsf_channel_set_pitchwheel(g_tsf, stream->current_msg->channel, 
+                tsf_channel_set_pitchwheel(g_tsf, stream->current_msg->channel,
                                           stream->current_msg->pitch_bend);
                 break;
             case TML_CONTROL_CHANGE:
-                tsf_channel_midi_control(g_tsf, stream->current_msg->channel, 
-                                        stream->current_msg->control, 
+                tsf_channel_midi_control(g_tsf, stream->current_msg->channel,
+                                        stream->current_msg->control,
                                         stream->current_msg->control_value);
                 break;
         }
         stream->current_msg = stream->current_msg->next;
     }
-    
+
     // Check if we've reached the end
     if (!stream->current_msg)
         return 0;
-    
+
     // Render audio
     tsf_render_short(g_tsf, (short*)data, samples, 0);
     stream->current_time = next_time;
@@ -296,14 +296,14 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream)
         return;
-    
+
     // Reset to beginning
     stream->current_msg = stream->midi;
     stream->current_time = 0.0;
-    
+
     // Reset synthesizer
     tsf_reset(g_tsf);
 }
@@ -318,7 +318,7 @@ void SetSoundFont(const char* path)
     {
         strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
         custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
-        
+
         // If already initialized, reload the soundfont
         if (tsf_initialized && g_tsf)
         {
@@ -468,7 +468,7 @@ bool GetPlugInInterface(uint32 ver, void *data)
         memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
         return true;
     }
-    
+
     return false;
 }
 

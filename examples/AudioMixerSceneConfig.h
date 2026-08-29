@@ -1,4 +1,4 @@
-// AudioMixerScene TOML Configuration Parser
+﻿// AudioMixerScene TOML Configuration Parser
 // Simple TOML parser for AudioMixerScene multi-source mixing configuration
 #pragma once
 

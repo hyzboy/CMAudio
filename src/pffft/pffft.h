@@ -1,4 +1,4 @@
-/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
+﻿/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
 
    Based on original fortran 77 code from FFTPACKv4 from NETLIB,
    authored by Dr Paul Swarztrauber of NCAR, in 1985.

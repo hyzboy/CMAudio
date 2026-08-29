@@ -33,12 +33,12 @@ static const char* GetSoundFontPath()
     // Priority 1: Custom path set via API
     if (custom_soundfont_path[0] != '\0')
         return custom_soundfont_path;
-    
+
     // Priority 2: Environment variable
     const char* sf_path = getenv("FLUIDSYNTH_SF2");
     if (sf_path && *sf_path)
         return sf_path;
-    
+
 #ifdef _WIN32
     return "C:\\soundfonts\\default.sf2";  // Windows default
 #else
@@ -52,18 +52,18 @@ static bool InitFluidSynth()
 {
     if (fluidsynth_initialized)
         return true;
-        
+
     fluid_settings = new_fluid_settings();
     if (!fluid_settings)
         return false;
-    
+
     // Configure settings using configuration state
     fluid_settings_setnum(fluid_settings, "synth.sample-rate", (double)sample_rate);
     fluid_settings_setint(fluid_settings, "synth.polyphony", polyphony);
     fluid_settings_setint(fluid_settings, "synth.reverb.active", reverb_enabled ? 1 : 0);
     fluid_settings_setint(fluid_settings, "synth.chorus.active", chorus_enabled ? 1 : 0);
     fluid_settings_setnum(fluid_settings, "synth.gain", (double)global_volume);
-    
+
     fluid_synth = new_fluid_synth(fluid_settings);
     if (!fluid_synth)
     {
@@ -71,7 +71,7 @@ static bool InitFluidSynth()
         fluid_settings = nullptr;
         return false;
     }
-    
+
     // Load soundfont
     const char* sf_path = GetSoundFontPath();
     if (fluid_synth_sfload(fluid_synth, sf_path, 1) < 0)
@@ -84,7 +84,7 @@ static bool InitFluidSynth()
             "/usr/share/sounds/sf2/GeneralUser_GS.sf2",
             nullptr
         };
-        
+
         bool loaded = false;
         for (int i = 0; alt_paths[i] != nullptr; i++)
         {
@@ -94,7 +94,7 @@ static bool InitFluidSynth()
                 break;
             }
         }
-        
+
         if (!loaded)
         {
             delete_fluid_synth(fluid_synth);
@@ -104,7 +104,7 @@ static bool InitFluidSynth()
             return false;
         }
     }
-    
+
     fluidsynth_initialized = true;
     return true;
 }
@@ -161,7 +161,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
             total_time_sec = msg->time;
     }
     total_time_sec /= 1000.0;
-    
+
     size_t total_samples = (size_t)(total_time_sec * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
@@ -175,7 +175,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     // Render audio
     const size_t buffer_size = 4096; // samples per channel
     int16_t render_buffer[buffer_size * 2]; // stereo
-    
+
     tml_message* msg = midi;
     double current_time = 0.0;
 
@@ -193,11 +193,11 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
         if (fluid_synth_write_s16(fluid_synth, buffer_size, render_buffer, 0, 2,
                                   render_buffer, 1, 2) != 0)
             break;
-        
+
         size_t bytes_to_copy = buffer_size * 2 * sizeof(int16_t);
         if (out_size + bytes_to_copy > pcm_total_bytes)
             bytes_to_copy = pcm_total_bytes - out_size;
-            
+
         memcpy((char*)ptr + out_size, render_buffer, bytes_to_copy);
         out_size += bytes_to_copy;
     }
@@ -232,7 +232,7 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
         return nullptr;
 
     MidiStream *stream = new MidiStream;
-    
+
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
@@ -272,17 +272,17 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (stream->midi)
         tml_free(stream->midi);
-    
+
     delete stream;
 }
 
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->midi || !stream->playing)
         return 0;
 
@@ -312,10 +312,10 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream)
         return;
-    
+
     stream->current_msg = stream->midi;
     stream->current_time = 0.0;
     stream->playing = (stream->midi != nullptr);
@@ -334,7 +334,7 @@ void SetSoundFont(const char* path)
     {
         strncpy(custom_soundfont_path, path, sizeof(custom_soundfont_path) - 1);
         custom_soundfont_path[sizeof(custom_soundfont_path) - 1] = '\0';
-        
+
         // If already initialized, reload the soundfont
         if (fluidsynth_initialized && fluid_synth)
         {
@@ -434,7 +434,7 @@ bool GetChannelInfo(int channel, void* info_ptr)
 {
     if (channel < 0 || channel >= 16 || !info_ptr)
         return false;
-    
+
     // Define local structure matching the interface
     struct MidiChannelInfo
     {
@@ -448,7 +448,7 @@ bool GetChannelInfo(int channel, void* info_ptr)
         int note_count;
         const char* instrument_name;
     };
-    
+
     MidiChannelInfo* info = (MidiChannelInfo*)info_ptr;
     info->channel = channel;
     info->program = channel_states[channel].program;
@@ -459,7 +459,7 @@ bool GetChannelInfo(int channel, void* info_ptr)
     info->solo = channel_states[channel].solo;
     info->note_count = 0;  // FluidSynth doesn't easily expose active note count
     info->instrument_name = nullptr;  // Would need GM instrument name lookup
-    
+
     return true;
 }
 
@@ -467,9 +467,9 @@ void SetChannelProgram(int channel, int program)
 {
     if (channel < 0 || channel >= 16 || program < 0 || program > 127)
         return;
-    
+
     channel_states[channel].program = program;
-    
+
     if (fluidsynth_initialized && fluid_synth)
     {
         fluid_synth_program_change(fluid_synth, channel, program);
@@ -480,9 +480,9 @@ void SetChannelBank(int channel, int bank)
 {
     if (channel < 0 || channel >= 16)
         return;
-    
+
     channel_states[channel].bank = bank;
-    
+
     if (fluidsynth_initialized && fluid_synth)
     {
         // Set bank MSB and LSB
@@ -494,12 +494,12 @@ void SetChannelVolume(int channel, float volume)
 {
     if (channel < 0 || channel >= 16)
         return;
-    
+
     if (volume < 0.0f) volume = 0.0f;
     if (volume > 1.0f) volume = 1.0f;
-    
+
     channel_states[channel].volume = volume;
-    
+
     if (fluidsynth_initialized && fluid_synth)
     {
         // MIDI volume CC is 0-127
@@ -512,12 +512,12 @@ void SetChannelPan(int channel, float pan)
 {
     if (channel < 0 || channel >= 16)
         return;
-    
+
     if (pan < -1.0f) pan = -1.0f;
     if (pan > 1.0f) pan = 1.0f;
-    
+
     channel_states[channel].pan = pan;
-    
+
     if (fluidsynth_initialized && fluid_synth)
     {
         // MIDI pan CC is 0-127, with 64 being center
@@ -530,9 +530,9 @@ void MuteChannel(int channel, bool mute)
 {
     if (channel < 0 || channel >= 16)
         return;
-    
+
     channel_states[channel].muted = mute;
-    
+
     if (mute)
     {
         SetChannelVolume(channel, 0.0f);
@@ -547,9 +547,9 @@ void SoloChannel(int channel, bool solo)
 {
     if (channel < 0 || channel >= 16)
         return;
-    
+
     channel_states[channel].solo = solo;
-    
+
     // Update solo state
     any_solo_active = false;
     for (int i = 0; i < 16; i++)
@@ -560,7 +560,7 @@ void SoloChannel(int channel, bool solo)
             break;
         }
     }
-    
+
     // Apply muting based on solo state
     for (int i = 0; i < 16; i++)
     {
@@ -600,7 +600,7 @@ uint ReadChannel(void *stream, int channel, char *pcm_data, uint buf_size)
 {
     if (!stream || channel < 0 || channel >= 16)
         return 0;
-    
+
     // Mute all other channels temporarily
     bool original_mute[16];
     for (int i = 0; i < 16; i++)
@@ -611,10 +611,10 @@ uint ReadChannel(void *stream, int channel, char *pcm_data, uint buf_size)
             MuteChannel(i, true);
         }
     }
-    
+
     // Read the audio with only this channel active
     uint result = ReadMIDI(stream, pcm_data, buf_size);
-    
+
     // Restore original mute states
     for (int i = 0; i < 16; i++)
     {
@@ -624,7 +624,7 @@ uint ReadChannel(void *stream, int channel, char *pcm_data, uint buf_size)
             SetChannelVolume(i, channel_states[i].volume);
         }
     }
-    
+
     return result;
 }
 
@@ -632,7 +632,7 @@ uint ReadChannels(void *stream, int *channels, int channel_count, char **pcm_dat
 {
     if (!stream || !channels || !pcm_data || channel_count <= 0)
         return 0;
-    
+
     // For multiple channels, we need to render separately
     // This is expensive but accurate
     uint result = 0;
@@ -642,7 +642,7 @@ uint ReadChannels(void *stream, int *channels, int channel_count, char **pcm_dat
         if (result == 0)
             break;
     }
-    
+
     return result;
 }
 
@@ -764,7 +764,7 @@ bool GetPlugInInterface(uint32 ver, void *data)
         memcpy(data, &midi_channel_interface, sizeof(MidiChannelInterface));
         return true;
     }
-    
+
     return false;
 }
 

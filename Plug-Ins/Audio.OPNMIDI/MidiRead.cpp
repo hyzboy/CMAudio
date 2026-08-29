@@ -27,7 +27,7 @@ static const char* GetBankPath()
     // Priority 1: Custom path set via API
     if (custom_bank_path[0] != '\0')
         return custom_bank_path;
-    
+
     // Priority 2: Use built-in banks (nullptr)
     return nullptr;
 }
@@ -36,18 +36,18 @@ static bool InitOPNMIDI()
 {
     if (opnmidi_initialized && g_opn_device)
         return true;
-        
+
     // Create OPN2 (YM2612) device using configuration
     g_opn_device = opn2_init(sample_rate);
     if (!g_opn_device)
         return false;
-    
+
     // Set chip count for polyphony
     opn2_setNumChips(g_opn_device, chip_count);
-    
+
     // Set volume
     opn2_setVolumeRangeModel(g_opn_device, OPNMIDI_VolumeModel_AUTO);
-    
+
     // Load bank
     const char* bank_path = GetBankPath();
     if (bank_path != nullptr)
@@ -70,7 +70,7 @@ static bool InitOPNMIDI()
             return false;
         }
     }
-    
+
     opnmidi_initialized = true;
     return true;
 }
@@ -84,14 +84,14 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     OPN2_MIDIPlayer* device = opn2_init(sample_rate);
     if (!device)
         return;
-    
+
     opn2_setNumChips(device, chip_count);
     const char* bank_path = GetBankPath();
     if (bank_path)
         opn2_openBankFile(device, bank_path);
     else
         opn2_openBankData(device, nullptr, 0);
-    
+
     // Load MIDI from memory
     if (opn2_openData(device, memory, memory_size) < 0)
     {
@@ -105,7 +105,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Get total time
     double total_time = opn2_totalTimeLength(device);
-    
+
     size_t total_samples = (size_t)(total_time * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
@@ -115,24 +115,24 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Render MIDI to PCM
     const size_t render_samples = 4096; // samples per channel
-    
+
     while (out_size < pcm_total_bytes)
     {
         size_t samples_to_render = render_samples;
         if (out_size + samples_to_render * 2 * sizeof(int16_t) > pcm_total_bytes)
             samples_to_render = (pcm_total_bytes - out_size) / (2 * sizeof(int16_t));
-        
+
         if (samples_to_render == 0)
             break;
-            
-        int rendered = opn2_playFormat(device, (int)samples_to_render, 
+
+        int rendered = opn2_playFormat(device, (int)samples_to_render,
                                        (OPN2_UInt8*)((char*)ptr + out_size),
                                        (OPN2_UInt8*)((char*)ptr + out_size) + sizeof(int16_t),
                                        nullptr);
-        
+
         if (rendered <= 0)
             break;
-            
+
         out_size += rendered * 2 * sizeof(int16_t);
     }
 
@@ -163,26 +163,26 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
         return nullptr;
 
     MidiStream *stream = new MidiStream;
-    
+
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
     stream->sample_rate = 44100;
-    
+
     stream->device = opn2_init(stream->sample_rate);
     if (!stream->device)
     {
         delete stream;
         return nullptr;
     }
-    
+
     opn2_setNumChips(stream->device, chip_count);
     const char* bank_path = GetBankPath();
     if (bank_path)
         opn2_openBankFile(stream->device, bank_path);
     else
         opn2_openBankData(stream->device, nullptr, 0);
-    
+
     // Load MIDI from memory
     if (opn2_openData(stream->device, stream->midi_data, stream->midi_size) < 0)
     {
@@ -204,28 +204,28 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (stream->device)
         opn2_close(stream->device);
-    
+
     delete stream;
 }
 
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->device)
         return 0;
-    
+
     // Calculate samples to render
     size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
-    
+
     int rendered = opn2_playFormat(stream->device, (int)samples,
                                    (OPN2_UInt8*)data,
                                    (OPN2_UInt8*)data + sizeof(int16_t),
                                    nullptr);
-    
+
     if (rendered <= 0)
         return 0;
 
@@ -235,10 +235,10 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->device)
         return;
-    
+
     // Reset position to beginning
     opn2_positionRewind(stream->device);
 }
@@ -255,7 +255,7 @@ void SetSoundFont(const char* path)
     {
         strncpy(custom_bank_path, path, sizeof(custom_bank_path) - 1);
         custom_bank_path[sizeof(custom_bank_path) - 1] = '\0';
-        
+
         // If already initialized, reload the bank
         if (opnmidi_initialized && g_opn_device)
         {
@@ -289,7 +289,7 @@ void SetPolyphony(int poly)
     chip_count = (poly + 5) / 6;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
-    
+
     if (opnmidi_initialized && g_opn_device)
     {
         opn2_setNumChips(g_opn_device, chip_count);
@@ -301,7 +301,7 @@ void SetChipCount(int count)
     chip_count = count;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
-    
+
     if (opnmidi_initialized && g_opn_device)
     {
         opn2_setNumChips(g_opn_device, chip_count);
@@ -407,7 +407,7 @@ bool GetPlugInInterface(uint32 ver, void *data)
         memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
         return true;
     }
-    
+
     return false;
 }
 

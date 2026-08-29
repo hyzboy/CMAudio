@@ -1,4 +1,4 @@
-/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
+﻿/* Copyright (c) 2013  Julien Pommier ( pommier@modartt.com )
    Copyright (c) 2020  Hayati Ayguen ( h_ayguen@web.de )
    Copyright (c) 2020  Dario Mambro ( dario.mambro@gmail.com )
 

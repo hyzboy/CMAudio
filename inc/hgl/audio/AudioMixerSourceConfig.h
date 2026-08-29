@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include<hgl/audio/AudioFilterPreset.h>
 #include<hgl/audio/AudioMixerTypes.h>

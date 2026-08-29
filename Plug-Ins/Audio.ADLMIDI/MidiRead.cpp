@@ -27,7 +27,7 @@ static const char* GetBankPath()
     // Priority 1: Custom path set via API
     if (custom_bank_path[0] != '\0')
         return custom_bank_path;
-    
+
     // Priority 2: Use built-in banks (nullptr)
     return nullptr;
 }
@@ -36,18 +36,18 @@ static bool InitADLMIDI()
 {
     if (adlmidi_initialized && g_adl_device)
         return true;
-        
+
     // Create AdLib/OPL3 device using configuration
     g_adl_device = adl_init(sample_rate);
     if (!g_adl_device)
         return false;
-    
+
     // Set chip count for polyphony
     adl_setNumChips(g_adl_device, chip_count);
-    
+
     // Set volume
     adl_setVolumeRangeModel(g_adl_device, ADLMIDI_VolumeModel_AUTO);
-    
+
     // Load bank
     const char* bank_path = GetBankPath();
     if (bank_path != nullptr)
@@ -69,7 +69,7 @@ static bool InitADLMIDI()
             adl_setBank(g_adl_device, 0);
         }
     }
-    
+
     adlmidi_initialized = true;
     return true;
 }
@@ -83,14 +83,14 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
     ADL_MIDIPlayer* device = adl_init(sample_rate);
     if (!device)
         return;
-    
+
     adl_setNumChips(device, chip_count);
     const char* bank_path = GetBankPath();
     if (bank_path)
         adl_openBankFile(device, bank_path);
     else
         adl_setBank(device, bank_id);
-    
+
     // Load MIDI from memory
     if (adl_openData(device, memory, memory_size) < 0)
     {
@@ -104,7 +104,7 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Get total time
     double total_time = adl_totalTimeLength(device);
-    
+
     size_t total_samples = (size_t)(total_time * sample_rate);
     const size_t total_stereo_samples = total_samples * 2; // stereo
     const size_t pcm_total_bytes = total_stereo_samples * sizeof(int16_t);
@@ -114,24 +114,24 @@ ALvoid LoadMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALvoid **da
 
     // Render MIDI to PCM
     const size_t render_samples = 4096; // samples per channel
-    
+
     while (out_size < pcm_total_bytes)
     {
         size_t samples_to_render = render_samples;
         if (out_size + samples_to_render * 2 * sizeof(int16_t) > pcm_total_bytes)
             samples_to_render = (pcm_total_bytes - out_size) / (2 * sizeof(int16_t));
-        
+
         if (samples_to_render == 0)
             break;
-            
-        int rendered = adl_playFormat(device, (int)samples_to_render, 
+
+        int rendered = adl_playFormat(device, (int)samples_to_render,
                                       (ADL_UInt8*)((char*)ptr + out_size),
                                       (ADL_UInt8*)((char*)ptr + out_size) + sizeof(int16_t),
                                       nullptr);
-        
+
         if (rendered <= 0)
             break;
-            
+
         out_size += rendered * 2 * sizeof(int16_t);
     }
 
@@ -162,26 +162,26 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
         return nullptr;
 
     MidiStream *stream = new MidiStream;
-    
+
     // Store MIDI data for potential restart
     stream->midi_data = (unsigned char*)memory;
     stream->midi_size = memory_size;
     stream->sample_rate = 44100;
-    
+
     stream->device = adl_init(stream->sample_rate);
     if (!stream->device)
     {
         delete stream;
         return nullptr;
     }
-    
+
     adl_setNumChips(stream->device, chip_count);
     const char* bank_path = GetBankPath();
     if (bank_path)
         adl_openBankFile(stream->device, bank_path);
     else
         adl_setBank(stream->device, bank_id);
-    
+
     // Load MIDI from memory
     if (adl_openData(stream->device, stream->midi_data, stream->midi_size) < 0)
     {
@@ -203,28 +203,28 @@ void *OpenMIDI(ALbyte *memory, ALsizei memory_size, ALenum *format, ALsizei *rat
 void CloseMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (stream->device)
         adl_close(stream->device);
-    
+
     delete stream;
 }
 
 uint ReadMIDI(void *ptr, char *data, uint buf_max)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->device)
         return 0;
-    
+
     // Calculate samples to render
     size_t samples = buf_max / (2 * sizeof(int16_t)); // stereo 16-bit
-    
+
     int rendered = adl_playFormat(stream->device, (int)samples,
                                   (ADL_UInt8*)data,
                                   (ADL_UInt8*)data + sizeof(int16_t),
                                   nullptr);
-    
+
     if (rendered <= 0)
         return 0;
 
@@ -234,10 +234,10 @@ uint ReadMIDI(void *ptr, char *data, uint buf_max)
 void RestartMIDI(void *ptr)
 {
     MidiStream *stream = (MidiStream *)ptr;
-    
+
     if (!stream || !stream->device)
         return;
-    
+
     // Reset position to beginning
     adl_positionRewind(stream->device);
 }
@@ -254,7 +254,7 @@ void SetSoundFont(const char* path)
     {
         strncpy(custom_bank_path, path, sizeof(custom_bank_path) - 1);
         custom_bank_path[sizeof(custom_bank_path) - 1] = '\0';
-        
+
         // If already initialized, reload the bank
         if (adlmidi_initialized && g_adl_device)
         {
@@ -291,7 +291,7 @@ void SetPolyphony(int poly)
     chip_count = (poly + 17) / 18;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
-    
+
     if (adlmidi_initialized && g_adl_device)
     {
         adl_setNumChips(g_adl_device, chip_count);
@@ -303,7 +303,7 @@ void SetChipCount(int count)
     chip_count = count;
     if (chip_count < 1) chip_count = 1;
     if (chip_count > 100) chip_count = 100;
-    
+
     if (adlmidi_initialized && g_adl_device)
     {
         adl_setNumChips(g_adl_device, chip_count);
@@ -332,7 +332,7 @@ const char* GetDefaultBank()
     const char* path = GetBankPath();
     if (path)
         return path;
-    
+
     // Return built-in bank description
     // Note: This returns a constant string, which is thread-safe
     switch (bank_id)
@@ -419,7 +419,7 @@ bool GetPlugInInterface(uint32 ver, void *data)
         memcpy(data, &midi_config_interface, sizeof(MidiConfigInterface));
         return true;
     }
-    
+
     return false;
 }
 

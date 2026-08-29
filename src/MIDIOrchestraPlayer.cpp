@@ -117,7 +117,7 @@ namespace hgl::audio
         decoder=nullptr;
         midi_config=nullptr;
         midi_channels=nullptr;
-        
+
         audio_manager=nullptr;
 
         orchestra_bus=nullptr;
@@ -531,7 +531,7 @@ namespace hgl::audio
                         decoder->Close(audio_ptr);
                         double total_time=0;
                         audio_ptr=decoder->Open(audio_data,audio_data_size,&al_format,&sample_rate,&total_time);
-                        
+
                         ClearAllBuffers();
                         PlaybackAllChannels();
                     }

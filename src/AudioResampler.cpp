@@ -1,4 +1,4 @@
-#include<hgl/audio/AudioResampler.h>
+﻿#include<hgl/audio/AudioResampler.h>
 #include<hgl/log/Log.h>
 #include<hgl/type/String.h>
 #include<hgl/type/StdString.h>

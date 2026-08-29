@@ -58,14 +58,14 @@ namespace hgl::audio
 
     /**
     * 3D空间MIDI交响乐团播放器
-    * 
+    *
     * 依赖要求 / Dependencies:
     * - 需要 FluidSynth 插件 (Audio.FluidSynth)
     * - FluidSynth 提供最佳音质和完整的多通道分离支持
-    * 
+    *
     * Requires FluidSynth plugin (Audio.FluidSynth)
     * FluidSynth provides best audio quality and complete multi-channel separation
-    * 
+    *
     * 特性 / Features:
     * - 每个MIDI通道独立的AudioSource和3D位置
     * - 模拟真实乐队的空间布局
@@ -73,14 +73,14 @@ namespace hgl::audio
     * - 完美同步的多通道播放
     * - 实时位置调整
     * - 独立的距离衰减和空间音频效果
-    * 
+    *
     * Each MIDI channel has independent AudioSource and 3D position
     * Simulates real orchestra spatial layout
     * Supports multiple preset layouts (Symphony, Chamber, Jazz, Rock)
     * Perfect synchronization across all channels
     * Real-time position adjustment
     * Independent distance attenuation and spatial audio effects
-    * 
+    *
     * 使用场景 / Use Cases:
     * - VR音乐厅体验 / VR concert hall experience
     * - 游戏中的乐队表演 / Orchestra performance in games
@@ -135,7 +135,7 @@ namespace hgl::audio
 
         bool PlaybackAllChannels();
 
-        bool DeletedAfterExit()const override{return false;}    
+        bool DeletedAfterExit()const override{return false;}
         bool Execute() override;
 
         void InitPrivate();

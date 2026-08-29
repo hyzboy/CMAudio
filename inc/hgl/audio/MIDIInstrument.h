@@ -1,4 +1,4 @@
-#ifndef HGL_MIDI_INSTRUMENT_INCLUDE
+﻿#ifndef HGL_MIDI_INSTRUMENT_INCLUDE
 #define HGL_MIDI_INSTRUMENT_INCLUDE
 
 namespace hgl::audio
@@ -6,7 +6,7 @@ namespace hgl::audio
     /**
      * MIDI General MIDI Level 1 乐器编号定义
      * MIDI General MIDI Level 1 Instrument Program Numbers
-     * 
+     *
      * 使用 enum class 提供类型安全和命名空间隔离
      * Using enum class for type safety and namespace isolation
      */

@@ -34,8 +34,8 @@ namespace hgl::audio
         bool operator==(const MixingTrack& other) const
         {
             return source_index == other.source_index &&
-                   time_offset == other.time_offset && 
-                   volume == other.volume && 
+                   time_offset == other.time_offset &&
+                   volume == other.volume &&
                    pitch == other.pitch;
         }
     };

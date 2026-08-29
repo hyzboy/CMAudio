@@ -166,7 +166,7 @@ namespace hgl::audio
     {
         source_pool.Init(max_source);      // 预分配音源对象池（固定大小）
         spatial_source_pool.Init();         // 初始化空间音源对象池
-        
+
         // 预创建空间音源对象并加入池
         for(int i = 0; i < max_source; i++)
         {
