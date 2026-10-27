@@ -17,13 +17,13 @@ static void Check(bool condition)
         failed=check_count;
 }
 
-static bool StartEngine(AudioEngineThread &thread)
+static int StartEngine(AudioEngineThread &thread)
 {
     if(!thread.Start())
-        return(false);
+        return(0);
 
     SleepSecond(0.05);
-    return thread.IsLive();
+    return thread.IsLive()?1:2;
 }
 
 class EventProducer:public Thread
@@ -69,9 +69,16 @@ int main()
     {
         SameProcessQueue queue(1024);
         AudioEngineThread thread(&queue);
-        const bool running=StartEngine(thread);
+        const int startup=StartEngine(thread);
 
-        if(!running)
+        if(startup==0)
+        {
+            thread.WaitExit();
+            Check(false);
+            return(failed);
+        }
+
+        if(startup==2)
         {
             thread.WaitExit();
             GLogWarning(U8_TEXT("Audio engine integration test skipped: OpenAL initialization failed"));
@@ -89,7 +96,7 @@ int main()
     {
         SameProcessQueue queue(1024);
         AudioEngineThread thread(&queue);
-        const bool running=StartEngine(thread);
+        const bool running=StartEngine(thread)==1;
         Check(running);
 
         if(running)
@@ -115,7 +122,7 @@ int main()
     {
         SameProcessQueue queue(1024);
         AudioEngineThread thread(&queue);
-        const bool running=StartEngine(thread);
+        const bool running=StartEngine(thread)==1;
         Check(running);
 
         if(running)
@@ -144,7 +151,7 @@ int main()
     {
         SameProcessQueue queue(256);
         AudioEngineThread thread(&queue);
-        const bool running=StartEngine(thread);
+        const bool running=StartEngine(thread)==1;
         Check(running);
 
         if(running)
