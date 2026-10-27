@@ -37,7 +37,7 @@ int main()
         Check("引擎线程运行中", t.IsLive());
         Check("初始化后处理计数 0", t.GetProcessedCount()==0);
 
-        t.WaitExit(1.0);
+        t.WaitExit();
         Check("Stop 后线程退出", !t.IsLive());
     }
 
@@ -61,7 +61,7 @@ int main()
         Check("100 事件全部处理", t.GetProcessedCount()==100);
         Check("队列已清空", q.GetPendingCount()==0);
 
-        t.WaitExit(1.0);
+        t.WaitExit();
     }
 
     // ---- 3. 回传：Play → PlayStarted（实例 ID 分配）----
@@ -91,7 +91,7 @@ int main()
         Check("10 个 Error 回传（未知 Cue）", errors==10);
         Check("回传队列已清空", q.GetResultCount()==0);
 
-        t.WaitExit(1.0);
+        t.WaitExit();
     }
 
     // ---- 4. 生产者在独立线程持续发事件（真实隔离场景）----
@@ -118,7 +118,7 @@ int main()
         Check("5000 事件全部处理", t.GetProcessedCount()==(uint32)N);
         Check("队列清空", q.GetPendingCount()==0);
 
-        t.WaitExit(1.0);
+        t.WaitExit();
     }
 
     std::cout << "== 结果: " << (failed ? "FAILED" : "ALL PASSED") << " (" << failed << " failures) ==" << std::endl;

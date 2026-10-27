@@ -74,8 +74,6 @@ namespace hgl::audio
             }
         }
 
-        bool DeletedAfterExit()const override{return false;}
-
         void Submit(const os_char *filename,AudioFileType file_type)
         {
             AudioLoadTask *task=new AudioLoadTask;
@@ -124,7 +122,7 @@ namespace hgl::audio
 
             if(!task)
             {
-                SleepSecond(0.001);     // 队列空，让出 CPU；退出由 exit_lock 检测
+                SleepSecond(0.001);     // 队列空，让出 CPU；退出请求在本轮执行后检查
                 return true;
             }
 

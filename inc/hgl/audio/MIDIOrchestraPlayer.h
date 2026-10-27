@@ -135,7 +135,6 @@ namespace hgl::audio
 
         bool PlaybackAllChannels();
 
-        bool DeletedAfterExit()const override{return false;}
         bool Execute() override;
 
         void InitPrivate();

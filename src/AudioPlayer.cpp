@@ -360,19 +360,14 @@ namespace hgl::audio
     {
         if(!audio_data&&!realtime_source)return;
 
-        bool thread_is_live=true;
-
         lock.Lock();
 
         if(Thread::IsLive())
             play_state=PlayState::Exit;
-        else
-            thread_is_live=false;
 
         lock.Unlock();
 
-        if(thread_is_live)
-            Thread::WaitExit();
+        Thread::WaitExit();
 
         play_state=PlayState::None;
     }

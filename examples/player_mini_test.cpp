@@ -37,7 +37,7 @@ int main()
     }
 
     p->Stop();
-    p->WaitExit(1.0);
+    p->WaitExit();
     delete p;
     fprintf(stderr,"done\n");
     return 0;

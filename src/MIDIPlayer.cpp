@@ -307,19 +307,14 @@ namespace hgl::audio
     {
         if(!audio_data)return;
 
-        bool thread_is_live=true;
-
         lock.Lock();
 
         if(Thread::IsLive())
             play_state=MIDIPlayState::Exit;
-        else
-            thread_is_live=false;
 
         lock.Unlock();
 
-        if(thread_is_live)
-            Thread::WaitExit();
+        Thread::WaitExit();
 
         play_state=MIDIPlayState::None;
     }

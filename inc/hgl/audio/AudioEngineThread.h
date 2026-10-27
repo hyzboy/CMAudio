@@ -69,8 +69,6 @@ namespace hgl::audio
         AudioEngineThread(EventTransport *t);
         ~AudioEngineThread()override;
 
-        bool DeletedAfterExit()const override{return false;}
-
         AudioEngine &GetEngine(){return engine;}
         SoundEventManager &GetCues(){return cues;}
 

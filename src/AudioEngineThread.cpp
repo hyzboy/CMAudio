@@ -17,8 +17,7 @@ namespace hgl::audio
 
     AudioEngineThread::~AudioEngineThread()
     {
-        if(running.load(std::memory_order_relaxed))
-            WaitExit(1.0);
+        WaitExit();
     }
 
     bool AudioEngineThread::ProcStartThread()
@@ -182,7 +181,7 @@ namespace hgl::audio
                     if(it->instance_id==ev.instance_id)
                     {
                         it->player->Stop();
-                        it->player->WaitExit(1.0);
+                        it->player->WaitExit();
                         delete it->player;
 
                         if(transport)
@@ -310,7 +309,7 @@ namespace hgl::audio
                     transport->PostResult(r);
                 }
 
-                p->WaitExit(1.0);
+                p->WaitExit();
                 delete p;
                 it=instances.erase(it);
             }
