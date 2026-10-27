@@ -7,71 +7,64 @@
 namespace hgl::audio
 {
     /**
-    * 事件传输层抽象（T3）
-    *
-    * 调用方 → 音频引擎 的事件通道与 引擎 → 调用方 的状态回传通道。
-    * 三种部署形态实现同一接口：
-    * - SameProcessQueue：同进程无锁 SPSC 环形队列（静态库/DLL 模式）
-    * - IPCTransport：共享内存 + 命名管道（独占进程模式，T7）
-    *
-    * 具体传输实现定义阻塞与过载策略。SameProcessQueue 使用非阻塞有界 SPSC，
-    * IPCTransport 使用操作系统管道，可能因管道背压而阻塞。
-    */
+     * @brief CN: 音频事件传输抽象（T3），隔离生产者与音频引擎的部署差异。
+     *        EN: Audio-event transport abstraction (T3), isolating deployment differences between producers and the audio engine.
+     * @details CN: Send/Recv 构成“调用方 → 引擎”的请求通道；PostResult/PollResult
+     *              构成“引擎 → 调用方”的响应通道。具体实现自行定义容量、阻塞和过载
+     *              策略：同进程实现通常采用非阻塞有界 SPSC 队列，跨进程实现可因 OS
+     *              管道背压而阻塞。调用方必须依据返回值处理队列满/空，不能假设所有实现
+     *              都会缓存无限事件或在发送时等待空间。
+     *          EN: Send/Recv form the caller-to-engine request channel; PostResult/PollResult
+     *              form the engine-to-caller response channel. Implementations define
+     *              capacity, blocking and overload policies. In-process implementations
+     *              typically use bounded non-blocking SPSC queues; inter-process
+     *              implementations may block under OS-pipe backpressure. Callers must
+     *              handle full/empty results and must not assume unbounded buffering or
+     *              that sends wait for available capacity.
+     */
     class EventTransport
     {
     public:
 
         virtual ~EventTransport()=default;
 
-        /**
-        * 发送一个事件（调用方 → 引擎）
-        * @return true=入队成功；false=队列满被丢弃（GetDroppedCount 可查）
-        */
+        /** @brief CN: 发送事件；false 表示本次未接受，调用方可按策略重试或丢弃。 EN: Send an event; false means it was not accepted and may be retried or dropped by policy. */
         virtual bool Send(const AudioEvent &ev)=0;
 
-        /**
-        * 取回一个事件（引擎侧消费）
-        * @return true=取到事件；false=队列空
-        */
+        /** @brief CN: 引擎侧取出事件；false 表示当前无可读事件或传输失败。 EN: Receive an event on the engine side; false means no event is available or transport failed. */
         virtual bool Recv(AudioEvent &ev)=0;
 
-        /**
-        * 回传状态（引擎 → 调用方）
-        * @return true=入队成功；false=队列满被丢弃
-        */
+        /** @brief CN: 引擎侧发送结果；false 表示本次回传未被接受。 EN: Post a result from the engine; false means the result was not accepted. */
         virtual bool PostResult(const AudioEventResult &r)=0;
 
-        /**
-        * 取回一个状态回传（调用方侧轮询）
-        * @return true=取到；false=队列空
-        */
+        /** @brief CN: 调用方轮询并取出结果；false 表示当前无结果或读取失败。 EN: Poll for a result on the caller side; false means none is available or reading failed. */
         virtual bool PollResult(AudioEventResult &r)=0;
 
-        /** 事件队列当前积压数 */
+        /** @brief CN: 返回请求事件队列当前积压数。 EN: Return the current number of pending requests. */
         virtual int  GetPendingCount()const=0;
 
-        /** 回传队列当前积压数 */
+        /** @brief CN: 返回结果回传队列当前积压数。 EN: Return the current number of pending results. */
         virtual int  GetResultCount()const=0;
 
-        /** 请求队列 Push 被拒绝的次数（调用方重试后成功也会计入） */
+        /** @brief CN: 请求投递被拒绝的次数；后续重试成功也不撤销计数。 EN: Number of rejected request posts; later successful retries do not decrement it. */
         virtual uint64 GetDroppedCount()const=0;
 
-        /** 回传队列 Push 被拒绝的次数；不支持该统计的传输实现返回 0 */
+        /** @brief CN: 回传投递被拒绝的次数；不支持该统计的实现返回 0。 EN: Number of rejected result posts; implementations without this statistic return 0. */
         virtual uint64 GetResultDroppedCount()const{return 0;}
     };//class EventTransport
 
     /**
-    * 同进程事件传输（T3，静态库/DLL 模式）
-    *
-    * 使用 CMCore 通用双向 SPSC 队列（hgl::DuplexQueue）：
-    * - 事件通道：调用方线程 → 引擎线程（AudioEvent）
-    * - 回传通道：引擎线程 → 调用方线程（AudioEventResult）
-    *
-    * 用法：
-    *   SameProcessQueue q(1024);          // 容量（槽数）
-    *   q.Send(ev);                        // 生产者
-    *   AudioEvent got; q.Recv(got);       // 消费者
-    */
+     * @brief CN: 使用 CMCore 双向 SPSC 通道的同进程音频事件传输。
+     *        EN: In-process audio-event transport using CMCore's bidirectional SPSC channel.
+     * @details CN: 请求与结果各有独立的固定容量队列；每个方向都要求恰好一个生产者和
+     *              一个消费者。容量是槽位数，队列满时 Send/PostResult 立即返回 false，
+     *              并由对应 dropped 计数器记录拒绝次数；此实现不阻塞也不覆盖旧事件。
+     *          EN: Requests and results use separate fixed-capacity queues, each requiring
+     *              exactly one producer and one consumer. Capacity is measured in slots.
+     *              Send/PostResult immediately returns false when full and increments
+     *              the corresponding dropped counter; this implementation neither
+     *              blocks nor overwrites older events.
+     */
     class SameProcessQueue : public EventTransport
     {
         hgl::DuplexQueue<AudioEvent,AudioEventResult> queue;
