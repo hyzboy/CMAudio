@@ -1,126 +1,184 @@
-﻿// Audio Engine Thread Test (T4)
-// 验证引擎线程化：AudioEngineThread 独立线程主循环
-// 事件消费 → 分发 → Update → 回传；WaitIdle 同步点
-#include <iostream>
-#include <thread>
-#include <atomic>
-#include <vector>
-#include <hgl/audio/AudioEngineThread.h>
-#include <hgl/audio/EventTransport.h>
-#include <hgl/time/Time.h>
+#include<hgl/audio/AudioEngineThread.h>
+#include<hgl/audio/EventTransport.h>
+#include<hgl/log/Log.h>
+#include<hgl/thread/Thread.h>
+#include<hgl/time/Time.h>
 
 using namespace hgl;
 using namespace hgl::audio;
 
-static int failed = 0;
+static int failed=0;
+static int check_count=0;
 
-static void Check(const char *name, bool cond)
+static void Check(bool condition)
 {
-    std::cout << (cond ? "  [PASS] " : "  [FAIL] ") << name << std::endl;
-    if(!cond) ++failed;
+    ++check_count;
+    if(!condition&&failed==0)
+        failed=check_count;
 }
+
+static bool StartEngine(AudioEngineThread &thread)
+{
+    if(!thread.Start())
+        return(false);
+
+    SleepSecond(0.05);
+    return thread.IsLive();
+}
+
+class EventProducer:public Thread
+{
+    EventTransport *transport;
+    uint32 event_count;
+
+public:
+
+    uint32 sent_count=0;
+    bool timed_out=false;
+
+    EventProducer(EventTransport *t,uint32 count):transport(t),event_count(count){}
+
+    bool Execute()override
+    {
+        const double deadline=GetUptimeSec()+10.0;
+
+        for(uint32 i=0;i<event_count;i++)
+        {
+            const AudioEvent event(AudioEventType::Play,i+1,0,i);
+
+            while(!transport->Send(event))
+            {
+                if(IsStopRequested()||GetUptimeSec()>deadline)
+                {
+                    timed_out=true;
+                    return(false);
+                }
+
+                SleepSecond(0.0001);
+            }
+
+            ++sent_count;
+        }
+
+        return(false);
+    }
+};
 
 int main()
 {
-    std::cout << "== Audio Engine Thread Test (T4: 引擎线程化) ==" << std::endl;
-
-    // ---- 1. 启动/停止 + 线程隔离 ----
-    std::cout << "[1] 启动/停止" << std::endl;
     {
-        SameProcessQueue q(1024);
-        AudioEngineThread t(&q);
+        SameProcessQueue queue(1024);
+        AudioEngineThread thread(&queue);
+        const bool running=StartEngine(thread);
 
-        Check("Start 成功", t.Start());
-
-        // 线程异步启动，稍候进入运行态
-        hgl::SleepSecond(0.05);
-        Check("引擎线程运行中", t.IsLive());
-        Check("初始化后处理计数 0", t.GetProcessedCount()==0);
-
-        t.WaitExit();
-        Check("Stop 后线程退出", !t.IsLive());
-    }
-
-    // ---- 2. 事件消费：发 100 事件 → WaitIdle → 全部处理 ----
-    std::cout << "[2] 事件消费与 WaitIdle" << std::endl;
-    {
-        SameProcessQueue q(1024);
-        AudioEngineThread t(&q);
-        Check("Start 成功", t.Start());
-
-        // 发 100 个 Play 事件
-        for(int i=0;i<100;i++)
+        if(!running)
         {
-            AudioEvent ev(AudioEventType::Play, (uint32)(i+1), 0, (uint32)i);
-            Check("Send 成功", q.Send(ev));
+            thread.WaitExit();
+            GLogWarning(U8_TEXT("Audio engine integration test skipped: OpenAL initialization failed"));
+            return(77);
         }
 
-        Check("队列积压 100", q.GetPendingCount()==100);
+        Check(true);
 
-        Check("WaitIdle 完成", t.WaitIdle(3000));
-        Check("100 事件全部处理", t.GetProcessedCount()==100);
-        Check("队列已清空", q.GetPendingCount()==0);
+        Check(thread.GetProcessedCount()==0);
 
-        t.WaitExit();
+        Check(thread.WaitExit());
+        Check(!thread.IsLive());
     }
 
-    // ---- 3. 回传：Play → PlayStarted（实例 ID 分配）----
-    std::cout << "[3] 回传通道（PlayStarted）" << std::endl;
     {
-        SameProcessQueue q(1024);
-        AudioEngineThread t(&q);
-        Check("Start 成功", t.Start());
+        SameProcessQueue queue(1024);
+        AudioEngineThread thread(&queue);
+        const bool running=StartEngine(thread);
+        Check(running);
 
-        for(int i=0;i<10;i++)
+        if(running)
         {
-            AudioEvent ev(AudioEventType::Play, 0xABCD, 0, (uint32)i);
-            q.Send(ev);
-        }
-
-        Check("WaitIdle 完成", t.WaitIdle(3000));
-
-        // 收集回传（T5：未知 Cue → Error，不再回传 PlayStarted）
-        AudioEventResult r;
-        int errors=0;
-        while(q.PollResult(r))
-        {
-            if(r.type==uint32(AudioEventResultType::Error))
-                ++errors;
-        }
-
-        Check("10 个 Error 回传（未知 Cue）", errors==10);
-        Check("回传队列已清空", q.GetResultCount()==0);
-
-        t.WaitExit();
-    }
-
-    // ---- 4. 生产者在独立线程持续发事件（真实隔离场景）----
-    std::cout << "[4] 多线程事件流（生产者线程 → 引擎线程）" << std::endl;
-    {
-        SameProcessQueue q(256);
-        AudioEngineThread t(&q);
-        Check("Start 成功", t.Start());
-
-        const int N=5000;
-        std::atomic<bool> done{false};
-
-        std::thread producer([&]{
-            for(int i=0;i<N;i++)
+            bool all_sent=true;
+            for(uint32 i=0;i<100;i++)
             {
-                AudioEvent ev(AudioEventType::Play, (uint32)(i+1), 0, (uint32)i);
-                while(!q.Send(ev)){}        // 等空位（压力）
+                const AudioEvent event(AudioEventType::Play,i+1,0,i);
+                if(!queue.Send(event))
+                    all_sent=false;
             }
-            done.store(true,std::memory_order_relaxed);
-        });
 
-        producer.join();
-        Check("WaitIdle 完成（5000 事件）", t.WaitIdle(10000));
-        Check("5000 事件全部处理", t.GetProcessedCount()==(uint32)N);
-        Check("队列清空", q.GetPendingCount()==0);
+            Check(all_sent);
+            Check(queue.GetPendingCount()==100);
+            Check(thread.WaitIdle(3000));
+            Check(thread.GetProcessedCount()==100);
+            Check(queue.GetPendingCount()==0);
+        }
 
-        t.WaitExit();
+        Check(thread.WaitExit());
     }
 
-    std::cout << "== 结果: " << (failed ? "FAILED" : "ALL PASSED") << " (" << failed << " failures) ==" << std::endl;
-    return failed ? 1 : 0;
+    {
+        SameProcessQueue queue(1024);
+        AudioEngineThread thread(&queue);
+        const bool running=StartEngine(thread);
+        Check(running);
+
+        if(running)
+        {
+            for(uint32 i=0;i<10;i++)
+            {
+                const AudioEvent event(AudioEventType::Play,0xABCD,0,i);
+                queue.Send(event);
+            }
+
+            Check(thread.WaitIdle(3000));
+
+            AudioEventResult result;
+            int errors=0;
+            while(queue.PollResult(result))
+                if(result.type==uint32(AudioEventResultType::Error))
+                    ++errors;
+
+            Check(errors==10);
+            Check(queue.GetResultCount()==0);
+        }
+
+        Check(thread.WaitExit());
+    }
+
+    {
+        SameProcessQueue queue(256);
+        AudioEngineThread thread(&queue);
+        const bool running=StartEngine(thread);
+        Check(running);
+
+        if(running)
+        {
+            static const uint32 event_count=5000;
+            EventProducer producer(&queue,event_count);
+
+            if(producer.Start())
+            {
+                const bool producer_joined=producer.Join(12.0);
+                Check(producer_joined);
+
+                if(!producer_joined)
+                    producer.WaitExit(2.0);
+
+                Check(!producer.timed_out&&producer.sent_count==event_count);
+                Check(thread.WaitIdle(10000));
+                Check(thread.GetProcessedCount()==event_count);
+                Check(queue.GetPendingCount()==0);
+            }
+            else
+            {
+                Check(false);
+            }
+        }
+
+        Check(thread.WaitExit());
+    }
+
+    if(failed)
+        GLogError(U8_TEXT("Audio engine thread test failed at check %d"),failed);
+
+    if(!failed)
+        GLogInfo(U8_TEXT("Audio engine thread test passed"));
+
+    return failed;
 }
