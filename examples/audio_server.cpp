@@ -49,7 +49,7 @@ int main(int argc,char **argv)
 
     std::cout << "[AudioServer] 客户端断开，停止引擎" << std::endl;
 
-    engine.WaitExit();
+    engine.StopAndJoin();
 
     ipc.Close();
 

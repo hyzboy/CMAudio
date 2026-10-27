@@ -37,7 +37,7 @@ int main()
     }
 
     p->Stop();
-    p->WaitExit();
+    p->StopAndJoin();
     delete p;
     fprintf(stderr,"done\n");
     return 0;

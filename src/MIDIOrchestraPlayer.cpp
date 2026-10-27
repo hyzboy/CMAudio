@@ -563,7 +563,7 @@ namespace hgl::audio
 
         state=MIDIOrchestraState::Play;
 
-        if(!IsLive())
+        if(!IsRunning())
             Start();
     }
 
@@ -612,7 +612,7 @@ namespace hgl::audio
         Stop();
 
         state=MIDIOrchestraState::Exit;
-        WaitExit();
+        StopAndJoin();
 
         if(decoder&&audio_ptr)
         {

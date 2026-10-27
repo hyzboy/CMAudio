@@ -2,7 +2,7 @@
 
 #include<hgl/type/String.h>
 #include<hgl/type/UnorderedMap.h>
-#include<hgl/thread/ThreadMutex.h>
+#include<hgl/sync/Mutex.h>
 #include<hgl/CoreType.h>
 
 namespace hgl::audio
@@ -38,7 +38,7 @@ namespace hgl::audio
     class AudioAssetManager
     {
         UnorderedMap<OSString, AudioBuffer *> assets;       ///< 文件名 → 缓冲区缓存
-        mutable ThreadMutex lock;
+        mutable Mutex lock;
 
         AudioLoadThread *load_thread;                       ///< 后台解码线程（懒启动，nullptr=未创建）
 

@@ -309,12 +309,12 @@ namespace hgl::audio
 
         lock.Lock();
 
-        if(Thread::IsLive())
+        if(Thread::IsRunning())
             play_state=MIDIPlayState::Exit;
 
         lock.Unlock();
 
-        Thread::WaitExit();
+        Thread::StopAndJoin();
 
         play_state=MIDIPlayState::None;
     }

@@ -2,7 +2,7 @@
 
 #include<hgl/CoreType.h>
 #include<hgl/thread/Thread.h>
-#include<hgl/thread/Atomic.h>
+#include<hgl/sync/Atomic.h>
 #include<hgl/audio/EventTransport.h>
 #include<hgl/audio/SoundEventManager.h>
 #include<hgl/audio/AudioEngine.h>

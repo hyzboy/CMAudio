@@ -17,7 +17,7 @@ namespace hgl::audio
 
     AudioEngineThread::~AudioEngineThread()
     {
-        WaitExit();
+        StopAndJoin();
     }
 
     bool AudioEngineThread::ProcStartThread()
@@ -181,7 +181,7 @@ namespace hgl::audio
                     if(it->instance_id==ev.instance_id)
                     {
                         it->player->Stop();
-                        it->player->WaitExit();
+                        it->player->StopAndJoin();
                         delete it->player;
 
                         if(transport)
@@ -309,7 +309,7 @@ namespace hgl::audio
                     transport->PostResult(r);
                 }
 
-                p->WaitExit();
+                p->StopAndJoin();
                 delete p;
                 it=instances.erase(it);
             }

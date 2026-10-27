@@ -23,7 +23,7 @@ static int StartEngine(AudioEngineThread &thread)
         return(0);
 
     SleepSecond(0.05);
-    return thread.IsLive()?1:2;
+    return thread.IsRunning()?1:2;
 }
 
 class EventProducer:public Thread
@@ -73,14 +73,14 @@ int main()
 
         if(startup==0)
         {
-            thread.WaitExit();
+            thread.StopAndJoin();
             Check(false);
             return(failed);
         }
 
         if(startup==2)
         {
-            thread.WaitExit();
+            thread.StopAndJoin();
             GLogWarning(U8_TEXT("Audio engine integration test skipped: OpenAL initialization failed"));
             return(77);
         }
@@ -89,8 +89,8 @@ int main()
 
         Check(thread.GetProcessedCount()==0);
 
-        Check(thread.WaitExit());
-        Check(!thread.IsLive());
+        Check(thread.StopAndJoin());
+        Check(!thread.IsRunning());
     }
 
     {
@@ -116,7 +116,7 @@ int main()
             Check(queue.GetPendingCount()==0);
         }
 
-        Check(thread.WaitExit());
+        Check(thread.StopAndJoin());
     }
 
     {
@@ -145,7 +145,7 @@ int main()
             Check(queue.GetResultCount()==0);
         }
 
-        Check(thread.WaitExit());
+        Check(thread.StopAndJoin());
     }
 
     {
@@ -165,7 +165,7 @@ int main()
                 Check(producer_joined);
 
                 if(!producer_joined)
-                    producer.WaitExit(2.0);
+                    producer.StopAndJoin(2.0);
 
                 Check(!producer.timed_out&&producer.sent_count==event_count);
                 Check(thread.WaitIdle(10000));
@@ -178,7 +178,7 @@ int main()
             }
         }
 
-        Check(thread.WaitExit());
+        Check(thread.StopAndJoin());
     }
 
     if(failed)

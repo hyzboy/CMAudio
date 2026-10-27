@@ -362,12 +362,12 @@ namespace hgl::audio
 
         lock.Lock();
 
-        if(Thread::IsLive())
+        if(Thread::IsRunning())
             play_state=PlayState::Exit;
 
         lock.Unlock();
 
-        Thread::WaitExit();
+        Thread::StopAndJoin();
 
         play_state=PlayState::None;
     }

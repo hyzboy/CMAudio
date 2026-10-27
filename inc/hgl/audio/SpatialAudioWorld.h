@@ -9,7 +9,7 @@
 #include<hgl/audio/DirectionalGainPattern.h>
 #include<hgl/audio/InterpolationType.h>
 #include<hgl/audio/ReverbPreset.h>
-#include<hgl/thread/ThreadMutex.h>
+#include<hgl/sync/Mutex.h>
 
 namespace hgl::audio
 {
@@ -239,7 +239,7 @@ namespace hgl::audio
 
         AudioBus *world_bus;                                                                        ///< 世界总线（所有空间音源统一挂载）
 
-        ThreadMutex scene_mutex;                                                                    ///< 线程互斥锁
+        Mutex scene_mutex;                                                                       ///< 线程互斥锁
 
         uint aux_effect_slot;                                                                       ///< 辅助效果槽
         uint reverb_effect;                                                                         ///< 混响效果

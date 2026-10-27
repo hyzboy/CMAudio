@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include<hgl/thread/Thread.h>
-#include<hgl/thread/ThreadMutex.h>
-#include<hgl/thread/Atomic.h>
+#include<hgl/sync/Mutex.h>
+#include<hgl/sync/Atomic.h>
 #include<hgl/audio/OpenAL.h>
 #include<hgl/audio/AudioSource.h>
 #include<hgl/audio/GainEnvelope.h>
@@ -54,7 +54,7 @@ namespace hgl::audio
     {
         OBJECT_LOGGER
 
-        ThreadMutex lock;
+        Mutex lock;
 
     protected:
 

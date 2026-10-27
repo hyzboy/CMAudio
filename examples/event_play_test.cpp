@@ -246,7 +246,7 @@ int main()
         Check("Music 快照生效 0.5", std::fabs(music_gain-0.5f)<0.01f);
     }
 
-    t.WaitExit();
+    t.StopAndJoin();
 
     std::cout << "== 结果: " << (failed ? "FAILED" : "ALL PASSED") << " (" << failed << " failures) ==" << std::endl;
     return failed ? 1 : 0;

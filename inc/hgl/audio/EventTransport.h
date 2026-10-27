@@ -2,7 +2,7 @@
 
 #include<hgl/CoreType.h>
 #include<hgl/audio/AudioEvent.h>
-#include<hgl/thread/DuplexQueue.h>
+#include<hgl/concurrency/DuplexQueue.h>
 
 namespace hgl::audio
 {

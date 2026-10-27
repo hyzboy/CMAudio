@@ -4,7 +4,7 @@
 #include<hgl/io/FileInputStream.h>
 #include<hgl/type/Queue.h>
 #include<hgl/thread/Thread.h>
-#include<hgl/thread/Atomic.h>
+#include<hgl/sync/Atomic.h>
 #include<hgl/time/Time.h>
 #include<hgl/log/Log.h>
 #include"AudioDecode.h"
@@ -46,7 +46,7 @@ namespace hgl::audio
         Queue<AudioLoadTask *> pending;         // 待解码任务
         Queue<CompletedLoad *> done;            // 已解码（主线程消费）
 
-        mutable ThreadMutex queue_lock;         // 保护 pending/done
+        mutable Mutex queue_lock;         // 保护 pending/done
 
         atom<int> task_count;                   // 在途任务数（含解码中+待上传），原子，避免队列空窗导致轮询提前结束
 
@@ -184,7 +184,7 @@ namespace hgl::audio
     {
         if(load_thread)
         {
-            load_thread->WaitExit();
+            load_thread->StopAndJoin();
             delete load_thread;
             load_thread=nullptr;
         }
@@ -196,7 +196,7 @@ namespace hgl::audio
     {
         if(!filename||!(*filename))return nullptr;
 
-        ThreadMutexLock lock_guard(&lock);
+        MutexLock lock_guard(&lock);
 
         const OSString key(filename);
 
@@ -228,7 +228,7 @@ namespace hgl::audio
     {
         if(!name||!(*name)||!buffer)return false;
 
-        ThreadMutexLock lock_guard(&lock);
+        MutexLock lock_guard(&lock);
 
         const OSString key(name);
 
@@ -243,7 +243,7 @@ namespace hgl::audio
     {
         if(!buffer)return;
 
-        ThreadMutexLock lock_guard(&lock);
+        MutexLock lock_guard(&lock);
 
         const uint rc=buffer->GetRefCount();
 
@@ -270,7 +270,7 @@ namespace hgl::audio
     {
         if(!name||!(*name))return;
 
-        ThreadMutexLock lock_guard(&lock);
+        MutexLock lock_guard(&lock);
 
         const OSString key(name);
 
@@ -332,7 +332,7 @@ namespace hgl::audio
 
     void AudioAssetManager::Clear()
     {
-        ThreadMutexLock lock_guard(&lock);
+        MutexLock lock_guard(&lock);
 
         for(auto &kv : assets)
             delete kv.second;
@@ -345,7 +345,7 @@ namespace hgl::audio
         if(!filename||!(*filename))return false;
 
         {
-            ThreadMutexLock lock_guard(&lock);
+            MutexLock lock_guard(&lock);
 
             if(assets.ContainsKey(OSString(filename)))return true;   // 已缓存，无需异步
         }
@@ -398,7 +398,7 @@ namespace hgl::audio
 
             if(buffer)
             {
-                ThreadMutexLock lock_guard(&lock);
+                MutexLock lock_guard(&lock);
 
                 AudioBuffer *existing=nullptr;
 

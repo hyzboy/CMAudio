@@ -4,7 +4,7 @@
 #include<hgl/audio/AudioFileType.h>
 #include<hgl/audio/AudioMixerTypes.h>
 #include<hgl/audio/ParametricEQ.h>
-#include<hgl/thread/Atomic.h>
+#include<hgl/sync/Atomic.h>
 #include<hgl/log/Log.h>
 
 namespace hgl::audio

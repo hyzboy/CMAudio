@@ -22,7 +22,7 @@ struct AudioClient
 
     ~AudioClient()
     {
-        engine.WaitExit();
+        engine.StopAndJoin();
     }
 };
 
@@ -54,7 +54,7 @@ AUDIO_API void AudioClient_Stop(AudioClient *client)
 {
     if(!client)return;
 
-    client->engine.WaitExit();
+    client->engine.StopAndJoin();
 }
 
 // ---- Cue 注册 ----
